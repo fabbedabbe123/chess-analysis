@@ -87,7 +87,7 @@ async def main():
         await goto_tab(pg,'Puzzles'); await pg.get_by_label('Puzzle type').select_option('mate1'); await pg.click('[data-testid=puzzle-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
         f=await cur_fen(pg); mp=next(x for x in PUZ if x['fen'].split()[0]==f.split()[0]); await play(pg,mp['solution'][0]); print('mate1:', await msg(pg))
         # mobile
-        m=await b.new_page(viewport={'width':390,'height':800}); await m.goto(URL); await m.wait_for_selector('cg-board'); await m.get_by_role('button',name='Puzzles',exact=True).last.click(); await m.click('[data-testid=puzzle-start]'); await m.wait_for_timeout(500)
+        m=await b.new_page(viewport={'width':390,'height':800}); await m.goto(URL); await m.wait_for_selector('cg-board'); await m.locator('.mobile-tabs button',has_text='Train').click(); await m.get_by_role('tab',name='Puzzles',exact=True).click(); await m.click('[data-testid=puzzle-start]'); await m.wait_for_timeout(500)
         print('mobile: board visible', await m.locator('cg-board').is_visible(), 'hscroll', await m.evaluate('document.documentElement.scrollWidth>innerWidth'))
         await m.screenshot(path='/tmp/claude-0/puzzle_mobile.png'); await pg.screenshot(path='/tmp/claude-0/puzzle_desktop.png')
         print('LOGS',logs); await b.close()
