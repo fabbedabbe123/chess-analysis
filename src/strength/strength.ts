@@ -17,7 +17,7 @@ import type { WhiteScore } from '@/types/engine';
  *  - Focus areas and trends come from the rule-based coach categories (patterns, not proven causes).
  */
 
-export type GameSource = 'play' | 'chesscom' | 'import';
+export type GameSource = 'play' | 'chesscom' | 'lichess' | 'import';
 
 export interface AnalysedGame {
   id: string;
@@ -120,7 +120,7 @@ export function sanitizeAnalysed(raw: unknown): AnalysedGame | null {
   const endedAt = num(r['endedAt']);
   if (typeof r['id'] !== 'string' || acpl === null || acpl < 0 || moves === null || moves <= 0 || endedAt === null) return null;
   if (r['userColor'] !== 'w' && r['userColor'] !== 'b') return null;
-  const source: GameSource = r['source'] === 'chesscom' || r['source'] === 'import' ? r['source'] : 'play';
+  const source: GameSource = r['source'] === 'chesscom' || r['source'] === 'lichess' || r['source'] === 'import' ? r['source'] : 'play';
   const c = (typeof r['counts'] === 'object' && r['counts'] !== null ? r['counts'] : {}) as Record<string, unknown>;
   return {
     id: r['id'],

@@ -7,12 +7,13 @@ import {
 } from '@/strength/strength';
 import { analyseTrackedGames, cancelBatch, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
 import { usePuzzle } from '@/stores/puzzleStore';
+import { useLichess } from '@/stores/lichessStore';
 import { useTracker } from '@/stores/trackerStore';
 import { confirmThen, openLesson, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { formatDate } from '@/utils/format';
 
 const TREND_TEXT: Record<Trend, string> = { improving: '↘ improving', steady: '→ steady', worse: '↗ getting worse', unknown: '' };
-const SOURCE_TEXT = { play: 'Play', chesscom: 'Chess.com', import: 'Imported' } as const;
+const SOURCE_TEXT = { play: 'Play', chesscom: 'Chess.com', lichess: 'Lichess', import: 'Imported' } as const;
 
 function Estimate({ games }: { games: AnalysedGame[] }) {
   const est = useMemo(() => estimateStrength(games), [games]);
@@ -32,7 +33,7 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
         <ul className="plain-list">
           <li>Finish a game in <button className="linklike" onClick={() => setRightTab('play')}>Play</button> and press “Analyse game”.</li>
           <li>Run a review on any game (Review tab) and press “Count this game for my strength”.</li>
-          <li>Track your Chess.com account in <button className="linklike" onClick={() => setRightTab('player')}>Player</button> and analyse your recent games below.</li>
+          <li>Track your Chess.com or Lichess account in <button className="linklike" onClick={() => setRightTab('player')}>Player</button> and analyse your recent games below.</li>
         </ul>
       </div>
     );
@@ -47,7 +48,7 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
       </div>
       {actual !== null && gap !== null && (
         <p className="small-print" data-testid="strength-compare">
-          Your recent Chess.com rating: <strong>{actual.rating}</strong> ({actual.games} rated game{actual.games === 1 ? '' : 's'}).{' '}
+          Your recent rating in these games: <strong>{actual.rating}</strong> ({actual.games} rated game{actual.games === 1 ? '' : 's'}).{' '}
           {Math.abs(gap) <= 150 ? 'The estimate is in the same range.' : gap > 0 ? 'The analysis suggests you play better than your rating in these games.' : 'The analysis suggests you play below your rating in these games.'}
         </p>
       )}
@@ -121,18 +122,20 @@ function Focus({ games }: { games: AnalysedGame[] }) {
 function Batch() {
   const trackedUser = useTracker((s) => s.username);
   const trackedGames = useTracker((s) => s.games);
+  const lichessUser = useLichess((s) => s.username);
+  const lichessGames = useLichess((s) => s.games);
   const batch = useStrength((s) => s.batch);
   const games = useStrength((s) => s.games);
   const [count, setCount] = useState(5);
-  const waiting = useMemo(() => unanalysedTracked().length, [games, trackedGames]); // eslint-disable-line react-hooks/exhaustive-deps
+  const waiting = useMemo(() => unanalysedTracked().length, [games, trackedGames, lichessGames]); // eslint-disable-line react-hooks/exhaustive-deps
   const running = batch.status === 'running';
-  if (trackedUser === null) {
-    return <p className="muted small-print">Track a Chess.com account in the <button className="linklike" onClick={() => setRightTab('player')}>Player</button> tab to analyse your recent games here.</p>;
+  if (trackedUser === null && lichessUser === null) {
+    return <p className="muted small-print">Track a Chess.com or Lichess account in the <button className="linklike" onClick={() => setRightTab('player')}>Player</button> tab to analyse your recent games here.</p>;
   }
   return (
     <div className="card" data-testid="batch">
       <div className="row wrap">
-        <span>Analyse my recent Chess.com games</span>
+        <span>Analyse my recent tracked games</span>
         <span className="spacer" />
         <label className="inline">
           Games

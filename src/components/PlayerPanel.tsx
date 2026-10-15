@@ -3,9 +3,11 @@ import { stripClockTags, type TimeClass, type TrackedGame } from '@/chesscom/api
 import { computeStats, scorePct, weakestOpenings, type Record3 } from '@/chesscom/stats';
 import { parsePgn } from '@/pgn/pgn';
 import { gameStore, loadGame, notify } from '@/stores/gameStore';
+import { clearLichess, syncLichess, useLichess } from '@/stores/lichessStore';
 import { clearTracker, olderMonthsAvailable, syncPlayer, useTracker } from '@/stores/trackerStore';
 import { confirmThen, setMobileTab } from '@/stores/uiStore';
 
+type Source = 'chesscom' | 'lichess';
 const CLASSES: TimeClass[] = ['bullet', 'blitz', 'rapid', 'daily'];
 
 function Wdl({ r }: { r: Record3 }) {
@@ -39,7 +41,11 @@ function openGame(g: TrackedGame) {
 }
 
 export function PlayerPanel() {
-  const t = useTracker((s) => s);
+  const cc = useTracker((s) => s);
+  const li = useLichess((s) => s);
+  const [source, setSource] = useState<Source>(cc.username === null && li.username !== null ? 'lichess' : 'chesscom');
+  const lichess = source === 'lichess';
+  const t = lichess ? li : cc;
   const [input, setInput] = useState(t.username ?? '');
   const [cls, setCls] = useState<TimeClass | 'all'>('all');
   const [showAll, setShowAll] = useState(false);
@@ -49,17 +55,24 @@ export function PlayerPanel() {
   const weak = useMemo(() => weakestOpenings(stats), [stats]);
   const ratingClass: TimeClass | null = cls !== 'all' ? cls : (CLASSES.find((c) => (stats.ratings[c]?.length ?? 0) > 1) ?? null);
   const syncing = t.status === 'syncing';
-  const older = olderMonthsAvailable(t);
+  const older = lichess ? 0 : olderMonthsAvailable(cc);
+  const name = lichess ? 'Lichess' : 'Chess.com';
+  const pick = (s: Source) => { setSource(s); setInput((s === 'lichess' ? li.username : cc.username) ?? ''); setCls('all'); setShowAll(false); };
 
   return (
     <section className="panel player-panel" aria-label="Player tracking">
-      <header className="panel-head"><h2>Player (Chess.com)</h2></header>
-      <form className="row wrap" onSubmit={(e) => { e.preventDefault(); void syncPlayer(input); }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Chess.com username" aria-label="Chess.com username" data-testid="player-input" autoCapitalize="off" spellCheck={false} />
-        <button className="btn primary" type="submit" disabled={syncing || input.trim() === ''} data-testid="player-track">{syncing ? 'Syncing…' : t.username === input.trim().toLowerCase() ? 'Refresh' : 'Track'}</button>
-        {t.username && <button type="button" className="btn small danger" onClick={() => { clearTracker(); setInput(''); }}>Stop tracking</button>}
+      <header className="panel-head"><h2>Player</h2></header>
+      <div className="tabs small" role="tablist" aria-label="Site">
+        {(['chesscom', 'lichess'] as const).map((s) => (
+          <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'active' : ''} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
+        ))}
+      </div>
+      <form className="row wrap" onSubmit={(e) => { e.preventDefault(); void (lichess ? syncLichess(input) : syncPlayer(input)); }}>
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`${name} username`} aria-label={`${name} username`} data-testid="player-input" autoCapitalize="off" spellCheck={false} />
+        <button className="btn primary" type="submit" disabled={syncing || input.trim() === ''} data-testid="player-track">{syncing ? 'Syncing…' : t.username?.toLowerCase() === input.trim().toLowerCase() ? 'Refresh' : 'Track'}</button>
+        {t.username && <button type="button" className="btn small danger" onClick={() => { if (lichess) clearLichess(); else clearTracker(); setInput(''); }}>Stop tracking</button>}
       </form>
-      <p className="muted small-print">Reads public games from Chess.com's open API (no login, nothing is sent anywhere else). Data stays in this browser.</p>
+      <p className="muted small-print">Reads public games from {name}'s open API (no login, no token, nothing is sent anywhere else). Data stays in this browser.</p>
       {t.error && <div className="callout error" role="alert" data-testid="player-error">{t.error}</div>}
       {t.note && <div className="callout warn small">{t.note}</div>}
 
@@ -118,6 +131,7 @@ export function PlayerPanel() {
               {games.length > 10 && <button className="btn small" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show fewer' : `Show all ${games.length}`}</button>}
             </>
           )}
+          {lichess && !li.exhausted && li.cursor !== null && <div className="row"><button className="btn small" disabled={syncing} onClick={() => void syncLichess(li.username ?? '', true)} data-testid="lichess-older">Load 100 older games</button></div>}
           {older > 0 && <div className="row"><button className="btn small" disabled={syncing} onClick={() => void syncPlayer(t.username ?? '', 3)}>Load 3 older months ({older} available)</button></div>}
         </div>
       )}

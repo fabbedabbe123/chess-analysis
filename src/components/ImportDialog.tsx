@@ -6,6 +6,7 @@ import { closeDialog, confirmThen, setRightTab } from '@/stores/uiStore';
 import { startReview } from '@/stores/reviewStore';
 import { settingsStore } from '@/stores/settingsStore';
 import { mainLineLength } from '@/chess/gameTree';
+import { fetchLichessPgn, isChessComGameLink, lichessGameId, LichessError } from '@/lichess/api';
 import { Modal } from './Modal';
 
 const looksLikeFen = (text: string) => !text.includes('[') && text.trim().split(/\s+/).length >= 4 && text.includes('/');
@@ -21,6 +22,7 @@ export function ImportDialog() {
   const [result, setResult] = useState<PgnParseResult | null>(null);
   const [fenError, setFenError] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
+  const [loading, setLoading] = useState(false);
   const file = useRef<HTMLInputElement>(null);
 
   const apply = (game: ParsedGame) => {
@@ -37,9 +39,33 @@ export function ImportDialog() {
     });
   };
 
+  const fetchLink = async (id: string) => {
+    setLoading(true);
+    try {
+      const pgn = await fetchLichessPgn(id);
+      setText(pgn);
+      parse(pgn);
+    } catch (e) {
+      setResult(null);
+      setFenError(e instanceof LichessError ? e.message : 'Could not load that Lichess game.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const parse = (source: string) => {
     setFenError(null);
     const input = source.trim();
+    if (!input.includes('\n') && isChessComGameLink(input)) {
+      setResult(null);
+      setFenError("Chess.com game links can't be opened from a browser app (Chess.com blocks it). Track your account in the Player tab to load its games, or paste the game's PGN here.");
+      return;
+    }
+    const linkId = input.includes('\n') ? null : lichessGameId(input);
+    if (linkId !== null) {
+      void fetchLink(linkId);
+      return;
+    }
     if (input === '') {
       setResult(null);
       setFenError('Paste a PGN or a FEN first.');
@@ -79,7 +105,7 @@ export function ImportDialog() {
 
   return (
     <Modal title="Import game or position" onClose={closeDialog} wide>
-      <p className="muted">Paste a PGN (one or many games, with variations and comments) or a FEN, or choose a file.</p>
+      <p className="muted">Paste a PGN (one or many games, with variations and comments), a FEN or a Lichess game link, or choose a file.</p>
       <textarea
         className="import-text"
         value={text}
@@ -90,7 +116,7 @@ export function ImportDialog() {
         spellCheck={false}
       />
       <div className="row wrap">
-        <button className="btn primary" onClick={() => parse(text)} data-testid="import-submit">Import</button>
+        <button className="btn primary" onClick={() => parse(text)} disabled={loading} data-testid="import-submit">{loading ? 'Fetching…' : 'Import'}</button>
         <button className="btn" onClick={() => file.current?.click()}>Choose file…</button>
         <input
           ref={file}

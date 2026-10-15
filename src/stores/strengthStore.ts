@@ -8,6 +8,7 @@ import { storageGet, storageSet } from '@/utils/storage';
 import type { Color } from '@/types/game';
 import { createStore, useStore } from './createStore';
 import { engineOptionsFrom, settingsStore } from './settingsStore';
+import { lichessStore } from './lichessStore';
 import { trackerStore } from './trackerStore';
 
 const KEY = 'chess-analysis:strength-games:v1';
@@ -78,10 +79,12 @@ export function cancelBatch(): void {
   abort?.abort();
 }
 
-/** Tracked Chess.com games that have not been analysed yet, newest first. */
+/** Tracked Chess.com and Lichess games that have not been analysed yet, newest first. */
 export function unanalysedTracked(): ReturnType<typeof trackerStore.get>['games'] {
   const done = new Set(strengthStore.get().games.map((g) => g.id));
-  return trackerStore.get().games.filter((g) => !done.has(g.url));
+  return [...trackerStore.get().games, ...lichessStore.get().games]
+    .filter((g) => !done.has(g.url))
+    .sort((a, b) => b.endTime - a.endTime);
 }
 
 /**
@@ -92,7 +95,7 @@ export async function analyseTrackedGames(count: number): Promise<void> {
   if (strengthStore.get().batch.status === 'running') return;
   const todo = unanalysedTracked().slice(0, Math.max(1, count));
   if (todo.length === 0) {
-    strengthStore.set((s) => ({ batch: { ...s.batch, error: null, note: 'No new tracked games to analyse. Sync your Chess.com games in the Player tab first.' } }));
+    strengthStore.set((s) => ({ batch: { ...s.batch, error: null, note: 'No new tracked games to analyse. Sync your Chess.com or Lichess games in the Player tab first.' } }));
     return;
   }
   const settings = settingsStore.get();
@@ -122,7 +125,7 @@ export async function analyseTrackedGames(count: number): Promise<void> {
         onProgress: (d, t) => strengthStore.set((s) => ({ batch: { ...s.batch, currentPly: d, currentPlies: t } })),
       });
       const label = `vs ${tg.opponent}${tg.opponentRating !== null ? ` (${tg.opponentRating})` : ''} · ${tg.timeClass}`;
-      if (addFromReview(result, tg.color, { id: tg.url, source: 'chesscom', endedAt: tg.endTime * 1000, label, myRating: tg.rating })) analysed += 1;
+      if (addFromReview(result, tg.color, { id: tg.url, source: tg.source === 'lichess' ? 'lichess' : 'chesscom', endedAt: tg.endTime * 1000, label, myRating: tg.rating })) analysed += 1;
       else skipped += 1;
       strengthStore.set((s) => ({ batch: { ...s.batch, done: s.batch.done + 1, currentPly: 0, currentPlies: 0 } }));
     }

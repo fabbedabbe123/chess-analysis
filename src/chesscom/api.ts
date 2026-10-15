@@ -22,6 +22,8 @@ export interface TrackedGame {
   eco: string | null;
   opening: string | null;
   pgn: string;
+  /** Where the game came from; absent means Chess.com (older saved data). */
+  source?: 'chesscom' | 'lichess';
 }
 
 export class ChessComError extends Error {
