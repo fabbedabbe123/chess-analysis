@@ -51,3 +51,4 @@ jobs:
       - run: python3 e2e/strength_reset.py
       - run: python3 e2e/ui_round4.py
       - run: python3 e2e/ui_round4b.py
+      - run: python3 e2e/home.py

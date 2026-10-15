@@ -1,6 +1,7 @@
 import asyncio, random, re
 from playwright.async_api import async_playwright
-URL='http://localhost:4173/'
+URL='http://localhost:4173/?workspace'
+BASE_URL='http://localhost:4173/'
 
 # Browser launch settings: PW_CHROMIUM overrides the binary; otherwise the sandbox's Chromium if present, otherwise Playwright's own.
 import os as _os
@@ -36,7 +37,8 @@ def fen_pieces(fen):
 import asyncio
 from playwright.async_api import async_playwright
 
-URL='http://localhost:4173/'
+URL='http://localhost:4173/?workspace'
+BASE_URL='http://localhost:4173/'
 
 async def load_fen(pg, fen):
     await pg.fill('input[aria-label=FEN]', fen)

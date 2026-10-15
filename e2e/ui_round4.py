@@ -11,9 +11,7 @@ async def main():
         ctx=await b.new_context(viewport={'width':1440,'height':900}); pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.goto(URL); await pg.evaluate("localStorage.clear(); localStorage.setItem('chess-analysis:settings:v1', JSON.stringify({reviewDepth:10}))"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        # welcome + help
-        check('welcome card shown on first visit', await pg.locator('[data-testid=welcome]').is_visible())
-        check('three starting points', await pg.locator('.welcome-choice').count()==3)
+        # help
         await pg.click('[data-testid=open-help]'); await pg.wait_for_selector('[data-testid=help-howto]')
         check('help explains how to do things', 'Switch to another account' in await pg.inner_text('[data-testid=help-howto]'))
         await pg.keyboard.press('Escape')

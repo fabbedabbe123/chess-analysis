@@ -75,11 +75,15 @@ The Strength tab turns analysed games into an estimate of your playing strength 
 
 Checks: `tests/strength.test.ts` (maths, bands, focus, plan, sanitising) and `python3 e2e/strength.py` (real Stockfish; uses synthetic 44-ply games from `e2e/strength_pgns.json`, and a seeded tracker for the batch because the Chess.com API is not reachable from the build sandbox).
 
+## Start page
+
+Opening the site with nothing to continue shows a calm start page (Analyse a game / My games / Play Stockfish, plus your estimated level and due puzzles). If a game is on the board or a game against Stockfish is unfinished, the workspace opens directly. The brand in the side menu returns to the start page. `?workspace` in the address skips the start page (used by the tests).
+
 ## Usability round (fourth)
 
 - Moves list now sits under the board (like Chess.com); the right-hand column is all for the active tool.
 - Four sections instead of nine tabs: Analyse (Engine, Review, Openings, Tactics), Train (Learn, Puzzles), My games (Player, Strength), Play.
-- First-visit "What do you want to do?" card and a **?** button with a how-to guide.
+- A **?** button with a how-to guide.
 - After a review the board jumps to your first error; the review starts with a one-line summary per side; best moves with big swings are marked "Forced sequence".
 - "Show errors only" in the move list; the game result is shown at the end of the game.
 - Import accepts PGN tags written on one line and refuses to "load" a game with no readable moves.

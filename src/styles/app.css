@@ -534,3 +534,27 @@ fieldset.plain:disabled { opacity: 0.5; }
   .mobile-tabs button { flex: 1 1 0; min-width: 0; }
 }
 @media (max-width: 900px) { .app:not(.mobile-board) .welcome { display: none; } }
+
+/* ---------- start page ---------- */
+.home { min-height: 100vh; display: grid; place-items: center; padding: 32px 16px; background: radial-gradient(900px 500px at 50% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%); }
+.home-inner { width: min(980px, 100%); display: grid; gap: 32px; }
+.home-brand { text-align: center; display: grid; gap: 6px; justify-items: center; }
+.home-brand .logo { font-size: 44px; color: var(--accent); line-height: 1; }
+.home-brand h1 { margin: 0; font-size: 34px; letter-spacing: -0.01em; }
+.home-brand p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 15px; line-height: 1.5; }
+.home-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.home-card { text-align: left; display: grid; gap: 8px; align-content: start; padding: 22px 20px; min-height: 170px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.home-card:hover, .home-card:focus-visible { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.home-card strong { font-size: 18px; }
+.home-card span:not(.home-icon) { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.home-icon { font-size: 26px; color: var(--accent); line-height: 1; }
+.home-continue h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.home-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.home-row { text-align: left; display: grid; gap: 2px; padding: 12px 14px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
+.home-row:hover { border-color: var(--accent); }
+.home-row span { color: var(--muted); font-size: 12.5px; }
+.home-foot { text-align: center; color: var(--muted); font-size: 13px; margin: 0; }
+.brand-btn { background: none; border: 0; padding: 0; text-align: left; color: inherit; cursor: pointer; width: 100%; }
+.brand-btn:hover strong { color: var(--accent); }
+@media (max-width: 760px) { .home-cards { grid-template-columns: 1fr; } .home-card { min-height: 0; } .home { place-items: start center; padding-top: 24px; } .home-brand h1 { font-size: 28px; } }
+@media (prefers-reduced-motion: reduce) { .home-card { transition: none; } }

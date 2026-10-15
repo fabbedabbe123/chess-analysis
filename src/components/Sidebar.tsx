@@ -15,6 +15,7 @@ import {
 } from '@/stores/gameStore';
 import { deleteSavedGame, saveGameToLibrary, useLibrary } from '@/stores/libraryStore';
 import { updateSettings, useSetting } from '@/stores/settingsStore';
+import { goHome } from '@/stores/viewStore';
 import { confirmThen, openDialog, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
@@ -64,13 +65,13 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar" aria-label="Game menu">
-      <div className="brand">
+      <button className="brand brand-btn" onClick={goHome} title="Back to the start page" data-testid="go-home">
         <span className="logo" aria-hidden>♞</span>
         <div>
           <strong>Chess Analysis</strong>
-          <small>Stockfish in your browser</small>
+          <small>⌂ Start page</small>
         </div>
-      </div>
+      </button>
 
       {puzzleOpen && <div className="callout info small">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
       <fieldset className="plain" disabled={puzzleOpen}>

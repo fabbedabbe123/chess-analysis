@@ -16,7 +16,7 @@ import { StrengthPanel } from '@/components/StrengthPanel';
 import { PuzzlePanel } from '@/components/PuzzlePanel';
 import { ReviewPanel } from '@/components/ReviewPanel';
 import { SettingsDialog } from '@/components/SettingsDialog';
-import { Welcome } from '@/components/Welcome';
+import { Home } from '@/components/Home';
 import { Sidebar } from '@/components/Sidebar';
 import { TacticsPanel } from '@/components/TacticsPanel';
 import { describeStatus, lineEnd, statusAt } from '@/chess/gameTree';
@@ -27,6 +27,7 @@ import { usePuzzle } from '@/stores/puzzleStore';
 import { useSetting } from '@/stores/settingsStore';
 import { openDialog, setMobileTab, setRightTab, toggleMoves, toggleSidebar, useUi, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
+import { useView } from '@/stores/viewStore';
 
 /**
  * The right-hand side has four sections; sections with more than one panel show a second row of sub-tabs.
@@ -84,6 +85,7 @@ export default function App() {
   const collapsed = useUi((s) => s.sidebarCollapsed);
   const movesCollapsed = useUi((s) => s.movesCollapsed);
   const puzzleActive = usePuzzle((s) => s.phase !== 'off');
+  const view = useView();
   const section = SECTIONS.find((sec) => sec.tabs.some((t) => t.id === rightTab));
   if (section) lastInSection.set(section.id, rightTab);
   useAutoAnalysis();
@@ -92,6 +94,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme;
   }, [theme]);
+
+  if (view === 'home') {
+    return (
+      <>
+        <Home />
+        {dialog === 'help' && <HelpDialog />}
+        {dialog === 'import' && <ImportDialog />}
+        <Notices />
+      </>
+    );
+  }
 
   return (
     <div className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
@@ -147,7 +160,6 @@ export default function App() {
             </div>
           )}
         </nav>
-        <Welcome />
         <div className={`right-panels tab-${rightTab}`}>
           <div className="p-engine"><EnginePanel /></div>
           <div className="p-review"><ReviewPanel /></div>

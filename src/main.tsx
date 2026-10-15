@@ -7,12 +7,14 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { startGamePersistence } from './stores/gameStore';
 import { initPuzzles } from './stores/puzzleStore';
 import { initPlay } from './stores/playStore';
+import { initView } from './stores/viewStore';
 import { installPieceCss } from './utils/boardStyle';
 
 installPieceCss();
 startGamePersistence();
 initPuzzles();
 initPlay();
+initView();
 
 const rootEl = document.getElementById('root');
 if (rootEl === null) throw new Error('Missing #root element');
