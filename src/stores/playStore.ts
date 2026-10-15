@@ -19,6 +19,7 @@ import { ensureEngine, stopAnalysis } from './engineStore';
 import { deleteFromHere, gameStore, playMove, setPersistenceSuspended, updateHeaders } from './gameStore';
 import { cancelReview, mainLineSignature, reviewStore, startReview } from './reviewStore';
 import { engineOptionsFrom, settingsStore, updateSettings } from './settingsStore';
+import { addFromReview } from './strengthStore';
 import { requestReanalysis, setTacticSquares } from './uiStore';
 
 /**
@@ -749,6 +750,7 @@ export async function analyzeGame(): Promise<void> {
   }
   const report = buildCoachReport(r.result, cur.userColor);
   playStore.set({ review: 'done', report });
+  if (cur.recordId !== null) addFromReview(r.result, cur.userColor, { id: cur.recordId, source: 'play', endedAt: Date.now(), label: `vs Stockfish ${cur.levelLabel}` });
   const acc = r.result.summary.accuracy[cur.userColor];
   const counts = r.result.summary.counts[cur.userColor];
   if (cur.recordId !== null) {

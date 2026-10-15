@@ -1,8 +1,8 @@
 import type { Square } from '@/types/game';
 import { createStore, useStore } from './createStore';
 
-export type RightTab = 'engine' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn';
-export type MobileTab = 'board' | 'engine' | 'moves' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn' | 'menu';
+export type RightTab = 'engine' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn' | 'strength';
+export type MobileTab = 'board' | 'engine' | 'moves' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn' | 'strength' | 'menu';
 export type DialogId = 'import' | 'settings' | 'help' | null;
 
 export interface UiState {

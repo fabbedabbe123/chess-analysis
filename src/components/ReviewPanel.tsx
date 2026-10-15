@@ -1,15 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { GRADE_ORDER, type MoveGrade } from '@/analysis/classify';
 import { GRADE_HELP, GRADE_LABEL } from '@/analysis/gradeInfo';
 import { formatScore } from '@/analysis/eval';
 import { pvToSan } from '@/analysis/pv';
-import type { ReviewMove } from '@/analysis/review';
+import type { ReviewMove, ReviewResult } from '@/analysis/review';
 import { getNode, hasNode, mainLine } from '@/chess/gameTree';
 import { continueFromHere, goTo, useGame } from '@/stores/gameStore';
 import { cancelReview, mainLineSignature, startReview, useReview } from '@/stores/reviewStore';
 import { updateSettings, useSettings } from '@/stores/settingsStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
+import { addFromReview, useStrength } from '@/stores/strengthStore';
 import { formatPercent } from '@/utils/format';
 
 
@@ -65,6 +66,33 @@ function MomentRow({ m, label }: { m: ReviewMove; label?: string }) {
         </span>
       </button>
     </li>
+  );
+}
+
+function hashOf(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i += 1) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+/** Lets the user say which side they were, so this review feeds the Strength tab. */
+function CountForStrength({ result, stale }: { result: ReviewResult; stale: boolean }) {
+  const tree = useGame((s) => s.tree);
+  const games = useStrength((s) => s.games);
+  const id = `imp-${hashOf(mainLineSignature(tree))}`;
+  const existing = games.find((g) => g.id === id);
+  const [failed, setFailed] = useState(false);
+  const count = (color: 'w' | 'b') => {
+    const h = tree.headers;
+    const label = `${h['White'] ?? 'White'} – ${h['Black'] ?? 'Black'}`;
+    setFailed(!addFromReview(result, color, { id, source: 'import', endedAt: Date.now(), label }));
+  };
+  return (
+    <div className="row wrap strength-count" data-testid="count-strength">
+      <span className="muted small-print">{existing ? `Counted for your strength (as ${existing.userColor === 'w' ? 'White' : 'Black'}).` : failed ? 'Not counted: that side has no moves outside the opening book.' : 'Count this game for my strength:'}</span>
+      <button className="btn small" disabled={stale} onClick={() => count('w')} data-testid="count-white">I was White</button>
+      <button className="btn small" disabled={stale} onClick={() => count('b')} data-testid="count-black">I was Black</button>
+    </div>
   );
 }
 
@@ -129,6 +157,7 @@ export function ReviewPanel() {
               </div>
             ))}
           </div>
+          <CountForStrength result={result} stale={stale} />
           <p className="muted small-print">
             Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
           </p>

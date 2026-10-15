@@ -7,7 +7,7 @@ A browser chess analysis platform powered by real Stockfish (WebAssembly, in a W
 ```bash
 npm install          # also copies the Stockfish files from node_modules into public/engine (postinstall)
 npm run dev          # dev server, http://localhost:5173
-npm test             # 368 unit tests (vitest)
+npm test             # 382 unit tests (vitest)
 npm run typecheck    # strict TypeScript (TypeScript 7)
 npm run lint         # ESLint (typescript-eslint runs on the TS 6 API alias, see below)
 npm run build        # typecheck + production build into dist/
@@ -64,6 +64,16 @@ Browser checks: `python3 e2e/play.py`, `python3 e2e/play_long.py` (real Stockfis
 ## Player tracking (Chess.com)
 
 The Player tab reads a user's public games from Chess.com's open Published-Data API (no key, no login) and shows W/D/L by colour and time control, a rating chart, the openings played with score, weak openings (needs >=5 games and <50%), and the recent games, which open on the board for review. Newest 3 months load first, older ones on demand; data is kept in localStorage (max 600 games). Unit-tested with mocked responses and driven in a browser with `python3 e2e/player_tracking.py` (Playwright route mock). Not verified against the live API: the build sandbox cannot reach chess.com.
+
+## Strength tab (estimate, focus areas, training plan)
+
+The Strength tab turns analysed games into an estimate of your playing strength and a short training plan. Games get in from three places: a finished Play game that you analyse, any reviewed game via "Count this game for my strength" (you say which side you were) in the Review tab, and a batch analysis of your tracked Chess.com games (real Stockfish in a dedicated worker, depth up to 14, one game at a time, each saved when finished; stopping keeps the results). Stored in localStorage (`chess-analysis:strength-games:v1`, newest 200).
+
+- **Estimate** (`src/strength/strength.ts`): average centipawn loss of your moves (book moves skipped, scores clamped to +-1000, move-weighted over your 20 most recent games) mapped to a rating with the community rule of thumb `3100 * exp(-0.01 * ACPL)`. That mapping is NOT calibrated here, so the result is shown as a range that narrows with the evidence (350 / sqrt(n), n = min(games, moves / 30), 125-400 points) with a confidence label, and nothing is shown below 20 counted moves. It is an estimate of playing strength, not an Elo. If your Chess.com games carry your rating, it is shown next to the estimate.
+- **Focus areas**: needs 3 analysed games. The coach's rule-based categories ranked by winning-chance points lost; the top two with at least 15 % share are highlighted; a trend (improving / steady / worse) appears from 6 games by comparing the newer half with the older half. These are patterns, not proven causes.
+- **Training plan**: for each focus area up to two related unfinished lessons (fixed mapping `RELATED_LESSONS` in `src/play/coach.ts`; mastery comes from your own puzzle results) plus "play and analyse 3 more games".
+
+Checks: `tests/strength.test.ts` (maths, bands, focus, plan, sanitising) and `python3 e2e/strength.py` (real Stockfish; uses synthetic 44-ply games from `e2e/strength_pgns.json`, and a seeded tracker for the batch because the Chess.com API is not reachable from the build sandbox).
 
 ## Known limits
 

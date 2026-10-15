@@ -1,0 +1,290 @@
+import { CATEGORY_LABEL, CATEGORY_ORDER, RELATED_LESSONS, type CoachCategory } from '@/play/coach';
+import { buildCoachReport } from '@/play/coach';
+import type { ReviewResult } from '@/analysis/review';
+import type { Skill } from '@/lessons/lessons';
+import { skillProgress, type Mastery } from '@/lessons/lessons';
+import type { PuzzleProgress } from '@/puzzles/puzzles';
+import type { Color } from '@/types/game';
+import type { WhiteScore } from '@/types/engine';
+
+/**
+ * Strength estimate + focus areas + training plan.
+ *
+ * HONESTY NOTES (also shown in the UI):
+ *  - The rating is an ESTIMATE of playing strength from engine analysis, not an Elo. It uses the average centipawn loss (ACPL)
+ *    of your moves and a community rule-of-thumb mapping (see `ratingFromAcpl`) that we did NOT calibrate ourselves.
+ *  - It is shown as a range that narrows with more analysed games; a single game says very little.
+ *  - Focus areas and trends come from the rule-based coach categories (patterns, not proven causes).
+ */
+
+export type GameSource = 'play' | 'chesscom' | 'import';
+
+export interface AnalysedGame {
+  id: string;
+  source: GameSource;
+  /** ms since epoch */
+  endedAt: number;
+  userColor: Color;
+  /** Short description for the list ("vs Stockfish Beginner", "vs Magnus (1500)"). */
+  label: string;
+  /** Number of the user's moves that counted towards ACPL (book moves are skipped). */
+  moves: number;
+  /** Average centipawn loss of the user's counted moves. */
+  acpl: number;
+  accuracy: number | null;
+  counts: { inaccuracy: number; mistake: number; blunder: number };
+  /** Coach category -> number of mistakes / winning-chance points lost. */
+  catCount: Partial<Record<CoachCategory, number>>;
+  catLoss: Partial<Record<CoachCategory, number>>;
+  /** The user's own rating at the time (Chess.com games only). */
+  myRating: number | null;
+  /** Search depth of the analysis. */
+  depth: number;
+}
+
+export const MAX_ANALYSED = 200;
+/** Only the most recent games count for the estimate: it should describe current form. */
+export const RECENT_GAMES = 20;
+const CP_CLAMP = 1000;
+
+/** Centipawns from the mover's point of view; mate = +-CP_CLAMP. */
+export function moverCp(score: WhiteScore, mover: Color): number {
+  let white: number;
+  if (score.kind === 'mate') {
+    const w = score.value === 0 ? (score.winner === 'w' ? 1 : -1) : Math.sign(score.value);
+    white = w * CP_CLAMP;
+  } else white = score.value;
+  const cp = mover === 'w' ? white : -white;
+  return Math.max(-CP_CLAMP, Math.min(CP_CLAMP, cp));
+}
+
+/** Build the record for one analysed game from a finished review; null when the user has no counted move. */
+export function gameFromReview(
+  result: ReviewResult,
+  userColor: Color,
+  meta: { id: string; source: GameSource; endedAt: number; label: string; myRating?: number | null },
+): AnalysedGame | null {
+  let total = 0;
+  let moves = 0;
+  for (const m of result.moves) {
+    if (m.color !== userColor || m.classification.moveClass === null || m.classification.grade === 'book') continue;
+    const before = moverCp(m.before.score, userColor);
+    const after = moverCp(m.after.score, userColor);
+    total += Math.max(0, before - after);
+    moves += 1;
+  }
+  if (moves === 0) return null;
+  const report = buildCoachReport(result, userColor);
+  const catCount: AnalysedGame['catCount'] = {};
+  const catLoss: AnalysedGame['catLoss'] = {};
+  for (const x of report.mistakes) {
+    catCount[x.category] = (catCount[x.category] ?? 0) + 1;
+    catLoss[x.category] = (catLoss[x.category] ?? 0) + x.move.classification.winLoss;
+  }
+  const acc = result.summary.accuracy[userColor];
+  const c = result.summary.counts[userColor];
+  return {
+    id: meta.id,
+    source: meta.source,
+    endedAt: meta.endedAt,
+    userColor,
+    label: meta.label,
+    moves,
+    acpl: total / moves,
+    accuracy: acc === null || Number.isNaN(acc) ? null : acc,
+    counts: { inaccuracy: c.inaccuracy, mistake: c.mistake, blunder: c.blunder },
+    catCount,
+    catLoss,
+    myRating: meta.myRating ?? null,
+    depth: result.depth,
+  };
+}
+
+const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+function sanitizeMap(raw: unknown): Partial<Record<CoachCategory, number>> {
+  const out: Partial<Record<CoachCategory, number>> = {};
+  if (typeof raw !== 'object' || raw === null) return out;
+  for (const c of CATEGORY_ORDER) {
+    const v = num((raw as Record<string, unknown>)[c]);
+    if (v !== null && v >= 0) out[c] = v;
+  }
+  return out;
+}
+
+export function sanitizeAnalysed(raw: unknown): AnalysedGame | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const acpl = num(r['acpl']);
+  const moves = num(r['moves']);
+  const endedAt = num(r['endedAt']);
+  if (typeof r['id'] !== 'string' || acpl === null || acpl < 0 || moves === null || moves <= 0 || endedAt === null) return null;
+  if (r['userColor'] !== 'w' && r['userColor'] !== 'b') return null;
+  const source: GameSource = r['source'] === 'chesscom' || r['source'] === 'import' ? r['source'] : 'play';
+  const c = (typeof r['counts'] === 'object' && r['counts'] !== null ? r['counts'] : {}) as Record<string, unknown>;
+  return {
+    id: r['id'],
+    source,
+    endedAt,
+    userColor: r['userColor'],
+    label: typeof r['label'] === 'string' ? r['label'] : '',
+    moves,
+    acpl,
+    accuracy: num(r['accuracy']),
+    counts: { inaccuracy: num(c['inaccuracy']) ?? 0, mistake: num(c['mistake']) ?? 0, blunder: num(c['blunder']) ?? 0 },
+    catCount: sanitizeMap(r['catCount']),
+    catLoss: sanitizeMap(r['catLoss']),
+    myRating: num(r['myRating']),
+    depth: num(r['depth']) ?? 0,
+  };
+}
+
+// ----------------------------------------------------------------- the estimate
+
+/**
+ * Rule-of-thumb mapping from average centipawn loss to playing strength: rating ~ 3100 * exp(-0.01 * ACPL).
+ * This is a widely repeated community approximation, NOT something we calibrated. Real ACPL depends on the engine depth,
+ * the time control and the kind of positions, so treat the result as a rough guide only.
+ */
+export function ratingFromAcpl(acpl: number): number {
+  const raw = 3100 * Math.exp(-0.01 * Math.max(0, acpl));
+  return Math.max(400, Math.min(2800, raw));
+}
+
+export type Confidence = 'very rough' | 'rough' | 'moderate';
+
+/** Below this many counted moves (book moves are skipped, so short opening games count for little) no estimate is shown. */
+export const MIN_MOVES_ESTIMATE = 20;
+/** About this many counted moves make one "full game" worth of evidence. */
+const MOVES_PER_GAME = 30;
+
+export interface StrengthEstimate {
+  /** Games the estimate is based on. */
+  games: number;
+  moves: number;
+  acpl: number;
+  rating: number;
+  low: number;
+  high: number;
+  confidence: Confidence;
+}
+
+const roundTo = (x: number, step: number) => Math.round(x / step) * step;
+
+export function recentGames(games: readonly AnalysedGame[]): AnalysedGame[] {
+  return [...games].sort((a, b) => b.endedAt - a.endedAt).slice(0, RECENT_GAMES);
+}
+
+/**
+ * null when there is not enough evidence (no games, or fewer than MIN_MOVES_ESTIMATE counted moves).
+ * The band half-width shrinks with the evidence, measured in "full games" n = min(games, moves / 30):
+ * 350 / sqrt(n), kept between 125 and 400.
+ */
+export function estimateStrength(all: readonly AnalysedGame[]): StrengthEstimate | null {
+  const games = recentGames(all);
+  if (games.length === 0) return null;
+  let moves = 0;
+  let loss = 0;
+  for (const g of games) {
+    moves += g.moves;
+    loss += g.acpl * g.moves;
+  }
+  if (moves < MIN_MOVES_ESTIMATE) return null;
+  const acpl = loss / moves;
+  const rating = ratingFromAcpl(acpl);
+  const evidence = Math.max(1, Math.min(games.length, moves / MOVES_PER_GAME));
+  const half = Math.max(125, Math.min(400, 350 / Math.sqrt(evidence)));
+  return {
+    games: games.length,
+    moves,
+    acpl,
+    rating: roundTo(rating, 25),
+    low: Math.max(400, roundTo(rating - half, 50)),
+    high: Math.min(2800, roundTo(rating + half, 50)),
+    confidence: evidence < 3 ? 'very rough' : evidence < 8 ? 'rough' : 'moderate',
+  };
+}
+
+/** Average of the user's real ratings in recent Chess.com games (null if none carries a rating). */
+export function recentActualRating(all: readonly AnalysedGame[]): { rating: number; games: number } | null {
+  const rated = recentGames(all).filter((g) => g.myRating !== null);
+  if (rated.length === 0) return null;
+  return { rating: Math.round(rated.reduce((s, g) => s + (g.myRating ?? 0), 0) / rated.length), games: rated.length };
+}
+
+// ------------------------------------------------------------------ focus areas
+
+export type Trend = 'improving' | 'steady' | 'worse' | 'unknown';
+
+export interface FocusArea {
+  category: CoachCategory;
+  label: string;
+  /** Winning-chance points lost to this category per analysed game. */
+  lossPerGame: number;
+  mistakes: number;
+  /** Share (0..1) of all points lost to categorised mistakes. */
+  share: number;
+  trend: Trend;
+}
+
+export const MIN_GAMES_FOCUS = 3;
+export const MIN_GAMES_TREND = 6;
+
+function lossIn(games: readonly AnalysedGame[], c: CoachCategory): number {
+  return games.reduce((s, g) => s + (g.catLoss[c] ?? 0), 0) / Math.max(1, games.length);
+}
+
+/** Categories ranked by points lost; the top two (at least 15 % of the total) become the focus. Needs >= 3 games. */
+export function focusAreas(all: readonly AnalysedGame[]): { areas: FocusArea[]; enough: boolean; ranked: FocusArea[] } {
+  const games = recentGames(all);
+  if (games.length < MIN_GAMES_FOCUS) return { areas: [], ranked: [], enough: false };
+  const chrono = [...games].sort((a, b) => a.endedAt - b.endedAt);
+  const totals = CATEGORY_ORDER.map((c) => ({ c, loss: games.reduce((s, g) => s + (g.catLoss[c] ?? 0), 0), n: games.reduce((s, g) => s + (g.catCount[c] ?? 0), 0) }));
+  const grand = totals.reduce((s, t) => s + t.loss, 0);
+  const ranked: FocusArea[] = totals
+    .filter((t) => t.loss > 0)
+    .sort((a, b) => b.loss - a.loss)
+    .map((t) => {
+      let trend: Trend = 'unknown';
+      if (chrono.length >= MIN_GAMES_TREND) {
+        const half = Math.floor(chrono.length / 2);
+        const early = lossIn(chrono.slice(0, half), t.c);
+        const late = lossIn(chrono.slice(chrono.length - half), t.c);
+        trend = late <= early * 0.75 ? 'improving' : late >= early * 1.25 ? 'worse' : 'steady';
+      }
+      return { category: t.c, label: CATEGORY_LABEL[t.c], lossPerGame: t.loss / games.length, mistakes: t.n, share: grand > 0 ? t.loss / grand : 0, trend };
+    });
+  return { enough: true, ranked, areas: ranked.filter((a) => a.share >= 0.15).slice(0, 2) };
+}
+
+// ---------------------------------------------------------------- training plan
+
+export interface PlanLesson {
+  skillId: string;
+  title: string;
+  mastery: Mastery;
+  solved: number;
+  total: number;
+}
+
+export interface PlanItem {
+  area: FocusArea;
+  lessons: PlanLesson[];
+}
+
+/** For each focus area: up to two related lessons that are not mastered yet (new / learning first). */
+export function buildPlan(areas: readonly FocusArea[], skills: readonly Skill[], progress: PuzzleProgress): PlanItem[] {
+  const order: Record<Mastery, number> = { new: 0, learning: 1, practised: 2, mastered: 3 };
+  return areas.map((area) => {
+    const lessons: PlanLesson[] = [];
+    for (const id of RELATED_LESSONS[area.category]) {
+      const skill = skills.find((s) => s.id === id);
+      if (skill === undefined) continue;
+      const p = skillProgress(skill, progress);
+      if (p.mastery === 'mastered') continue;
+      lessons.push({ skillId: id, title: skill.title, mastery: p.mastery, solved: p.solved, total: p.total });
+    }
+    lessons.sort((a, b) => order[a.mastery] - order[b.mastery]);
+    return { area, lessons: lessons.slice(0, 2) };
+  });
+}

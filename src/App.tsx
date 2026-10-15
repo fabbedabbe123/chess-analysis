@@ -12,6 +12,7 @@ import { PlayPanel } from '@/components/PlayPanel';
 import { PlayerPanel } from '@/components/PlayerPanel';
 import { MoveVerdict } from '@/components/MoveVerdict';
 import { LearnPanel } from '@/components/LearnPanel';
+import { StrengthPanel } from '@/components/StrengthPanel';
 import { PuzzlePanel } from '@/components/PuzzlePanel';
 import { ReviewPanel } from '@/components/ReviewPanel';
 import { SettingsDialog } from '@/components/SettingsDialog';
@@ -26,15 +27,27 @@ import { useSetting } from '@/stores/settingsStore';
 import { setMobileTab, setRightTab, toggleSidebar, useUi, type MobileTab, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
 
-const RIGHT_TABS: { id: RightTab; label: string }[] = [
-  { id: 'engine', label: 'Engine' },
-  { id: 'review', label: 'Review' },
-  { id: 'openings', label: 'Openings' },
-  { id: 'tactics', label: 'Tactics' },
-  { id: 'learn', label: 'Learn' },
-  { id: 'puzzles', label: 'Puzzles' },
-  { id: 'play', label: 'Play' },
-  { id: 'player', label: 'Player' },
+/** The right-hand tabs come in two groups so the bar stays readable: looking at a game, and getting better. */
+const TAB_GROUPS: { label: string; tabs: { id: RightTab; label: string }[] }[] = [
+  {
+    label: 'Analyse',
+    tabs: [
+      { id: 'engine', label: 'Engine' },
+      { id: 'review', label: 'Review' },
+      { id: 'openings', label: 'Openings' },
+      { id: 'tactics', label: 'Tactics' },
+    ],
+  },
+  {
+    label: 'Improve',
+    tabs: [
+      { id: 'learn', label: 'Learn' },
+      { id: 'puzzles', label: 'Puzzles' },
+      { id: 'play', label: 'Play' },
+      { id: 'strength', label: 'Strength' },
+      { id: 'player', label: 'Player' },
+    ],
+  },
 ];
 
 const MOBILE_TABS: { id: MobileTab; label: string }[] = [
@@ -47,6 +60,7 @@ const MOBILE_TABS: { id: MobileTab; label: string }[] = [
   { id: 'learn', label: 'Learn' },
   { id: 'puzzles', label: 'Puzzles' },
   { id: 'play', label: 'Play' },
+  { id: 'strength', label: 'Strength' },
   { id: 'player', label: 'Player' },
   { id: 'menu', label: 'Menu' },
 ];
@@ -102,10 +116,17 @@ export default function App() {
 
       <div className="col-right">
         <nav className="tabs" role="tablist" aria-label="Analysis panels">
-          {RIGHT_TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => setRightTab(t.id)}>
-              {t.label}
-            </button>
+          {TAB_GROUPS.map((g) => (
+            <div className="tab-group" key={g.label} role="presentation">
+              <span className="tab-group-label" aria-hidden="true">{g.label}</span>
+              <div className="tab-row" role="presentation">
+                {g.tabs.map((t) => (
+                  <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => setRightTab(t.id)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         <div className={`right-panels tab-${rightTab}`}>
@@ -116,6 +137,7 @@ export default function App() {
           <div className="p-learn"><LearnPanel /></div>
           <div className="p-puzzles"><PuzzlePanel /></div>
           <div className="p-play"><PlayPanel /></div>
+          <div className="p-strength"><StrengthPanel /></div>
           <div className="p-player"><PlayerPanel /></div>
         </div>
         <section className="panel moves-panel" aria-label="Move list">
@@ -127,7 +149,7 @@ export default function App() {
 
       <nav className="mobile-tabs" aria-label="Sections">
         {MOBILE_TABS.map((t) => (
-          <button key={t.id} className={mobileTab === t.id ? 'active' : ''} onClick={() => { setMobileTab(t.id); if (t.id === 'engine' || t.id === 'review' || t.id === 'openings' || t.id === 'tactics' || t.id === 'puzzles' || t.id === 'play' || t.id === 'player' || t.id === 'learn') setRightTab(t.id); }}>
+          <button key={t.id} className={mobileTab === t.id ? 'active' : ''} onClick={() => { setMobileTab(t.id); if (t.id === 'engine' || t.id === 'review' || t.id === 'openings' || t.id === 'tactics' || t.id === 'puzzles' || t.id === 'play' || t.id === 'player' || t.id === 'learn' || t.id === 'strength') setRightTab(t.id); }}>
             {t.label}
           </button>
         ))}
