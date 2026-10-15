@@ -80,6 +80,11 @@ export function parseLichessGame(raw: unknown, username: string): TrackedGame | 
     const u = p?.['user'] as Record<string, unknown> | undefined;
     return typeof u?.['name'] === 'string' ? u['name'] : null;
   };
+  const opponentName = (p: Record<string, unknown> | undefined): string => {
+    const n = nameOf(p);
+    if (n !== null) return n;
+    return typeof p?.['aiLevel'] === 'number' ? `Stockfish level ${p['aiLevel']}` : '?';
+  };
   const w = players['white'], b = players['black'];
   const color = nameOf(w)?.toLowerCase() === me ? 'w' : nameOf(b)?.toLowerCase() === me ? 'b' : null;
   if (color === null) return null;
@@ -98,12 +103,13 @@ export function parseLichessGame(raw: unknown, username: string): TrackedGame | 
     color,
     outcome,
     reason: outcome === 'draw' ? (reasonByStatus[status] ?? status) : outcome === 'win' ? `won by ${reasonByStatus[status] ?? status}` : `lost by ${reasonByStatus[status] ?? status}`,
-    opponent: nameOf(theirs) ?? '?',
+    opponent: opponentName(theirs),
     rating: num(mine?.['rating']),
     opponentRating: num(theirs?.['rating']),
     eco: typeof op?.['eco'] === 'string' ? op['eco'] : null,
     opening: typeof op?.['name'] === 'string' ? (op['name'].split(':')[0] ?? op['name']) : null,
     pgn,
+    ...(typeof g['rated'] === 'boolean' ? { rated: g['rated'] } : {}),
     source: 'lichess',
   };
 }

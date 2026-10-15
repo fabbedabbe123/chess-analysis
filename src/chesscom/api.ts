@@ -22,6 +22,8 @@ export interface TrackedGame {
   eco: string | null;
   opening: string | null;
   pgn: string;
+  /** false for casual (unrated) games; absent in older saved data. */
+  rated?: boolean;
   /** Where the game came from; absent means Chess.com (older saved data). */
   source?: 'chesscom' | 'lichess';
 }
@@ -132,13 +134,14 @@ export function parseMonth(data: unknown, username: string): { games: TrackedGam
       timeClass: tc,
       color,
       outcome: outcomeOf(String(mine['result'])),
-      reason: String(mine['result']),
+      reason: outcomeOf(String(mine['result'])) === 'win' ? String(theirs['result']) : String(mine['result']),
       opponent: String(theirs['username'] ?? '?'),
       rating: num(mine['rating']),
       opponentRating: num(theirs['rating']),
       eco: header(pgn, 'ECO'),
       opening: openingFromUrl(ecoUrl),
       pgn,
+      ...(typeof g['rated'] === 'boolean' ? { rated: g['rated'] } : {}),
     });
   }
   return { games, skipped };
@@ -152,4 +155,18 @@ export async function fetchMonth(url: string, username: string, f: Fetch = fetch
 /** Chess.com adds a clock tag to every move; removed on load so the move list is not full of "[%clk ...]". */
 export function stripClockTags(pgn: string): string {
   return pgn.replace(/\{\s*(?:\[%(?:clk|emt)\s+[^\]]*\]\s*)+\}/g, '').replace(/\[%(?:clk|emt)\s+[^\]]*\]/g, '');
+}
+
+const CC_WORDS: Record<string, string> = {
+  checkmated: 'checkmate', resigned: 'resignation', timeout: 'time', abandoned: 'abandonment', stalemate: 'stalemate', agreed: 'agreement',
+  repetition: 'repetition', insufficient: 'insufficient material', '50move': 'the fifty-move rule', timevsinsufficient: 'time vs insufficient material', win: '',
+};
+/** Plain-language result text for a tracked game ("won by resignation", "lost on time"). Lichess games already carry such text. */
+export function reasonText(g: Pick<TrackedGame, 'outcome' | 'reason' | 'source'>): string {
+  if (g.source === 'lichess') return g.reason;
+  const w = CC_WORDS[g.reason];
+  if (g.outcome === 'draw') return w ? `draw by ${w}` : 'draw';
+  const verb = g.outcome === 'win' ? 'won' : 'lost';
+  if (!w) return verb;
+  return w === 'time' ? `${verb} on time` : `${verb} by ${w}`;
 }

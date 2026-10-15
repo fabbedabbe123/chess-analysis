@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadOpeningBook, type OpeningBook } from '@/analysis/openings';
 import { buildRepertoire } from '@/strength/repertoire';
-import { stripClockTags, type TimeClass, type TrackedGame } from '@/chesscom/api';
+import { reasonText, stripClockTags, type TimeClass, type TrackedGame } from '@/chesscom/api';
 import { computeStats, scorePct, weakestOpenings, type Record3 } from '@/chesscom/stats';
 import { parsePgn } from '@/pgn/pgn';
 import { gameStore, loadGame, notify } from '@/stores/gameStore';
@@ -171,7 +171,7 @@ export function PlayerPanel() {
                     <button className="moment" onClick={() => openGame(g)} title="Load on the board">
                       <span className={`pill res-${g.outcome}`}>{g.outcome}</span>
                       <span className="moment-move">{g.color === 'w' ? '⚪' : '⚫'} vs {g.opponent}</span>
-                      <span className="muted">{g.timeClass} · {g.reason}{g.opening ? ` · ${g.opening}` : ''}</span>
+                      <span className="muted">{g.timeClass} · {reasonText(g)}{g.rated === false ? ' · unrated' : ''}{g.opening ? ` · ${g.opening}` : ''}</span>
                     </button>
                   </li>
                 ))}

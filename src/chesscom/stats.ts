@@ -30,7 +30,7 @@ export function computeStats(games: readonly TrackedGame[]): PlayerStats {
     add(s.total, g.outcome);
     add(g.color === 'w' ? s.asWhite : s.asBlack, g.outcome);
     add((s.byTimeClass[g.timeClass] ??= empty()), g.outcome);
-    if (g.rating !== null) (s.ratings[g.timeClass] ??= []).push({ t: g.endTime, rating: g.rating });
+    if (g.rating !== null && g.rated !== false) (s.ratings[g.timeClass] ??= []).push({ t: g.endTime, rating: g.rating });
     if (g.outcome === 'loss') s.lossReasons[g.reason] = (s.lossReasons[g.reason] ?? 0) + 1;
     if (g.opening !== null) {
       const key = `${g.color}|${g.opening}`;

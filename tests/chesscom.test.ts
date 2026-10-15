@@ -130,3 +130,14 @@ describe('chess.com PGN import', () => {
     expect(mainLine(t).map((id) => getNode(t, id).comment).filter(Boolean)).toEqual(['solid']);
   });
 });
+
+describe('reason text and rated flag', () => {
+  it('describes results in words', async () => {
+    const { reasonText } = await import('@/chesscom/api');
+    expect(reasonText({ outcome: 'win', reason: 'resigned', source: undefined })).toBe('won by resignation');
+    expect(reasonText({ outcome: 'loss', reason: 'timeout', source: undefined })).toBe('lost on time');
+    expect(reasonText({ outcome: 'loss', reason: 'checkmated', source: undefined })).toBe('lost by checkmate');
+    expect(reasonText({ outcome: 'win', reason: 'win', source: undefined })).toBe('won');
+    expect(reasonText({ outcome: 'draw', reason: 'agreed', source: undefined })).toBe('draw by agreement');
+  });
+});

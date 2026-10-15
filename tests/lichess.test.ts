@@ -31,7 +31,13 @@ describe('lichess parsing', () => {
     expect(parseLichessGame(base({ pgn: undefined }), 'me')).toBeNull();
     expect(parseLichessGame(null, 'me')).toBeNull();
     const anon = base({ players: { white: { user: { name: 'Me' }, rating: 1500 }, black: { aiLevel: 3 } } });
-    expect(parseLichessGame(anon, 'me')?.opponent).toBe('?');
+    expect(parseLichessGame(anon, 'me')?.opponent).toBe('Stockfish level 3');
+    const unknown = base({ players: { white: { user: { name: 'Me' }, rating: 1500 }, black: {} } });
+    expect(parseLichessGame(unknown, 'me')?.opponent).toBe('?');
+  });
+  it('keeps whether the game was rated', () => {
+    expect(parseLichessGame(base({ rated: false }), 'me')?.rated).toBe(false);
+    expect(parseLichessGame(base({ rated: true }), 'me')?.rated).toBe(true);
   });
   it('parses NDJSON, counting bad lines and finding the oldest game', () => {
     const text = [JSON.stringify(base()), 'not json', JSON.stringify(base({ id: 'ZZZZZZZZ', createdAt: 1_600_000_000_000, variant: 'chess960' })), ''].join('\n');

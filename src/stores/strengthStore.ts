@@ -131,7 +131,7 @@ export async function analyseTrackedGames(count: number): Promise<void> {
         onProgress: (d, t) => strengthStore.set((s) => ({ batch: { ...s.batch, currentPly: d, currentPlies: t } })),
       });
       const label = `vs ${tg.opponent}${tg.opponentRating !== null ? ` (${tg.opponentRating})` : ''} · ${tg.timeClass}`;
-      if (addFromReview(result, tg.color, { id: tg.url, source: tg.source === 'lichess' ? 'lichess' : 'chesscom', endedAt: tg.endTime * 1000, label, myRating: tg.rating })) analysed += 1;
+      if (addFromReview(result, tg.color, { id: tg.url, source: tg.source === 'lichess' ? 'lichess' : 'chesscom', endedAt: tg.endTime * 1000, label, myRating: tg.rated === false ? null : tg.rating })) analysed += 1;
       else skipped += 1;
       strengthStore.set((s) => ({ batch: { ...s.batch, done: s.batch.done + 1, currentPly: 0, currentPlies: 0 } }));
     }
