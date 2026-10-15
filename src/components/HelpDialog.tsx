@@ -3,7 +3,25 @@ import { Modal } from './Modal';
 
 export function HelpDialog() {
   return (
-    <Modal title="Shortcuts & about" onClose={closeDialog}>
+    <Modal title="Help & tips" onClose={closeDialog}>
+      <h3>What can I do here?</h3>
+      <dl className="howto" data-testid="help-howto">
+        <dt>Check a game I played</dt>
+        <dd>Press <strong>Import PGN / FEN</strong> in the left menu and paste the game (or a Lichess game link). Open <strong>Analyse → Review</strong> and press Run: every move gets a grade, and bad moves come with the reason, based on Stockfish's numbers. “Next error” steps through your mistakes.</dd>
+        <dt>Load my own games automatically</dt>
+        <dd>Open <strong>My games → Player</strong>, choose Chess.com or Lichess, type your username and press Track. Then open <strong>Strength</strong> to have Stockfish analyse them. The estimate of your playing level, your weak areas and practice puzzles from your own mistakes come from that.</dd>
+        <dt>Switch to another account</dt>
+        <dd>In <strong>My games → Strength</strong>, use <strong>Switch account or start over</strong> at the bottom, then track the new username.</dd>
+        <dt>Play against Stockfish</dt>
+        <dd>Open <strong>Play</strong>, choose colour, clock and level. You can start from any position (even the one on the board). After the game, “New game…” lets you change the settings.</dd>
+        <dt>Train</dt>
+        <dd><strong>Train → Learn</strong> has short lessons with exercises. <strong>Puzzles</strong> has puzzles that come back when you are due to repeat them.</dd>
+        <dt>Find good moves in a position</dt>
+        <dd><strong>Analyse → Engine</strong> shows Stockfish's best lines. Drag a piece on the board to try your own idea; it becomes a variation.</dd>
+        <dt>Your data</dt>
+        <dd>Everything stays in this browser. <strong>Settings → Your data</strong> makes a backup file you can restore later.</dd>
+      </dl>
+      <h3>Shortcuts</h3>
       <table className="keys">
         <tbody>
           <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / next move</td></tr>

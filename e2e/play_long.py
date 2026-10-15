@@ -10,7 +10,7 @@ async def main():
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); logs=[]
         pg.on('console',lambda m: logs.append(m.text) if m.type=='error' else None); pg.on('pageerror',lambda e: logs.append('PAGEERR '+str(e)))
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         await pg.click('[data-testid=opt-practice]')  # competitive: no take back
         print('practice off -> takeback buttons:', await pg.locator('[data-testid=play-takeback]').count())
         await start(pg,'w','easy')

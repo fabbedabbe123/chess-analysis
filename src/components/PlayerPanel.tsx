@@ -101,7 +101,7 @@ export function PlayerPanel() {
 
   return (
     <section className="panel player-panel" aria-label="Player tracking">
-      <header className="panel-head"><h2>Player</h2></header>
+      <header className="panel-head"><h2>My games</h2></header>
       <div className="tabs small" role="tablist" aria-label="Site">
         {(['chesscom', 'lichess'] as const).map((s) => (
           <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'active' : ''} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
@@ -112,6 +112,13 @@ export function PlayerPanel() {
         <button className="btn primary" type="submit" disabled={syncing || input.trim() === ''} data-testid="player-track">{syncing ? 'Syncing…' : t.username?.toLowerCase() === input.trim().toLowerCase() ? 'Refresh' : 'Track'}</button>
         {t.username && <button type="button" className="btn small danger" onClick={() => { if (lichess) clearLichess(); else clearTracker(); setInput(''); }}>Stop tracking</button>}
       </form>
+      {t.username === null && (
+        <ol className="plain-list steps" data-testid="player-steps">
+          <li>Choose {lichess ? 'Chess.com' : 'Lichess'} or {name} above and type your username, then press <strong>Track</strong>.</li>
+          <li>Your latest games load with results, openings and rating over time. Click a game to open it on the board.</li>
+          <li>Open <strong>Strength</strong> to let Stockfish analyse them: you get a level estimate, weak areas and practice puzzles from your own mistakes.</li>
+        </ol>
+      )}
       <p className="muted small-print">Reads public games from {name}'s open API (no login, no token, nothing is sent anywhere else). Data stays in this browser.</p>
       {t.error && <div className="callout error" role="alert" data-testid="player-error">{t.error}</div>}
       {t.note && <div className="callout warn small">{t.note}</div>}

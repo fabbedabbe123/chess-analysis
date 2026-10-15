@@ -16,6 +16,14 @@ BOARD_JS = """() => {
     out[sq]= color==='w'? role.toUpperCase():role; });
   return {fen: wrap.dataset.fen, pieces: out, node: wrap.dataset.node};
 }"""
+
+GROUP={'Engine':'Analyse','Review':'Analyse','Openings':'Analyse','Tactics':'Analyse','Learn':'Train','Puzzles':'Train','Strength':'My games','Player':'My games'}
+async def goto_tab(pg, name):
+    """Open a right-hand panel: sections first (Analyse / Train / My games / Play), then the sub-tab."""
+    loc = pg.get_by_role('tab', name=name, exact=True)
+    if name in GROUP and await loc.count() == 0 or (name in GROUP and not await loc.first.is_visible()):
+        await pg.get_by_role('tab', name=GROUP[name], exact=True).click()
+    await pg.get_by_role('tab', name=name, exact=True).click()
 def fen_pieces(fen):
     out={}
     for r,row in enumerate(fen.split()[0].split('/')):

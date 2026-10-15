@@ -26,7 +26,7 @@ async def main():
         # a real game to be parked
         for m in ['e2e4','e7e5','g1f3']: await play(pg,m)
         game_fen=await cur_fen(pg); n_moves=await pg.locator('.move-list .mv').count()
-        await pg.get_by_role('tab',name='Puzzles').click()
+        await goto_tab(pg,'Puzzles')
         print('puzzles bundled:', len(PUZ), {d:sum(1 for x in PUZ if x['difficulty']==d) for d in ['easy','medium','hard']}, {t:sum(1 for x in PUZ if x['theme']==t) for t in sorted({x['theme'] for x in PUZ})})
         await pg.get_by_label('Puzzle type').select_option('tactic'); await pg.get_by_label('Puzzle difficulty').select_option('easy')
         await pg.click('[data-testid=puzzle-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
@@ -77,14 +77,14 @@ async def main():
         await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.wait_for_timeout(500)
         print('after reload mid-puzzle: game fen restored:', (await cur_fen(pg))==game_fen or (await cur_fen(pg)), '| moves', await pg.locator('.move-list .mv').count(), 'expected', n_moves)
         # progress persisted
-        await pg.get_by_role('tab',name='Puzzles').click(); print('stats:', (await pg.locator('.puzzle-stats').inner_text()).replace('\n',' '))
+        await goto_tab(pg,'Puzzles'); print('stats:', (await pg.locator('.puzzle-stats').inner_text()).replace('\n',' '))
         # reveal solution + exit restores
         await pg.click('[data-testid=puzzle-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
         await pg.get_by_role('button',name='Show solution').click(); await pg.wait_for_timeout(300); print('revealed:', await msg(pg), '|', await pg.inner_text('[data-testid=puzzle-solution]'))
         await pg.get_by_role('button',name='Exit puzzles').click(); await pg.wait_for_timeout(600)
         print('after exit: fen ok', (await cur_fen(pg))==game_fen if False else await cur_fen(pg), '| moves', await pg.locator('.move-list .mv').count(), '| engine', await pg.inner_text('[data-testid=engine-status]'))
         # mate puzzle with alternative mate allowed: solve via stored move
-        await pg.get_by_role('tab',name='Puzzles').click(); await pg.get_by_label('Puzzle type').select_option('mate1'); await pg.click('[data-testid=puzzle-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
+        await goto_tab(pg,'Puzzles'); await pg.get_by_label('Puzzle type').select_option('mate1'); await pg.click('[data-testid=puzzle-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
         f=await cur_fen(pg); mp=next(x for x in PUZ if x['fen'].split()[0]==f.split()[0]); await play(pg,mp['solution'][0]); print('mate1:', await msg(pg))
         # mobile
         m=await b.new_page(viewport={'width':390,'height':800}); await m.goto(URL); await m.wait_for_selector('cg-board'); await m.get_by_role('button',name='Puzzles',exact=True).last.click(); await m.click('[data-testid=puzzle-start]'); await m.wait_for_timeout(500)

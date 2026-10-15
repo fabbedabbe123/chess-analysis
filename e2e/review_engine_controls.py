@@ -15,27 +15,28 @@ async def main():
             await pg.wait_for_timeout(300)
         # 1) review with mate
         await imp(G)
-        await pg.get_by_role('tab',name='Review').click(); await pg.click('[data-testid=run-review]')
+        await goto_tab(pg,'Review'); await pg.click('[data-testid=run-review]')
         await pg.wait_for_selector('[data-testid=accuracy-w]',timeout=120000)
         print('mate game accuracy W/B:', await pg.inner_text('[data-testid=accuracy-w]'), await pg.inner_text('[data-testid=accuracy-b]'))
         for t in await pg.locator('.moment').all_inner_texts(): print('  moment:', t.replace('\n',' | '))
         print('  badges:', await pg.locator('.move-list .badge').all_inner_texts())
         # review stale detection
         await pg.locator('.mv',has_text='Bc4').first.click(); await pg.keyboard.press('ArrowLeft')
-        await pg.get_by_role('tab',name='Engine').click()
+        await goto_tab(pg,'Engine')
         # make new variation at start to see stale? main line change -> delete last
-        await pg.locator('.mv',has_text='Qxf7#').first.click(); await pg.get_by_text('Delete from here').click(); await pg.get_by_role('tab',name='Review').click(); await pg.wait_for_timeout(200)
+        await pg.locator('.mv',has_text='Qxf7#').first.click(); await pg.get_by_text('Delete from here').click(); await goto_tab(pg,'Review'); await pg.wait_for_timeout(200)
         print('stale warning shown:', await pg.locator('.callout.warn').count()>0)
         # 2) cancel review
-        await imp(LONG); await pg.get_by_role('tab',name='Review').click()
-        await pg.click('[data-testid=run-review]'); await pg.wait_for_timeout(1500)
+        await imp(LONG); await goto_tab(pg,'Review')
+        await pg.fill('input[aria-label="Review depth"]','26'); await pg.click('[data-testid=run-review]'); await pg.wait_for_timeout(1500)
         print('running progress:', await pg.locator('.progress span').inner_text()); await pg.get_by_role('button',name='Cancel').click(); await pg.wait_for_timeout(500)
         print('after cancel:', await pg.locator('.review-panel .muted.pad').all_inner_texts())
+        await pg.fill('input[aria-label="Review depth"]','10')
         # review again completes after a cancel
         await pg.click('[data-testid=run-review]'); await pg.wait_for_selector('[data-testid=accuracy-w]',timeout=180000)
         print('rerun after cancel OK', await pg.inner_text('[data-testid=accuracy-w]'))
         # 3) race test: rapid navigation
-        await pg.get_by_role('tab',name='Engine').click()
+        await goto_tab(pg,'Engine')
         bad=0
         for trial in range(6):
             for _ in range(random.randint(8,25)): await pg.keyboard.press(random.choice(['ArrowLeft','ArrowRight','ArrowLeft']))

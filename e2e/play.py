@@ -22,7 +22,7 @@ async def main():
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         # keep a user game to prove it is restored
         await play(pg,'e2e4'); await play(pg,'e7e5'); before=await plies(pg)
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         print('1) setup visible, levels:', await pg.locator('[data-testid^=level-]').count())
         # --- White vs Beginner
         await start(pg,'w','beginner')
@@ -83,7 +83,7 @@ async def main():
             if await pg.locator('.modal button:has-text("Leave")').count(): await pg.click('.modal button:has-text("Leave")')
         # dashboard
         print('15) dashboard:', (await pg.inner_text('[data-testid=play-dashboard]')).replace('\n',' | ')[:350])
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Play',exact=True).click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Play')
         print('16) history persisted after reload:', 'Games' in await pg.inner_text('[data-testid=play-dashboard]'))
         print('LOGS',logs); await b.close()
 asyncio.run(main())

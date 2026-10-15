@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { GRADE_ORDER, type MoveGrade } from '@/analysis/classify';
-import { GRADE_HELP, GRADE_LABEL } from '@/analysis/gradeInfo';
+import { FORCED_HELP, GRADE_HELP, GRADE_LABEL, TAG_LABEL } from '@/analysis/gradeInfo';
 import { formatScore } from '@/analysis/eval';
 import { pvToSan } from '@/analysis/pv';
 import type { ReviewMove, ReviewResult } from '@/analysis/review';
@@ -53,20 +53,34 @@ function MomentRow({ m, label }: { m: ReviewMove; label?: string }) {
     return conv.moves[0]?.san ?? null;
   }, [m]);
   const cls = m.classification.grade ?? m.classification.moveClass;
+  const forced = m.classification.isEngineBest && cls !== null && !['inaccuracy', 'mistake', 'miss', 'blunder'].includes(cls);
   return (
     <li>
       <button className="moment" onClick={() => goTo(m.nodeId)}>
         <span className="moment-move">{m.moveNumber}{m.color === 'w' ? '.' : '...'} {m.san}</span>
         {cls && <span className={`pill cls-${cls}`} title={GRADE_HELP[cls]}>{GRADE_LABEL[cls]}</span>}
-        {m.classification.tags.map((t) => <span key={t} className="pill tag">{t}</span>)}
+        {forced && <span className="pill tag forced" title={FORCED_HELP} data-testid="forced-tag">Forced sequence</span>}
+        {m.classification.tags.filter((t) => !(forced && t === 'allowed-mate')).map((t) => <span key={t} className="pill tag">{TAG_LABEL[t] ?? t}</span>)}
         <span className="muted">
           {formatScore(m.before.score)} → {formatScore(m.after.score)}
           {best ? ` · engine preferred ${best}` : ''}
-          {label ? ` · ${label}` : ''}
+          {label ? ` · ${forced ? 'no better move existed' : label}` : ''}
         </span>
       </button>
     </li>
   );
+}
+
+const ERR_GRADES = ['blunder', 'miss', 'mistake', 'inaccuracy'] as const;
+const ERR_WORD: Record<(typeof ERR_GRADES)[number], [string, string]> = { blunder: ['blunder', 'blunders'], miss: ['miss', 'misses'], mistake: ['mistake', 'mistakes'], inaccuracy: ['inaccuracy', 'inaccuracies'] };
+
+/** One plain sentence per side: how many errors, and where to start. */
+export function headline(summary: ReviewResult['summary'], white: string, black: string): string {
+  const side = (c: 'w' | 'b', name: string): string => {
+    const parts = ERR_GRADES.filter((g) => summary.grades[c][g] > 0).map((g) => `${summary.grades[c][g]} ${ERR_WORD[g][summary.grades[c][g] === 1 ? 0 : 1]}`);
+    return `${name}: ${parts.length === 0 ? 'no errors' : parts.join(', ')}`;
+  };
+  return `${side('w', white)}. ${side('b', black)}. Use “Next error” under the board to go through them.`;
 }
 
 function hashOf(text: string): string {
@@ -89,9 +103,9 @@ function CountForStrength({ result, stale }: { result: ReviewResult; stale: bool
   };
   return (
     <div className="row wrap strength-count" data-testid="count-strength">
-      <span className="muted small-print">{existing ? `Counted for your strength (as ${existing.userColor === 'w' ? 'White' : 'Black'}).` : failed ? 'Not counted: that side has no moves outside the opening book.' : 'Count this game for my strength:'}</span>
-      <button className="btn small" disabled={stale} onClick={() => count('w')} data-testid="count-white">I was White</button>
-      <button className="btn small" disabled={stale} onClick={() => count('b')} data-testid="count-black">I was Black</button>
+      <span className="muted small-print">{existing ? `Counted for your strength (as ${existing.userColor === 'w' ? 'White' : 'Black'}).` : failed ? 'Not counted: that side has no moves outside the opening book.' : 'Add this game to my strength estimate. I played as:'}</span>
+      <button className="btn small" disabled={stale} onClick={() => count('w')} data-testid="count-white">White</button>
+      <button className="btn small" disabled={stale} onClick={() => count('b')} data-testid="count-black">Black</button>
     </div>
   );
 }
@@ -157,6 +171,7 @@ export function ReviewPanel() {
               </div>
             ))}
           </div>
+          <p className="review-headline" data-testid="review-headline">{headline(summary, tree.headers['White'] ?? 'White', tree.headers['Black'] ?? 'Black')}</p>
           <CountForStrength result={result} stale={stale} />
           <p className="muted small-print">
             Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
@@ -191,7 +206,7 @@ export function ReviewPanel() {
           )}
           <h3>Biggest swings</h3>
           <ul className="moments">
-            {summary.biggestSwings.filter((m) => Math.abs(m.swing) >= 1).map((m) => <MomentRow key={m.nodeId} m={m} label={`${m.swing > 0 ? '+' : ''}${m.swing.toFixed(0)} pts`} />)}
+            {summary.biggestSwings.filter((m) => Math.abs(m.swing) >= 1).map((m) => <MomentRow key={m.nodeId} m={m} label={`White's win chance ${m.swing > 0 ? '+' : ''}${m.swing.toFixed(0)}%`} />)}
           </ul>
           <h3>Study positions</h3>
           <p className="muted small-print">Positions from your own mistakes: the position <em>before</em> the move, where the engine knows a better one.</p>

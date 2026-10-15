@@ -90,14 +90,14 @@ textarea { width: 100%; resize: vertical; }
   gap: 14px;
   height: 100%;
   padding: 12px;
-  --board: min(calc(100vh - 250px), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px));
+  --board: min(calc(100vh - 400px), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px));
 }
 .col-left, .col-right { min-height: 0; min-width: 0; }
 .col-left { overflow-y: auto; }
 .col-center { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; overflow: auto; }
 .col-right {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) minmax(200px, 30%);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
 }
 .mobile-tabs { display: none; }
@@ -478,3 +478,42 @@ fieldset.plain:disabled { opacity: 0.5; }
 .why-list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.45; }
 .why-list li { margin: 2px 0; }
 .why-list li[data-kind='mate'], .why-list li[data-kind='material'], .why-list li[data-kind='hanging'] { color: var(--danger); }
+
+/* ---------- round 4: moves under the board, sections, welcome, help ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: -1px; padding: 0; border: 0; }
+@media (min-width: 901px) {
+  .app { --board: min(calc(100vh - 400px), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
+  .col-center { justify-content: flex-start; }
+  .col-center .moves-panel { width: calc(var(--board) + 46px); flex: 1 1 auto; min-height: 120px; max-height: 260px; margin-left: 0; align-self: center; padding: 6px 10px 8px; }
+  .app.side-collapsed { --board: min(calc(100vh - 400px), 760px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .app { --board: min(calc(100vh - 400px), 600px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
+  .app.side-collapsed { --board: min(calc(100vh - 400px), 700px, calc(100vw - 40px - 340px - 3 * 14px - 24px - 56px)); }
+}
+.col-center .moves-panel .move-list { flex: 1 1 auto; min-height: 44px; overflow-y: auto; }
+.col-center .moves-panel .move-tools { margin-top: 4px; }
+.col-center .moves-panel .move-tools .comment-box { min-height: 0; height: 30px; resize: none; }
+.moves-panel .move-tools { border-top: 1px solid var(--line); padding-top: 4px; }
+.col-right > .tabs { gap: 6px; }
+.col-right > .tabs .tab-row.primary { display: flex; gap: 4px; background: transparent; padding: 0; }
+.col-right > .tabs .tab-row.primary button:not(.help-btn) { flex: 1 1 0; background: var(--bg); font-size: 13.5px; padding: 7px 4px; }
+.col-right > .tabs .tab-row.primary button.active { background: var(--accent); color: var(--accent-text); }
+.col-right > .tabs .tab-row.sub { background: var(--bg); }
+.help-btn { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg-3); color: var(--text); font-weight: 700; align-self: center; }
+.help-btn:hover { border-color: var(--accent); color: var(--accent); }
+.welcome { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+.welcome header { display: flex; justify-content: space-between; align-items: center; }
+.welcome-choice { text-align: left; background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; display: grid; gap: 2px; }
+.welcome-choice:hover { border-color: var(--accent); }
+.welcome-choice span { color: var(--muted); font-size: 12.5px; }
+.howto dt { font-weight: 700; margin-top: 10px; }
+.howto dd { margin: 2px 0 0; color: var(--muted); }
+.steps { padding-left: 18px; }
+@media (max-width: 900px) { .col-center .moves-panel { max-height: 40vh; } .help-btn { display: none; } }
+.errors-only { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin: 0 0 4px; color: var(--muted); }
+.pill.forced { color: var(--info, #6aa7ff); border-color: currentColor; }
+.review-headline { margin: 6px 0; font-weight: 600; }
+@media (min-width: 901px) {
+  .sidebar > .spacer + .stack { position: sticky; bottom: 0; background: var(--bg); padding: 6px 0 2px; border-top: 1px solid var(--line); }
+}

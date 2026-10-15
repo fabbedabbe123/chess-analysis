@@ -12,7 +12,7 @@ async def main():
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.goto(URL); await pg.wait_for_selector('cg-board')
         await pg.evaluate("localStorage.clear(); localStorage.setItem('chess-analysis:settings:v1', JSON.stringify({reviewDepth:8}))"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Strength').click()
+        await goto_tab(pg,'Strength')
         check('empty state before any game', await pg.locator('[data-testid=strength-empty]').count()==1)
         for i,pgn in enumerate(PGNS):
             await pg.click('[data-testid=open-import]'); await pg.fill('textarea.import-text',pgn); await pg.click('[data-testid=import-submit]')
@@ -23,7 +23,7 @@ async def main():
             await pg.wait_for_timeout(200)
             if i==0:
                 check('count button reports it was counted', 'Counted' in await pg.inner_text('[data-testid=count-strength]'))
-        await pg.get_by_role('tab',name='Strength').click()
+        await goto_tab(pg,'Strength')
         check('estimate shown', await pg.locator('[data-testid=strength-range]').count()==1)
         print('range:', await pg.inner_text('[data-testid=strength-range]'), '|', await pg.inner_text('[data-testid=strength-confidence]'))
         check('3 games in the list', await pg.locator('[data-testid=strength-games] li').count()==3)
@@ -34,7 +34,7 @@ async def main():
             if await first.count():
                 await first.click(); await pg.wait_for_selector('[data-testid=skill-detail]',timeout=5000)
                 check('plan lesson opens the lesson', True)
-                await pg.get_by_role('tab',name='Strength').click()
+                await goto_tab(pg,'Strength')
         await pg.screenshot(path='/tmp/claude-0/strength1440.png')
         # train my mistakes: real saved mistakes -> real puzzle on the board
         saved=json.loads(await pg.evaluate("localStorage.getItem('chess-analysis:strength-games:v1')"))
@@ -46,13 +46,13 @@ async def main():
         fen=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
         check('puzzle board shows a saved mistake position', any(m['fen'].split()[0]==fen.split()[0] for g in saved for m in g.get('mistakes',[])))
         await pg.get_by_role('button',name='Exit puzzles').click()
-        await pg.get_by_role('tab',name='Strength').click()
+        await goto_tab(pg,'Strength')
         # persistence
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Strength').click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
         check('estimate survives reload', await pg.locator('[data-testid=strength-range]').count()==1)
         # batch with a seeded tracker (analysis is real; the tracked games are example input, the Chess.com API is not reachable here)
         seeded={'username':'tester','games':[{'url':f'https://example.test/g{i}','endTime':1700000000+i,'timeClass':'blitz','color':'w','outcome':'loss','reason':'resigned','opponent':'opp','rating':1100+i,'opponentRating':1150,'eco':None,'opening':None,'pgn':PGNS[i]} for i in range(2)],'fetchedMonths':[],'allArchives':[],'lastSync':1}
-        await pg.evaluate("v=>localStorage.setItem('chess-analysis:tracker:v1', v)", json.dumps(seeded)); await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Strength').click()
+        await pg.evaluate("v=>localStorage.setItem('chess-analysis:tracker:v1', v)", json.dumps(seeded)); await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
         check('batch panel offered', await pg.locator('[data-testid=batch-start]').count()==1)
         await pg.select_option('[data-testid=batch-count]','3'); await pg.click('[data-testid=batch-start]')
         await pg.wait_for_selector('[data-testid=batch-note]',timeout=180000)

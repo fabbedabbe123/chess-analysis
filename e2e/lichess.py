@@ -26,7 +26,7 @@ async def main():
         await pg.route('https://lichess.org/game/export/**',export)
         await pg.goto(URL); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         await pg.evaluate("localStorage.setItem('chess-analysis:settings:v1',JSON.stringify({autoReviewOnImport:false}))"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Player').click() if await pg.get_by_role('tab',name='Player').count() else await pg.get_by_role('button',name='Player',exact=True).click()
+        await goto_tab(pg,'Player')
         await pg.click('[data-testid=source-lichess]')
         await pg.fill('[data-testid=player-input]','Me'); await pg.click('[data-testid=player-track]')
         await pg.wait_for_selector('[data-testid=player-stats]')
@@ -42,7 +42,7 @@ async def main():
         stored=json.loads(await pg.evaluate("localStorage.getItem('chess-analysis:lichess:v1')"))
         check('saved with cursor and lichess source', stored['cursor'] is not None and stored['games'][0]['source']=='lichess')
         await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Player').click() if await pg.get_by_role('tab',name='Player').count() else await pg.get_by_role('button',name='Player',exact=True).click()
+        await goto_tab(pg,'Player')
         check('Lichess tab chosen after reload when only Lichess is tracked', await pg.locator('[data-testid=source-lichess].active').count()==1)
         # link import
         await pg.get_by_role('button',name='Import').first.click()

@@ -45,7 +45,7 @@ async def main():
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         for m in ['e2e4','e7e5']: await play(pg,m)
         game_fen=await fen(pg)
-        await pg.get_by_role('tab',name='Learn').click()
+        await goto_tab(pg,'Learn')
         await pg.wait_for_selector('[data-testid=learn-summary]')
         n=await pg.locator('.skill-card').count()
         ok(n==len(LES), f'Learn lists all {len(LES)} skills (saw {n})')
@@ -97,7 +97,7 @@ async def main():
         ok(await pg.get_by_role('tab',name='Learn').get_attribute('aria-selected')=='true', 'Leave returns to the Learn tab')
         ok((await fen(pg))==game_fen, 'game restored again')
         # persistence
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Learn').click(); await pg.wait_for_selector('[data-testid=learn-summary]')
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Learn'); await pg.wait_for_selector('[data-testid=learn-summary]')
         card=await pg.inner_text('[data-testid=skill-najdorf]'); ok('Mastered' not in card and '1/1 solved' in card, f'Najdorf progress persisted ({card.splitlines()[-1]})')
         await pg.screenshot(path='/tmp/claude-0/learn_list.png')
         # --- mobile

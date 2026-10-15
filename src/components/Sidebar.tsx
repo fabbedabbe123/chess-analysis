@@ -15,7 +15,7 @@ import {
 } from '@/stores/gameStore';
 import { deleteSavedGame, saveGameToLibrary, useLibrary } from '@/stores/libraryStore';
 import { updateSettings, useSetting } from '@/stores/settingsStore';
-import { confirmThen, openDialog } from '@/stores/uiStore';
+import { confirmThen, openDialog, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { parsePgn } from '@/pgn/pgn';
@@ -79,6 +79,7 @@ export function Sidebar() {
           ＋ New game
         </button>
         <button className="btn" onClick={() => openDialog('import')} data-testid="open-import">⇪ Import PGN / FEN</button>
+        <button className="btn" onClick={() => { setRightTab('player'); setMobileTab('player'); }} data-testid="open-my-games">♟ My games (Chess.com / Lichess)</button>
         {changed && (
           <button className="btn" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
             ↺ Restore imported game
@@ -165,7 +166,7 @@ export function Sidebar() {
           {theme === 'dark' ? '☀ Light theme' : '☾ Dark theme'}
         </button>
         <button className="btn" onClick={() => openDialog('settings')} data-testid="open-settings">⚙ Settings</button>
-        <button className="btn" onClick={() => openDialog('help')}>? Shortcuts & about</button>
+        <button className="btn" onClick={() => openDialog('help')}>? Help, tips & shortcuts</button>
       </div>
     </aside>
   );

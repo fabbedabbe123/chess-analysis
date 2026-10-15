@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { GRADE_HELP, GRADE_LABEL } from '@/analysis/gradeInfo';
+import { useEffect, useMemo, useRef } from 'react';
+import { GRADE_HELP, GRADE_LABEL, TAG_LABEL, FORCED_HELP } from '@/analysis/gradeInfo';
 import { formatScore } from '@/analysis/eval';
 import { pvToSan } from '@/analysis/pv';
 import { explainBadMove } from '@/analysis/whyBad';
@@ -30,6 +30,15 @@ export function MoveVerdict() {
   const fresh = result !== null && signature === mainLineSignature(tree);
   const byNode = useMemo(() => new Map<string, ReviewMove>((fresh ? result.moves : []).map((m) => [m.nodeId, m])), [fresh, result]);
   const mistakes = useMemo(() => (fresh ? result.moves.filter((m) => m.classification.grade !== null && BAD.has(m.classification.grade)) : []), [fresh, result]);
+
+  // When a review has just finished and the user has not moved yet, take them to the first error.
+  const prevStatus = useRef(status);
+  useEffect(() => {
+    const finished = prevStatus.current === 'running' && status === 'done';
+    prevStatus.current = status;
+    const first = mistakes[0];
+    if (finished && fresh && !busy && first !== undefined && currentId === tree.rootId) goTo(first.nodeId);
+  }, [status, fresh, busy, mistakes, currentId, tree.rootId]);
 
   if (busy) return null;
   const plies = line.length - 1;
@@ -79,7 +88,8 @@ export function MoveVerdict() {
             <strong>{here.moveNumber}{here.color === 'w' ? '.' : '...'} {here.san}</strong>
             {cls !== null ? <span className={`pill cls-${cls}`} data-testid="verdict-class" title={GRADE_HELP[cls]}>{GRADE_LABEL[cls]}</span> : <span className="muted">not classified</span>}
             <span className="muted">{formatScore(here.before.score)} → {formatScore(here.after.score)}</span>
-            {here.classification.tags.map((t) => <span key={t} className="pill tag">{t}</span>)}
+            {here.classification.tags.filter((t) => !(here.classification.isEngineBest && t === 'allowed-mate')).map((t) => <span key={t} className="pill tag">{TAG_LABEL[t] ?? t}</span>)}
+            {here.classification.isEngineBest && here.classification.tags.includes('allowed-mate') && <span className="pill tag forced" title={FORCED_HELP}>Forced sequence</span>}
           </>
         )}
       </div>
@@ -97,7 +107,7 @@ export function MoveVerdict() {
       <div className="verdict-nav">
         <button className="btn small" disabled={prev === undefined} onClick={() => prev && goTo(prev.nodeId)} data-testid="verdict-prev">◀ Previous error</button>
         <span className="muted small-print">{mistakes.length} error{mistakes.length === 1 ? '' : 's'}</span>
-        <button className="btn small" disabled={next === undefined} onClick={() => next && goTo(next.nodeId)} data-testid="verdict-next">Next error ▶</button>
+        <button className="btn small" disabled={next === undefined} onClick={() => next && goTo(next.nodeId)} data-testid="verdict-next">{here === null && currentId === tree.rootId ? 'First error ▶' : 'Next error ▶'}</button>
       </div>
     </div>
   );

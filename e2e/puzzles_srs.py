@@ -20,7 +20,7 @@ async def main():
         await pg.goto(URL); await pg.evaluate("localStorage.clear()")
         past=int(time.time()*1000)-86400000
         await pg.evaluate("t=>localStorage.setItem('chess-analysis:puzzles:v1',JSON.stringify({solved:{p001:{attempts:1,clean:true}},streak:0,bestStreak:0,srs:{p001:{box:2,due:t}}}))",past)
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Puzzles').click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Puzzles')
         await pg.wait_for_function("!document.querySelector('[data-testid=puzzle-review]')?.disabled",timeout=10000)
         check('a due puzzle enables the review button', 'Review 1 due' in await pg.inner_text('[data-testid=puzzle-review]'))
         await pg.click('[data-testid=puzzle-review]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
@@ -34,7 +34,7 @@ async def main():
         check('one Lichess puzzle added', 'Added 1 new puzzle' in await pg.inner_text('[data-testid=puzzle-online-note]'))
         saved=json.loads(await pg.evaluate("localStorage.getItem('chess-analysis:lichess-puzzles:v1')"))
         check('saved with a li- id and the solver to move', saved[0]['id']=='li-3mKyB' and saved[0]['theme']=='mate3')
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Puzzles').click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Puzzles')
         check('survives reload', '1 saved' in await pg.inner_text('.puzzle-panel'))
         mode['fail']=True
         await pg.click('[data-testid=puzzle-online]'); await pg.wait_for_function("document.querySelector('[data-testid=puzzle-online-note]')?.innerText.includes('Could not reach')")

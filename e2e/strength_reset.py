@@ -15,7 +15,7 @@ async def main():
         games=[ag(i,'chesscom') for i in range(3)]+[ag(i,'lichess') for i in range(2)]+[ag(9,'play')]
         await pg.evaluate("""([g,c,l])=>{localStorage.setItem('chess-analysis:strength-games:v1',g);localStorage.setItem('chess-analysis:tracker:v1',c);localStorage.setItem('chess-analysis:lichess:v1',l)}""",
           [json.dumps(games), json.dumps({'username':'olduser','games':[tg(1)],'fetchedMonths':[],'allArchives':[],'lastSync':1}), json.dumps({'username':'lichuser','games':[tg(2)],'cursor':None,'exhausted':True,'lastSync':1})])
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Strength').click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
         check('reset card visible without opening anything', await pg.locator('[data-testid=reset-chesscom]').is_visible())
         await pg.click('[data-testid=reset-chesscom]'); await pg.get_by_role('button',name='Remove',exact=True).last.click(); await pg.wait_for_timeout(300)
         saved=json.loads(await pg.evaluate("localStorage.getItem('chess-analysis:strength-games:v1')"))

@@ -169,9 +169,33 @@ export function ChessBoard() {
     [engineArrows, tacticSquares],
   );
 
+  // A board hidden by a mobile tab has no size; drawing arrows then produces NaN SVG coordinates. Draw once it is visible.
+  const userShapesRef = useRef(node.shapes);
+  userShapesRef.current = node.shapes;
+  const autoShapesRef = useRef(autoShapes);
+  autoShapesRef.current = autoShapes;
   useEffect(() => {
+    const el = host.current;
+    if (el !== null && el.offsetWidth === 0) return;
     cg.current?.setAutoShapes(autoShapes);
   }, [autoShapes]);
+  useEffect(() => {
+    const el = host.current;
+    if (el === null || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => {
+      const api = cg.current;
+      if (api === null) return;
+      if (el.offsetWidth > 0) {
+        api.setAutoShapes(autoShapesRef.current);
+        api.setShapes(toDrawShapes(userShapesRef.current));
+      } else {
+        api.setAutoShapes([]);
+        api.setShapes([]);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Optional sound on new positions.
   useEffect(() => {

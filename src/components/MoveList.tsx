@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getNode, isOnMainLine, lineEnd } from '@/chess/gameTree';
 import { nagToSymbol } from '@/pgn/pgn';
 import {
@@ -15,6 +15,8 @@ import type { MoveGrade } from '@/analysis/classify';
 import { GRADE_LABEL, GRADE_SYMBOL } from '@/analysis/gradeInfo';
 import type { GameTree, MoveNode } from '@/types/game';
 
+
+const ERROR_GRADES = new Set<string>(['inaccuracy', 'mistake', 'miss', 'blunder']);
 
 interface TokenProps {
   node: MoveNode;
@@ -90,13 +92,20 @@ export function MoveList() {
   const review = useReview((s) => s.result);
   const reviewSig = useReview((s) => s.signature);
 
+  const [errorsOnly, setErrorsOnly] = useState(false);
   const badges = useMemo(() => {
     const map = new Map<string, MoveGrade>();
     if (review !== null && reviewSig === mainLineSignature(tree)) {
-      for (const m of review.moves) if (m.classification.moveClass !== null) map.set(m.nodeId, m.classification.grade ?? m.classification.moveClass);
+      for (const m of review.moves) {
+        if (m.classification.moveClass === null) continue;
+        const g = m.classification.grade ?? m.classification.moveClass;
+        if (errorsOnly && !ERROR_GRADES.has(g)) continue;
+        map.set(m.nodeId, g);
+      }
     }
     return map;
-  }, [review, reviewSig, tree]);
+  }, [review, reviewSig, tree, errorsOnly]);
+  const reviewed = review !== null && reviewSig === mainLineSignature(tree);
 
   const root = getNode(tree, tree.rootId);
   const first = root.children[0];
@@ -104,6 +113,9 @@ export function MoveList() {
 
   return (
     <div className="move-list" role="region" aria-label="Moves" data-testid="move-list">
+      {reviewed && (
+        <label className="errors-only small-print"><input type="checkbox" checked={errorsOnly} onChange={(e) => setErrorsOnly(e.target.checked)} data-testid="errors-only" /> Show errors only</label>
+      )}
       {first === undefined ? (
         <p className="muted pad">No moves yet. Drag a piece, or import a game.</p>
       ) : (

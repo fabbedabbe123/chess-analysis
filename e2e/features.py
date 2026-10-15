@@ -15,7 +15,7 @@ async def main():
         nonlocal ok; print(('PASS ' if cond else 'FAIL ')+name); ok = ok and bool(cond)
     async with async_playwright() as p:
         b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
-        ctx=await b.new_context(viewport={'width':1280,'height':800}); pg=await ctx.new_page(); errs=[]
+        ctx=await b.new_context(viewport={'width':1280,'height':1000}); pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         # 1. sidebar collapse
@@ -29,14 +29,14 @@ async def main():
         await pg.click('[data-testid=side-toggle]'); await pg.wait_for_timeout(200)
         check('expands again', await pg.locator('.side-body').is_visible())
         # 2. play session resume
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         check('no resume banner at first', await pg.locator('[data-testid=play-resume-banner]').count()==0)
         await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]'); await pg.click('[data-testid=play-start]'); await pg.wait_for_selector('[data-testid=play-status]')
         await play(pg,'e2e4'); await pg.wait_for_function("document.querySelectorAll('.moves-flow .mv').length>=2",timeout=30000)
         await play(pg,'d2d4'); await pg.wait_for_function("document.querySelectorAll('.moves-flow .mv').length>=4",timeout=30000)
         n=await plies(pg)
         await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         check('resume banner after reload', await pg.locator('[data-testid=play-resume-banner]').count()==1)
         check('user own game untouched while a session is only saved', await plies(pg)==0)
         await pg.click('[data-testid=play-resume]'); await pg.wait_for_selector('[data-testid=play-status]')
@@ -54,7 +54,7 @@ async def main():
         check('review ran automatically after import', await pg.locator('[data-testid^=grade-w-]').count()>0)
         check('review tab is shown', await pg.get_by_role('tab',name='Review').get_attribute('aria-selected')=='true')
         # 4. lesson deep-link + new lessons
-        await pg.get_by_role('tab',name='Learn').click()
+        await goto_tab(pg,'Learn')
         if await pg.locator('[data-testid=learn-back]').count(): await pg.click('[data-testid=learn-back]')
         for sid in ['opposition','lucena','philidor']:
             check(f'lesson {sid} listed', await pg.locator(f'[data-testid=skill-{sid}]').count()==1)

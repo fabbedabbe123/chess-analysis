@@ -16,21 +16,25 @@ import { StrengthPanel } from '@/components/StrengthPanel';
 import { PuzzlePanel } from '@/components/PuzzlePanel';
 import { ReviewPanel } from '@/components/ReviewPanel';
 import { SettingsDialog } from '@/components/SettingsDialog';
+import { Welcome } from '@/components/Welcome';
 import { Sidebar } from '@/components/Sidebar';
 import { TacticsPanel } from '@/components/TacticsPanel';
-import { describeStatus, statusAt } from '@/chess/gameTree';
+import { describeStatus, lineEnd, statusAt } from '@/chess/gameTree';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { useKeyboard } from '@/hooks/useKeyboard';
 import { useGame } from '@/stores/gameStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { useSetting } from '@/stores/settingsStore';
-import { setMobileTab, setRightTab, toggleSidebar, useUi, type MobileTab, type RightTab } from '@/stores/uiStore';
+import { openDialog, setMobileTab, setRightTab, toggleSidebar, useUi, type MobileTab, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
 
-/** The right-hand tabs come in two groups so the bar stays readable: looking at a game, and getting better. */
-const TAB_GROUPS: { label: string; tabs: { id: RightTab; label: string }[] }[] = [
+/**
+ * The right-hand side has four sections; sections with more than one panel show a second row of sub-tabs.
+ * (Fewer tabs at once: what you want to do first, then which tool.)
+ */
+const SECTIONS: { id: string; label: string; hint: string; tabs: { id: RightTab; label: string }[] }[] = [
   {
-    label: 'Analyse',
+    id: 'analyse', label: 'Analyse', hint: 'Look at a game or position',
     tabs: [
       { id: 'engine', label: 'Engine' },
       { id: 'review', label: 'Review' },
@@ -39,21 +43,26 @@ const TAB_GROUPS: { label: string; tabs: { id: RightTab; label: string }[] }[] =
     ],
   },
   {
-    label: 'Improve',
+    id: 'train', label: 'Train', hint: 'Lessons and puzzles',
     tabs: [
       { id: 'learn', label: 'Learn' },
       { id: 'puzzles', label: 'Puzzles' },
-      { id: 'play', label: 'Play' },
-      { id: 'strength', label: 'Strength' },
-      { id: 'player', label: 'Player' },
     ],
   },
+  {
+    id: 'games', label: 'My games', hint: 'Your Chess.com / Lichess games and strength',
+    tabs: [
+      { id: 'player', label: 'Player' },
+      { id: 'strength', label: 'Strength' },
+    ],
+  },
+  { id: 'play', label: 'Play', hint: 'Play Stockfish', tabs: [{ id: 'play', label: 'Play' }] },
 ];
+const lastInSection = new Map<string, RightTab>();
 
 const MOBILE_TABS: { id: MobileTab; label: string }[] = [
   { id: 'board', label: 'Board' },
   { id: 'engine', label: 'Engine' },
-  { id: 'moves', label: 'Moves' },
   { id: 'review', label: 'Review' },
   { id: 'openings', label: 'Openings' },
   { id: 'tactics', label: 'Tactics' },
@@ -70,9 +79,12 @@ function StatusLine() {
   const currentId = useGame((s) => s.currentId);
   const text = useMemo(() => describeStatus(statusAt(tree, currentId)), [tree, currentId]);
   const turn = tree.nodes[currentId]?.fen.split(' ')[1] === 'b' ? 'Black' : 'White';
+  const result = tree.headers['Result'];
+  const atEnd = lineEnd(tree, currentId) === currentId;
+  const shownResult = atEnd && result !== undefined && ['1-0', '0-1', '1/2-1/2'].includes(result) ? result : null;
   return (
     <div className="status-line" role="status" data-testid="game-status">
-      {text ?? `${turn} to move`}
+      {text ?? `${turn} to move`}{shownResult !== null && ` · Result ${shownResult === '1/2-1/2' ? '½–½' : shownResult}`}
     </div>
   );
 }
@@ -84,6 +96,8 @@ export default function App() {
   const mobileTab = useUi((s) => s.mobileTab);
   const collapsed = useUi((s) => s.sidebarCollapsed);
   const puzzleActive = usePuzzle((s) => s.phase !== 'off');
+  const section = SECTIONS.find((sec) => sec.tabs.some((t) => t.id === rightTab));
+  if (section) lastInSection.set(section.id, rightTab);
   useAutoAnalysis();
   useKeyboard();
 
@@ -112,23 +126,38 @@ export default function App() {
         <StatusLine />
         <MoveVerdict />
         <BoardControls />
+        <section className="panel moves-panel" aria-label="Move list">
+          <h2 className="sr-only">Moves</h2>
+          <MoveList />
+          <MoveTools />
+        </section>
       </main>
 
       <div className="col-right">
-        <nav className="tabs" role="tablist" aria-label="Analysis panels">
-          {TAB_GROUPS.map((g) => (
-            <div className="tab-group" key={g.label} role="presentation">
-              <span className="tab-group-label" aria-hidden="true">{g.label}</span>
-              <div className="tab-row" role="presentation">
-                {g.tabs.map((t) => (
-                  <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => setRightTab(t.id)}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+        <nav className="tabs" role="tablist" aria-label="Sections">
+          <div className="tab-row primary" role="presentation">
+            {SECTIONS.map((sec) => {
+              const active = sec.tabs.some((t) => t.id === rightTab);
+              return (
+                <button key={sec.id} role="tab" aria-selected={active} className={active ? 'active' : ''} title={sec.hint}
+                  onClick={() => { const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id; setRightTab(t); }}>
+                  {sec.label}
+                </button>
+              );
+            })}
+            <button className="help-btn" onClick={() => openDialog('help')} aria-label="Help and tips" title="Help and tips" data-testid="open-help">?</button>
+          </div>
+          {section && section.tabs.length > 1 && (
+            <div className="tab-row sub" role="presentation">
+              {section.tabs.map((t) => (
+                <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => setRightTab(t.id)}>
+                  {t.label}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
         </nav>
+        <Welcome />
         <div className={`right-panels tab-${rightTab}`}>
           <div className="p-engine"><EnginePanel /></div>
           <div className="p-review"><ReviewPanel /></div>
@@ -140,11 +169,6 @@ export default function App() {
           <div className="p-strength"><StrengthPanel /></div>
           <div className="p-player"><PlayerPanel /></div>
         </div>
-        <section className="panel moves-panel" aria-label="Move list">
-          <header className="panel-head"><h2>Moves</h2></header>
-          <MoveList />
-          <MoveTools />
-        </section>
       </div>
 
       <nav className="mobile-tabs" aria-label="Sections">

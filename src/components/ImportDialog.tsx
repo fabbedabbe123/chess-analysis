@@ -103,6 +103,8 @@ export function ImportDialog() {
     }
   };
 
+  const sel = result?.games[selected];
+  const unreadable = sel !== undefined && mainLineLength(sel.tree) === 0 && sel.warnings.length > 0;
   return (
     <Modal title="Import game or position" onClose={closeDialog} wide>
       <p className="muted">Paste a PGN (one or many games, with variations and comments), a FEN or a Lichess game link, or choose a file.</p>
@@ -161,9 +163,13 @@ export function ImportDialog() {
               </li>
             ))}
           </ul>
-          <button className="btn primary" onClick={() => { const g = result.games[selected]; if (g) apply(g); }}>
-            Load selected game
-          </button>
+          {unreadable
+            ? <div className="callout error" role="alert" data-testid="import-unreadable">No moves could be read from this game, so there is nothing to load. Check the move text (the warning above says where reading stopped).</div>
+            : (
+              <button className="btn primary" onClick={() => { const g = result.games[selected]; if (g) apply(g); }}>
+                Load selected game
+              </button>
+            )}
         </div>
       )}
     </Modal>

@@ -10,7 +10,7 @@ async def main():
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
         await pg.goto(URL); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]'); await pg.click('[data-testid=play-start]'); await pg.wait_for_selector('[data-testid=play-status]')
         await pg.click('[data-testid=play-resign]'); await pg.get_by_label('Are you sure?').get_by_role('button',name='Resign').click()
         await pg.wait_for_selector('[data-testid=play-settings]')

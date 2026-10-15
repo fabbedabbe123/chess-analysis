@@ -21,7 +21,7 @@ async def main():
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         await play(pg,'e2e4'); await play(pg,'e7e5')
         mine=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         # invalid and finished positions are refused
         await pg.click('[data-testid=from-fen]'); await pg.fill('[data-testid=from-fen-input]','garbage'); await pg.click('[data-testid=play-start]')
         check('garbage FEN refused', await pg.locator('[data-testid=from-error]').count()==1)
@@ -38,7 +38,7 @@ async def main():
         await pg.wait_for_timeout(300)
         check('your own game is restored after leaving', (await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")).split()[0]==mine.split()[0])
         # custom FEN + clock
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         await pg.click('[data-testid=from-fen]'); await pg.fill('[data-testid=from-fen-input]',FEN)
         await pg.select_option('[data-testid=opt-tc]','3+2'); await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]')
         await pg.click('[data-testid=play-start]'); await pg.wait_for_selector('[data-testid=play-status]')
@@ -55,7 +55,7 @@ async def main():
         check('the other clock is not running', (await pg.inner_text('[data-testid=clock-b]')) in ('3:00','3:02','2:59','2:58','3:01') )
         # session resume keeps the clock
         fen_after=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Play',exact=True).click()
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Play')
         check('unfinished game offered for resume', await pg.locator('[data-testid=play-resume]').count()==1)
         await pg.click('[data-testid=play-resume]'); await pg.wait_for_selector('[data-testid=clock-w]')
         r=secs(await pg.inner_text('[data-testid=clock-w]'))

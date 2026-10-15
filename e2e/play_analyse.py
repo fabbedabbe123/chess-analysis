@@ -18,7 +18,7 @@ async def main():
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
         await pg.goto(URL); await pg.evaluate("localStorage.clear(); localStorage.setItem('chess-analysis:settings:v1', JSON.stringify({reviewDepth:10}))"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.get_by_role('tab',name='Play',exact=True).click()
+        await goto_tab(pg,'Play')
         await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]'); await pg.click('[data-testid=play-start]'); await pg.wait_for_selector('[data-testid=play-status]')
         n=0
         for uci in ['e2e4','g1f3','f1c4','d1e2']:

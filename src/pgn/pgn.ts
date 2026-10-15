@@ -59,6 +59,10 @@ export interface PgnParseResult {
 
 const HEADER_RE = /^\[\s*([A-Za-z0-9_]+)\s+"((?:[^"\\]|\\.)*)"\s*\]\s*$/;
 
+const TAG_SRC = '\\[\\s*[A-Za-z0-9_]+\\s+"(?:[^"\\\\]|\\\\.)*"\\s*\\]';
+const MULTI_TAG_LINE = new RegExp(`^(?:${TAG_SRC}\\s*)+$`);
+const TAG_G = new RegExp(TAG_SRC, 'g');
+
 interface RawGame {
   headerLines: string[];
   moveLines: string[];
@@ -74,14 +78,15 @@ function splitGames(text: string): RawGame[] {
   for (const line of lines) {
     if (line.startsWith('%')) continue; // PGN escape mechanism
     const trimmed = line.trim();
-    const isHeader = braceDepth === 0 && HEADER_RE.test(trimmed);
-    if (isHeader) {
+    // Several tags on one line (`[Event "x"][White "y"]`, as some sites and copy-pastes produce) count as separate tag lines.
+    const tags = braceDepth === 0 ? (HEADER_RE.test(trimmed) ? [trimmed] : MULTI_TAG_LINE.test(trimmed) ? (trimmed.match(TAG_G) ?? []) : []) : [];
+    if (tags.length > 0) {
       if (current === null || sawMoves) {
         current = { headerLines: [], moveLines: [] };
         games.push(current);
         sawMoves = false;
       }
-      current.headerLines.push(trimmed);
+      current.headerLines.push(...tags);
       continue;
     }
     if (trimmed.length === 0) continue;

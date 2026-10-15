@@ -75,6 +75,16 @@ The Strength tab turns analysed games into an estimate of your playing strength 
 
 Checks: `tests/strength.test.ts` (maths, bands, focus, plan, sanitising) and `python3 e2e/strength.py` (real Stockfish; uses synthetic 44-ply games from `e2e/strength_pgns.json`, and a seeded tracker for the batch because the Chess.com API is not reachable from the build sandbox).
 
+## Usability round (fourth)
+
+- Moves list now sits under the board (like Chess.com); the right-hand column is all for the active tool.
+- Four sections instead of nine tabs: Analyse (Engine, Review, Openings, Tactics), Train (Learn, Puzzles), My games (Player, Strength), Play.
+- First-visit "What do you want to do?" card and a **?** button with a how-to guide.
+- After a review the board jumps to your first error; the review starts with a one-line summary per side; best moves with big swings are marked "Forced sequence".
+- "Show errors only" in the move list; the game result is shown at the end of the game.
+- Import accepts PGN tags written on one line and refuses to "load" a game with no readable moves.
+- Sidebar: "My games" shortcut; settings buttons stay visible on short screens. Fixed SVG NaN console errors on mobile.
+
 ## More features (added in the third round)
 
 - **Lichess tracking**: the Player tab has a Chess.com / Lichess switch. Lichess games come from `GET /api/games/user/{name}` (NDJSON, `pgnInJson`, `opening`), 100 per page, "Load 100 older games" pages back with `until`. Variants and unfinished games are skipped and counted. Tracked Lichess games can be analysed in the Strength tab like Chess.com ones. Checked against the live API in a real browser (response shape and CORS); the UI flow is tested with a mocked network (`e2e/lichess.py`).

@@ -11,7 +11,7 @@ async def main():
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         await pg.click('[data-testid=open-import]'); await pg.fill('textarea.import-text',PGN); await pg.click('[data-testid=import-submit]'); await pg.wait_for_timeout(300)
         if await pg.get_by_role('button',name='Load selected game').count(): await pg.get_by_role('button',name='Load selected game').click()
-        await pg.get_by_role('tab',name='Review').click(); await pg.fill('input[aria-label="Review depth"]',DEPTH)
+        await goto_tab(pg,'Review'); await pg.fill('input[aria-label="Review depth"]',DEPTH)
         await pg.click('[data-testid=run-review]'); await pg.wait_for_selector('[data-testid=accuracy-w]', timeout=280000)
         n=await pg.locator('.move-list .mv').count()
         for g in ['brilliant','great','best','excellent','good','book','inaccuracy','mistake','miss','blunder']:

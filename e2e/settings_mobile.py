@@ -31,14 +31,14 @@ async def main():
             r=await pg.evaluate(f"fetch('/pieces/{set_}/wK.svg').then(r=>r.status)"); print(set_,r,end='; ')
         print()
         # tabs & dialogs
-        for tab in ['Review','Openings','Tactics','Engine']: await pg.get_by_role('tab',name=tab).click()
-        await pg.click('text=Shortcuts & about'); print('help dialog:', await pg.locator('.modal').count()); await pg.keyboard.press('Escape')
+        for tab in ['Review','Openings','Tactics','Engine']: await goto_tab(pg,tab)
+        await pg.click('text=Help, tips & shortcuts'); print('help dialog:', await pg.locator('.modal').count()); await pg.keyboard.press('Escape')
         # openings explorer error path (network blocked in sandbox)
-        await pg.get_by_role('tab',name='Openings').click(); await pg.get_by_label('Load from explorer.lichess.ovh').check(); await pg.wait_for_timeout(3500)
+        await goto_tab(pg,'Openings'); await pg.get_by_label('Load from explorer.lichess.ovh').check(); await pg.wait_for_timeout(3500)
         print('explorer:', await pg.locator('.openings-panel .callout.warn').all_inner_texts(), '| book moves still shown:', await pg.locator('.book-move').count())
         # mobile nav
         m=await b.new_page(viewport={'width':390,'height':800}); await m.goto(URL); await m.wait_for_selector('cg-board')
-        for t in ['Engine','Moves','Review','Openings','Tactics','Menu','Board']:
+        for t in ['Engine','Review','Openings','Tactics','Menu','Board']:
             await m.get_by_role('button',name=t,exact=True).last.click(); await m.wait_for_timeout(150)
             vis=await m.evaluate("[...document.querySelectorAll('.col-left,.col-center,.col-right,.right-panels>div,.moves-panel')].filter(e=>e.offsetParent!==null).map(e=>e.className.split(' ')[0]).join(',')")
             hs=await m.evaluate('document.documentElement.scrollWidth>innerWidth'); print(f'mobile {t:8}',vis,'hscroll',hs)

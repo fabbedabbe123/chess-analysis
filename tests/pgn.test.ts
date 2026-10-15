@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMove, createTree, getNode, mainLine, setComment, setHeaders, setShapes, toggleNag } from '@/chess/gameTree';
+import { addMove, createTree, getNode, mainLine, mainLineLength, setComment, setHeaders, setShapes, toggleNag } from '@/chess/gameTree';
 import { exportPgn, parsePgn, tokenizeMovetext } from '@/pgn/pgn';
 import type { GameTree } from '@/types/game';
 
@@ -293,5 +293,21 @@ describe('tokenizer', () => {
   it('does not treat a move number prefix like "1-0" inside a SAN as a result', () => {
     const tokens = tokenizeMovetext('1. e4 1-0');
     expect(tokens.filter((t) => t.type === 'result')).toHaveLength(1);
+  });
+});
+
+describe('tags on one line', () => {
+  it('reads several tags written on the same line', () => {
+    const r = parsePgn('[Event "Casual"][White "Fabian"][Black "Opp"][Result "1-0"]\n\n1. e4 e5 2. Nf3 Nc6 1-0');
+    expect(r.errors).toEqual([]);
+    expect(r.games).toHaveLength(1);
+    const h = r.games[0]!.tree.headers;
+    expect(h['White']).toBe('Fabian');
+    expect(h['Result']).toBe('1-0');
+    expect(mainLineLength(r.games[0]!.tree)).toBe(4);
+  });
+  it('does not treat a bracket inside a comment as tags', () => {
+    const r = parsePgn('[Event "x"]\n\n1. e4 {[White "no"]} e5 *');
+    expect(r.games[0]!.tree.headers['White']).not.toBe('no');
   });
 });

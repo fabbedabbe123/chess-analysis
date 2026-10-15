@@ -39,3 +39,12 @@ export const GRADE_HELP: Record<MoveGrade, string> = {
   miss: 'The chance was there and was not taken: an inaccuracy or mistake right after the opponent erred (10+ points), or a missed forced mate or clear win that leaves you still at 40% or better.',
   blunder: 'Loses more than 20 winning-chance points.',
 };
+
+export const TAG_LABEL: Record<string, string> = {
+  'missed-mate': 'Missed mate',
+  'allowed-mate': 'Allows mate',
+  'missed-win': 'Missed win',
+  opening: 'Opening',
+  tactical: 'Tactical',
+};
+export const FORCED_HELP = 'The best move in the position. The big swing comes from the sequence being forced (an exchange or a threat), not from a mistake.';
