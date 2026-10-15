@@ -7,7 +7,7 @@ async def main():
     def check(n,c):
         nonlocal ok; print(('PASS ' if c else 'FAIL ')+n); ok = ok and bool(c)
     async with async_playwright() as p:
-        b=await p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
+        b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.goto(URL); await pg.wait_for_selector('cg-board')

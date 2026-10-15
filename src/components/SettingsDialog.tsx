@@ -8,8 +8,47 @@ import {
   useSettings,
   type Settings,
 } from '@/stores/settingsStore';
-import { closeDialog, requestReanalysis } from '@/stores/uiStore';
+import { closeDialog, confirmThen, requestReanalysis } from '@/stores/uiStore';
+import { applyBackup, collectBackup, describeBackup, parseBackup } from '@/utils/backup';
+import { downloadText } from '@/utils/download';
+import { notify } from '@/stores/gameStore';
 import { Modal } from './Modal';
+
+function DataBackup() {
+  const exportAll = () => {
+    try {
+      const backup = collectBackup(localStorage);
+      downloadText(`chess-analysis-backup-${backup.exportedAt.slice(0, 10)}.json`, JSON.stringify(backup), 'application/json');
+      notify('info', 'Backup downloaded.');
+    } catch {
+      notify('error', 'Could not read this browser\'s storage.');
+    }
+  };
+  const importFile = async (file: File | undefined) => {
+    if (file === undefined) return;
+    if (file.size > 30_000_000) { notify('error', 'That file is too large to be a backup.'); return; }
+    const parsed = parseBackup(await file.text());
+    if (!parsed.ok) { notify('error', parsed.error); return; }
+    confirmThen(true, `Restore ${describeBackup(parsed.keys, parsed.backup.data)} from ${parsed.backup.exportedAt.slice(0, 10) || 'an unknown date'}? This replaces everything stored in this browser (games, settings, progress).`, 'Restore', () => {
+      const r = applyBackup(parsed.backup, localStorage);
+      if (!r.ok) { notify('error', r.error); return; }
+      window.location.reload();
+    });
+  };
+  return (
+    <fieldset>
+      <legend>Your data</legend>
+      <p className="muted small-print">Everything (games, review results, puzzle progress, settings) lives only in this browser. Download a backup to keep it safe or to move it to another browser. The Lichess token is never included.</p>
+      <div className="row wrap">
+        <button className="btn" onClick={exportAll} data-testid="backup-export">Download backup</button>
+        <label className="btn" style={{ cursor: 'pointer' }}>
+          Restore from file…
+          <input type="file" accept="application/json,.json" hidden onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = ''; }} data-testid="backup-import" />
+        </label>
+      </div>
+    </fieldset>
+  );
+}
 
 function Check({ k, label }: { k: keyof Settings; label: string }) {
   const s = useSettings();
@@ -122,6 +161,7 @@ export function SettingsDialog() {
             <small className="muted">Stored only in this browser and sent only to explorer.lichess.ovh.</small>
           </label>
         </fieldset>
+        <DataBackup />
       </div>
       <div className="row">
         <button className="btn danger" onClick={() => resetSettings()}>Reset all settings</button>

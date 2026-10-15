@@ -17,3 +17,29 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: node scripts/build-lessons.mjs && git diff --exit-code public/data/lessons.json
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright && playwright install --with-deps chromium
+      - name: Start the built site
+        run: |
+          nohup npx vite preview --port 4173 --strictPort > preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ > /dev/null && break; sleep 1; done
+      # real Stockfish in a real browser; these scripts exit non-zero on failure
+      - run: python3 e2e/lessons.py
+      - run: python3 e2e/features.py
+      - run: python3 e2e/backup.py
+      - run: python3 e2e/move_verdict.py
+      - run: python3 e2e/strength.py

@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 exec(open(__import__('os').path.join(__import__('os').path.dirname(__file__),'common.py')).read())
 async def main():
     async with async_playwright() as p:
-        b=await p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
+        b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
         ctx=await b.new_context(viewport={'width':1440,'height':900}); pg=await ctx.new_page(); logs=[]
         pg.on('console',lambda m: logs.append(m.text) if m.type=='error' else None); pg.on('pageerror',lambda e: logs.append('PAGEERR '+str(e)))
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear(); localStorage.setItem('chess-analysis:settings:v1', JSON.stringify({autoReviewOnImport:false}))"); await pg.reload(); await pg.wait_for_selector('cg-board')

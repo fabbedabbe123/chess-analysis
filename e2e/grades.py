@@ -5,7 +5,7 @@ PGN=sys.argv[1] if len(sys.argv)>1 else '1. e4 e5 2. Nf3 d6 3. Bc4 Bg4 4. Nc3 g6
 DEPTH=sys.argv[2] if len(sys.argv)>2 else '12'
 async def main():
     async with async_playwright() as p:
-        b=await p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
+        b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); logs=[]
         pg.on('pageerror',lambda e: logs.append(str(e)))
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')

@@ -8,7 +8,7 @@ def g(i, color, res, tc='blitz'):
 ARCH='https://api.chess.com/pub/player/fabian/games/'
 async def main():
     async with async_playwright() as p:
-        b=await p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
+        b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); logs=[]
         pg.on('console',lambda m: logs.append(m.text) if m.type=='error' and 'Failed to load resource' not in m.text else None); pg.on('pageerror',lambda e: logs.append('PAGEERR '+str(e)))
         async def route(r):

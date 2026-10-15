@@ -10,7 +10,7 @@ async def play(pg, uci):
     await pg.mouse.click(*await sq_xy(pg,uci[:2])); await pg.wait_for_timeout(60); await pg.mouse.click(*await sq_xy(pg,uci[2:4])); await pg.wait_for_timeout(300)
 async def main():
     async with async_playwright() as p:
-        b=await p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
+        b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
         pg=await (await b.new_context(viewport={'width':1440,'height':900})).new_page(); logs=[]
         pg.on('console',lambda m: logs.append(m.text) if m.type=='error' else None); pg.on('pageerror',lambda e: logs.append('PAGEERR '+str(e)))
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')

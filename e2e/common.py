@@ -1,6 +1,10 @@
 import asyncio, random, re
 from playwright.async_api import async_playwright
 URL='http://localhost:4173/'
+
+# Browser launch settings: PW_CHROMIUM overrides the binary; otherwise the sandbox's Chromium if present, otherwise Playwright's own.
+import os as _os
+LAUNCH = {'executable_path': _os.environ['PW_CHROMIUM']} if _os.environ.get('PW_CHROMIUM') else ({'executable_path': '/opt/pw-browsers/chromium'} if _os.path.exists('/opt/pw-browsers/chromium') else {})
 BOARD_JS = """() => {
   const wrap=document.querySelector('.board-wrap'); const b=document.querySelector('cg-board').getBoundingClientRect(); const s=b.width/8;
   const flipped = document.querySelector('.cg-wrap').classList.contains('orientation-black');
