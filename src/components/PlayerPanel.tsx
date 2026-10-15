@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { loadOpeningBook, type OpeningBook } from '@/analysis/openings';
+import { buildRepertoire } from '@/strength/repertoire';
 import { stripClockTags, type TimeClass, type TrackedGame } from '@/chesscom/api';
 import { computeStats, scorePct, weakestOpenings, type Record3 } from '@/chesscom/stats';
 import { parsePgn } from '@/pgn/pgn';
@@ -26,6 +28,44 @@ function RatingChart({ points }: { points: { t: number; rating: number }[] }) {
       <text x="2" y="10" className="chart-label">{hi}</text>
       <text x="2" y={h - 2} className="chart-label">{lo}</text>
     </svg>
+  );
+}
+
+function RepertoireView({ games }: { games: TrackedGame[] }) {
+  const [open, setOpen] = useState(false);
+  const [book, setBook] = useState<OpeningBook | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!open || book !== null) return;
+    let alive = true;
+    loadOpeningBook().then((b) => alive && setBook(b)).catch(() => alive && setFailed(true));
+    return () => { alive = false; };
+  }, [open, book]);
+  const rep = useMemo(() => (book === null ? null : buildRepertoire(games, book)), [games, book]);
+  return (
+    <details className="card-details" onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)} data-testid="repertoire">
+      <summary>Repertoire and book exits</summary>
+      {failed && <p className="callout error small">The opening book could not be loaded.</p>}
+      {open && !failed && rep === null && <p className="muted small-print">Reading your games…</p>}
+      {rep !== null && (rep.rows.length === 0 ? (
+        <p className="muted small-print">Needs an opening with at least 2 games in the loaded set.</p>
+      ) : (
+        <>
+          <table className="counts" data-testid="repertoire-table">
+            <thead><tr><th></th><th>Games</th><th>Score</th><th title="Average half-move where the game first left the opening book">Book to</th><th title="Share of games where you played the first move out of book">You left</th><th>Your usual first non-book move</th></tr></thead>
+            <tbody>
+              {rep.rows.slice(0, 12).map((o) => (
+                <tr key={o.key}>
+                  <td>{o.color === 'w' ? '♔' : '♚'} {o.name}</td><td>{o.games}</td><td>{o.score.toFixed(0)}%</td>
+                  <td>ply {o.avgExitPly.toFixed(0)}</td><td>{o.youLeftPct.toFixed(0)}%</td><td>{o.topDeviation ? `${o.topDeviation.label} (${o.topDeviation.count}×)` : '–'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted small-print">Uses the bundled offline opening book on your latest {rep.considered} loaded games{rep.unreadable > 0 ? ` (${rep.unreadable} unreadable)` : ''}. Leaving the book is not a mistake in itself; it shows where your own preparation ends. A game that stays in the book to its last move counts as leaving after it.</p>
+        </>
+      ))}
+    </details>
   );
 }
 
@@ -116,6 +156,7 @@ export function PlayerPanel() {
               {weak.length > 0 && (
                 <p className="callout small">Weakest openings with at least 5 games: {weak.map((o) => `${o.name} as ${o.color === 'w' ? 'White' : 'Black'} (${scorePct(o).toFixed(0)}% in ${o.games})`).join('; ')}.</p>
               )}
+              <RepertoireView games={games} />
               <h3>Games</h3>
               <ul className="moments">
                 {(showAll ? games : games.slice(0, 10)).map((g) => (

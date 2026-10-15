@@ -43,4 +43,4 @@ jobs:
       - run: python3 e2e/backup.py
       - run: python3 e2e/move_verdict.py
       - run: python3 e2e/strength.py
-          python e2e/lichess.py
+      - run: python3 e2e/lichess.py

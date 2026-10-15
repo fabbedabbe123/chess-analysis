@@ -36,6 +36,17 @@ async def main():
                 check('plan lesson opens the lesson', True)
                 await pg.get_by_role('tab',name='Strength').click()
         await pg.screenshot(path='/tmp/claude-0/strength1440.png')
+        # train my mistakes: real saved mistakes -> real puzzle on the board
+        saved=json.loads(await pg.evaluate("localStorage.getItem('chess-analysis:strength-games:v1')"))
+        n_saved=sum(len(g.get('mistakes',[])) for g in saved)
+        print('saved mistakes:', n_saved)
+        check('mistakes were saved with the analysed games', n_saved>0)
+        check('train card offered', await pg.locator('[data-testid=train-start]').count()==1)
+        await pg.click('[data-testid=train-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]',timeout=8000)
+        fen=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
+        check('puzzle board shows a saved mistake position', any(m['fen'].split()[0]==fen.split()[0] for g in saved for m in g.get('mistakes',[])))
+        await pg.get_by_role('button',name='Exit puzzles').click()
+        await pg.get_by_role('tab',name='Strength').click()
         # persistence
         await pg.reload(); await pg.wait_for_selector('cg-board'); await pg.get_by_role('tab',name='Strength').click()
         check('estimate survives reload', await pg.locator('[data-testid=strength-range]').count()==1)

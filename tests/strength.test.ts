@@ -7,7 +7,7 @@ import type { SearchRequest, SearchSnapshot, WhiteScore } from '@/types/engine';
 import type { Skill } from '@/lessons/lessons';
 import { EMPTY_PROGRESS } from '@/puzzles/puzzles';
 import {
-  buildPlan, estimateStrength, focusAreas, gameFromReview, moverCp, ratingFromAcpl, recentActualRating, sanitizeAnalysed, RECENT_GAMES,
+  buildPlan, estimateStrength, openMistakeCount, progressSeries, trainingPuzzles, focusAreas, gameFromReview, moverCp, ratingFromAcpl, recentActualRating, sanitizeAnalysed, RECENT_GAMES,
   type AnalysedGame,
 } from '@/strength/strength';
 import { parseAnalysed } from '@/stores/strengthStore';
@@ -15,7 +15,7 @@ import { parseAnalysed } from '@/stores/strengthStore';
 const cp = (value: number): WhiteScore => ({ pov: 'white', kind: 'cp', value });
 
 function game(over: Partial<AnalysedGame> = {}): AnalysedGame {
-  return { id: `g${Math.random()}`, source: 'play', endedAt: 1, userColor: 'w', label: 'x', moves: 30, acpl: 50, accuracy: 80, counts: { inaccuracy: 1, mistake: 1, blunder: 0 }, catCount: {}, catLoss: {}, myRating: null, depth: 14, ...over };
+  return { id: `g${Math.random()}`, source: 'play', endedAt: 1, userColor: 'w', label: 'x', moves: 30, acpl: 50, accuracy: 80, counts: { inaccuracy: 1, mistake: 1, blunder: 0 }, catCount: {}, catLoss: {}, myRating: null, depth: 14, mistakes: [], ...over };
 }
 
 describe('moverCp', () => {
@@ -146,5 +146,46 @@ describe('persistence sanitising', () => {
     expect(parseAnalysed('not json')).toEqual([]);
     expect(parseAnalysed(null)).toEqual([]);
     expect(parseAnalysed(JSON.stringify([game({ id: 'a' }), { nope: 1 }, 5])).map((x) => x.id)).toEqual(['a']);
+  });
+});
+
+
+describe('practising your own mistakes', () => {
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const mk = (id: string, best: string, category: 'tactics' | 'endgame', loss: number) => ({ id, fen: START, best, category, loss, ply: 1 });
+  it('sanitizes saved mistakes and drops bad ones', () => {
+    const g = sanitizeAnalysed({ ...game({ id: 'a' }), mistakes: [mk('m1', 'e2e4', 'tactics', 20), { id: 'x' }, { ...mk('m2', 'zz', 'tactics', 5) }, { ...mk('m3', 'e2e4', 'nonsense' as never, 5) }] });
+    expect(g?.mistakes.map((m) => m.id)).toEqual(['m1']);
+    expect(sanitizeAnalysed({ ...game({ id: 'b' }), mistakes: 'oops' })?.mistakes).toEqual([]);
+    const old = { ...game({ id: 'c' }) } as Partial<AnalysedGame>;
+    delete old.mistakes;
+    expect(sanitizeAnalysed(old)?.mistakes).toEqual([]);
+  });
+  it('builds valid puzzles, biggest loss first, skipping clean solves and illegal moves', () => {
+    const g = game({ id: 'g1', mistakes: [mk('a', 'e2e4', 'tactics', 10), { ...mk('b', 'd2d4', 'tactics', 30), fen: START.replace('w KQkq', 'w KQkq') }, mk('bad', 'e2e5', 'tactics', 99)] });
+    // 'b' has the same fen but a different best move, so it is a different puzzle; 'bad' is an illegal move and must be dropped
+    const puzzles = trainingPuzzles([g], EMPTY_PROGRESS);
+    expect(puzzles.map((p) => p.id)).toEqual(['b', 'a']);
+    expect(puzzles.every((p) => p.theme === 'mistake')).toBe(true);
+    const done = { ...EMPTY_PROGRESS, solved: { b: { attempts: 1, clean: true }, a: { attempts: 2, clean: false } } };
+    expect(trainingPuzzles([g], done).map((p) => p.id)).toEqual(['a']);
+    expect(openMistakeCount([g], done)).toBe(2);
+    expect(trainingPuzzles([g], EMPTY_PROGRESS, 1)).toHaveLength(1);
+  });
+  it('puts focus-area mistakes first', () => {
+    const games = [1, 2, 3].map((i) => game({ id: `f${i}`, endedAt: i, catLoss: { tactics: 40 }, catCount: { tactics: 2 }, mistakes: i === 1 ? [mk('t', 'e2e4', 'tactics', 5), mk('e', 'd2d4', 'endgame', 50)] : [] }));
+    expect(trainingPuzzles(games, EMPTY_PROGRESS).map((p) => p.id)).toEqual(['t', 'e']);
+  });
+});
+
+describe('progress series', () => {
+  it('is chronological, with null ratings until there is evidence', () => {
+    const games = [3, 1, 2].map((i) => game({ id: `s${i}`, endedAt: i, moves: 30, acpl: 40 + i * 10, accuracy: 80 }));
+    const s = progressSeries(games);
+    expect(s.map((p) => p.endedAt)).toEqual([1, 2, 3]);
+    expect(s[0]?.rating).not.toBeNull();
+    expect(s[2]?.acpl).toBe(70);
+    const short = progressSeries([game({ id: 'z', moves: 5 })]);
+    expect(short[0]?.rating).toBeNull();
   });
 });

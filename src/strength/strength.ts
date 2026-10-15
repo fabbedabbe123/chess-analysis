@@ -3,7 +3,7 @@ import { buildCoachReport } from '@/play/coach';
 import type { ReviewResult } from '@/analysis/review';
 import type { Skill } from '@/lessons/lessons';
 import { skillProgress, type Mastery } from '@/lessons/lessons';
-import type { PuzzleProgress } from '@/puzzles/puzzles';
+import { validatePuzzle, type Puzzle, type PuzzleProgress } from '@/puzzles/puzzles';
 import type { Color } from '@/types/game';
 import type { WhiteScore } from '@/types/engine';
 
@@ -18,6 +18,29 @@ import type { WhiteScore } from '@/types/engine';
  */
 
 export type GameSource = 'play' | 'chesscom' | 'lichess' | 'import';
+
+/** One of the user's worst moves in a game, kept so it can be practised later. */
+export interface SavedMistake {
+  /** Stable puzzle id. */
+  id: string;
+  /** Position before the user's move (user to move). */
+  fen: string;
+  /** Stockfish's preferred move (UCI). */
+  best: string;
+  category: CoachCategory;
+  /** Winning-chance points lost by the move that was played. */
+  loss: number;
+  ply: number;
+}
+
+export const MAX_MISTAKES_PER_GAME = 8;
+const UCI_MOVE = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
+
+function hashId(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i += 1) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
 
 export interface AnalysedGame {
   id: string;
@@ -40,6 +63,8 @@ export interface AnalysedGame {
   myRating: number | null;
   /** Search depth of the analysis. */
   depth: number;
+  /** The worst moves (see SavedMistake); absent in games saved before this existed. */
+  mistakes: SavedMistake[];
 }
 
 export const MAX_ANALYSED = 200;
@@ -81,6 +106,13 @@ export function gameFromReview(
     catCount[x.category] = (catCount[x.category] ?? 0) + 1;
     catLoss[x.category] = (catLoss[x.category] ?? 0) + x.move.classification.winLoss;
   }
+  const mistakes: SavedMistake[] = [];
+  for (const x of report.mistakes) {
+    const best = x.move.before.bestMove;
+    if (best === null || x.move.classification.isEngineBest || !UCI_MOVE.test(best)) continue;
+    mistakes.push({ id: `tm-${hashId(meta.id)}-${x.move.ply}`, fen: x.move.fenBefore, best, category: x.category, loss: Math.round(x.move.classification.winLoss * 10) / 10, ply: x.move.ply });
+    if (mistakes.length >= MAX_MISTAKES_PER_GAME) break; // report.mistakes is sorted worst first
+  }
   const acc = result.summary.accuracy[userColor];
   const c = result.summary.counts[userColor];
   return {
@@ -97,6 +129,7 @@ export function gameFromReview(
     catLoss,
     myRating: meta.myRating ?? null,
     depth: result.depth,
+    mistakes,
   };
 }
 
@@ -136,8 +169,84 @@ export function sanitizeAnalysed(raw: unknown): AnalysedGame | null {
     catLoss: sanitizeMap(r['catLoss']),
     myRating: num(r['myRating']),
     depth: num(r['depth']) ?? 0,
+    mistakes: sanitizeMistakes(r['mistakes']),
   };
 }
+
+function sanitizeMistakes(raw: unknown): SavedMistake[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SavedMistake[] = [];
+  for (const x of raw.slice(0, MAX_MISTAKES_PER_GAME)) {
+    if (typeof x !== 'object' || x === null) continue;
+    const m = x as Record<string, unknown>;
+    const loss = num(m['loss']);
+    const ply = num(m['ply']);
+    const cat = CATEGORY_ORDER.find((c) => c === m['category']);
+    if (typeof m['id'] !== 'string' || typeof m['fen'] !== 'string' || typeof m['best'] !== 'string' || !UCI_MOVE.test(m['best'])
+      || cat === undefined || loss === null || loss < 0 || ply === null) continue;
+    out.push({ id: m['id'], fen: m['fen'], best: m['best'], category: cat, loss, ply });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- practise your own mistakes
+
+/**
+ * Practice puzzles from the user's own saved mistakes (newest analysed games first, via `recentGames`).
+ * Focus-area categories come first, then the biggest losses. Puzzles already solved cleanly are left out.
+ * Every puzzle is validated (legal position and move) before it is offered.
+ */
+export function trainingPuzzles(all: readonly AnalysedGame[], progress: PuzzleProgress, limit = 10): Puzzle[] {
+  const games = recentGames(all);
+  const focus = new Set(focusAreas(all).areas.map((a) => a.category));
+  const seen = new Set<string>();
+  const candidates: SavedMistake[] = [];
+  for (const g of games) {
+    for (const m of g.mistakes) {
+      const key = `${m.fen}|${m.best}`;
+      if (seen.has(key) || progress.solved[m.id]?.clean === true) continue;
+      seen.add(key);
+      candidates.push(m);
+    }
+  }
+  candidates.sort((a, b) => Number(focus.has(b.category)) - Number(focus.has(a.category)) || b.loss - a.loss);
+  const out: Puzzle[] = [];
+  for (const m of candidates) {
+    const v = validatePuzzle({ id: m.id, fen: m.fen, solution: [m.best], theme: 'mistake', difficulty: 'medium' });
+    if (v.ok) out.push(v.puzzle);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Number of saved mistakes in the recent games that are still open (not solved cleanly). */
+export function openMistakeCount(all: readonly AnalysedGame[], progress: PuzzleProgress): number {
+  let n = 0;
+  for (const g of recentGames(all)) for (const m of g.mistakes) if (progress.solved[m.id]?.clean !== true) n += 1;
+  return n;
+}
+
+// ---------------------------------------------------------------- progress over time
+
+export interface ProgressPoint {
+  endedAt: number;
+  /** Centre of the rolling estimate over the last `window` games up to and including this one; null when too little evidence. */
+  rating: number | null;
+  accuracy: number | null;
+  acpl: number;
+}
+
+/** Chronological series for the chart: per game accuracy / ACPL and a rolling strength estimate (same rule as the main estimate). */
+export function progressSeries(all: readonly AnalysedGame[], window = 5): ProgressPoint[] {
+  const chrono = [...all].sort((a, b) => a.endedAt - b.endedAt).slice(-MAX_ANALYSED);
+  return chrono.map((g, i) => {
+    const slice = chrono.slice(Math.max(0, i + 1 - window), i + 1);
+    const est = estimateStrength(slice);
+    return { endedAt: g.endedAt, rating: est === null ? null : est.rating, accuracy: g.accuracy, acpl: g.acpl };
+  });
+}
+
+
 
 // ----------------------------------------------------------------- the estimate
 

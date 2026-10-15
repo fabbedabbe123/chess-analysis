@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadLessons, MASTERY_LABEL, type Skill } from '@/lessons/lessons';
 import { CATEGORY_LABEL } from '@/play/coach';
 import {
-  buildPlan, estimateStrength, focusAreas, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
+  buildPlan, estimateStrength, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
   type AnalysedGame, type Trend,
 } from '@/strength/strength';
 import { analyseTrackedGames, cancelBatch, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
-import { usePuzzle } from '@/stores/puzzleStore';
+import { startPuzzleSession, usePuzzle } from '@/stores/puzzleStore';
 import { useLichess } from '@/stores/lichessStore';
 import { useTracker } from '@/stores/trackerStore';
 import { confirmThen, openLesson, setMobileTab, setRightTab } from '@/stores/uiStore';
@@ -119,6 +119,49 @@ function Focus({ games }: { games: AnalysedGame[] }) {
   );
 }
 
+function ProgressChart({ games }: { games: AnalysedGame[] }) {
+  const series = useMemo(() => progressSeries(games).filter((p) => p.rating !== null), [games]);
+  if (series.length < 4) return null;
+  const w = 360, h = 90;
+  const vals = series.map((p) => p.rating as number);
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  const span = Math.max(1, hi - lo);
+  const d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${((i / (vals.length - 1)) * w).toFixed(1)},${(h - 6 - ((v - lo) / span) * (h - 12)).toFixed(1)}`).join(' ');
+  return (
+    <div data-testid="strength-progress">
+      <h3>Progress</h3>
+      <svg className="rating-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Rolling strength estimate from ${vals[0]} to ${vals[vals.length - 1]} over ${series.length} games`}>
+        <path d={d} className="g-line" fill="none" />
+        <text x="2" y="10" className="chart-label">{Math.round(hi)}</text>
+        <text x="2" y={h - 2} className="chart-label">{Math.round(lo)}</text>
+      </svg>
+      <p className="muted small-print">Centre of the estimate over a rolling window of 5 games, {series.length} points. It moves with the opponents and positions you got, so look at the direction over many games, not single steps. Same uncalibrated rule as above.</p>
+    </div>
+  );
+}
+
+function TrainMistakes({ games }: { games: AnalysedGame[] }) {
+  const progress = usePuzzle((s) => s.progress);
+  const open = useMemo(() => openMistakeCount(games, progress), [games, progress]);
+  const puzzles = useMemo(() => trainingPuzzles(games, progress), [games, progress]);
+  if (games.length === 0) return null;
+  if (games.every((g) => g.mistakes.length === 0)) {
+    return <p className="muted small-print" data-testid="train-none">Your own mistakes become practice puzzles once a game is analysed (games analysed before this feature have none saved).</p>;
+  }
+  return (
+    <div className="card" data-testid="train-mistakes">
+      <div className="row wrap">
+        <strong>Train my mistakes</strong>
+        <span className="spacer" />
+        <button className="btn small primary" disabled={puzzles.length === 0} onClick={() => { startPuzzleSession(puzzles); setRightTab('puzzles'); setMobileTab('board'); }} data-testid="train-start">
+          {puzzles.length === 0 ? 'All done' : `Start ${puzzles.length}`}
+        </button>
+      </div>
+      <p className="muted small-print">{open} of your worst moves from the recent games are still open. Each puzzle is the position before your mistake; find the move Stockfish preferred. Focus-area mistakes come first, then the biggest losses.</p>
+    </div>
+  );
+}
+
 function Batch() {
   const trackedUser = useTracker((s) => s.username);
   const trackedGames = useTracker((s) => s.games);
@@ -194,7 +237,9 @@ export function StrengthPanel() {
       <header className="panel-head"><h2>Strength</h2></header>
       {saveFailed && <div className="callout warn">These results could not be saved in this browser (storage full or blocked). They stay until you reload.</div>}
       <Estimate games={games} />
+      <ProgressChart games={games} />
       <Focus games={games} />
+      <TrainMistakes games={games} />
       <h3>Add games</h3>
       <Batch />
       <GameList games={games} />
