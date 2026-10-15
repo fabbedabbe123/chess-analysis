@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { currentFen, useGame } from '@/stores/gameStore';
+import { formatClock } from '@/play/clock';
 import { usePlay } from '@/stores/playStore';
 import { useOrientation } from '@/stores/puzzleStore';
 import type { Color } from '@/types/engine';
@@ -32,6 +33,7 @@ function Strip({ color }: { color: Color }) {
   const playPhase = usePlay((s) => s.phase);
   const userColor = usePlay((s) => s.userColor);
   const level = usePlay((s) => s.levelLabel);
+  const clockMs = usePlay((s) => (s.clocks === null ? null : s.clocks[color]));
   const cap = useMemo(() => capturedBy(fen), [fen]);
   const turn: Color = fen.split(' ')[1] === 'b' ? 'b' : 'w';
 
@@ -51,6 +53,7 @@ function Strip({ color }: { color: Color }) {
       {adv > 0 && <span className="adv">+{adv}</span>}
       <span className="spacer" />
       {turn === color && <span className="to-move">to move</span>}
+      {clockMs !== null && <span className={`clock ${clockMs < 20_000 ? 'low' : ''}`} data-testid={`clock-${color}`} aria-label={`${color === 'w' ? 'White' : 'Black'} clock`}>{formatClock(clockMs)}</span>}
     </div>
   );
 }

@@ -5,15 +5,16 @@ import { loadLessons, type Skill } from '@/lessons/lessons';
 import { summarizeHistory } from '@/play/history';
 import { LEVELS, MAX_MOVETIME, MIN_MOVETIME, STRENGTH_DISCLAIMER, specFor, type LevelId } from '@/play/strength';
 import { recommendPuzzles } from '@/play/training';
+import { TIME_CONTROLS, TIME_CONTROL_IDS, type TimeControlId } from '@/play/clock';
 import { loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { parsePgn } from '@/pgn/pgn';
 import { getNode, mainLine } from '@/chess/gameTree';
 import { MiniBoard } from '@/components/MiniBoard';
 import { EvalGraph } from '@/components/ReviewPanel';
-import { gameStore, goTo, loadGame, notify, playLine, useGame } from '@/stores/gameStore';
+import { currentFen, gameStore, goTo, loadGame, notify, playLine, useGame } from '@/stores/gameStore';
 import { clearHistory, useHistory } from '@/stores/historyStore';
 import {
-  analyzeGame, discardSavedSession, exitPlay, resumeSavedGame, useSavedSession, offerDraw, requestHint, resign, retryEngineMove, showAlternative, startGame, takeBack, updatePlaySettings, usePlay, visibleFeedback,
+  analyzeGame, checkPlayablePosition, discardSavedSession, exitPlay, resumeSavedGame, useSavedSession, offerDraw, requestHint, resign, retryEngineMove, showAlternative, startGame, takeBack, updatePlaySettings, usePlay, visibleFeedback,
   type FeedbackMode, type MoveFeedback,
 } from '@/stores/playStore';
 import { startPuzzleSession, usePuzzle } from '@/stores/puzzleStore';
@@ -113,9 +114,25 @@ function Dashboard() {
   );
 }
 
+type StartFrom = 'start' | 'board' | 'fen';
+
 function Setup() {
   const s = usePlay((p) => p.settings);
   const spec = specFor(s.level, s.custom);
+  const [startFrom, setStartFrom] = useState<StartFrom>('start');
+  const [fenText, setFenText] = useState('');
+  const [startError, setStartError] = useState<string | null>(null);
+  const begin = () => {
+    setStartError(null);
+    let fen: string | undefined;
+    if (startFrom === 'board') fen = currentFen(gameStore.get());
+    else if (startFrom === 'fen') fen = fenText.trim();
+    if (fen !== undefined) {
+      const check = checkPlayablePosition(fen);
+      if (!check.ok) { setStartError(check.error); return; }
+    }
+    if (startGame(Math.random, fen)) setMobileTab('board');
+  };
   return (
     <>
       <p className="muted small-print">Play a full game against Stockfish. Your current game is kept and restored when you leave.</p>
@@ -127,6 +144,24 @@ function Setup() {
           </button>
         ))}
       </div>
+      <h3>Start from</h3>
+      <div className="tabs small" role="radiogroup" aria-label="Start position">
+        {([['start', 'Standard start'], ['board', 'Board position'], ['fen', 'FEN']] as const).map(([k, label]) => (
+          <button key={k} role="radio" aria-checked={startFrom === k} className={startFrom === k ? 'active' : ''} onClick={() => { setStartFrom(k); setStartError(null); }} data-testid={`from-${k}`}>{label}</button>
+        ))}
+      </div>
+      {startFrom === 'board' && <p className="muted small-print">Plays on from the position currently shown on the board (your game is kept and restored when you leave).</p>}
+      {startFrom === 'fen' && (
+        <input value={fenText} onChange={(e) => { setFenText(e.target.value); setStartError(null); }} placeholder="Paste a FEN, e.g. a position you want to practise" aria-label="Start FEN" data-testid="from-fen-input" spellCheck={false} />
+      )}
+      {startError && <div className="callout error small" role="alert" data-testid="from-error">{startError}</div>}
+      <h3>Time control</h3>
+      <label className="field"><span>Clock</span>
+        <select value={s.timeControl} onChange={(e) => updatePlaySettings({ timeControl: e.target.value as TimeControlId })} data-testid="opt-tc">
+          {TIME_CONTROL_IDS.map((id) => <option key={id} value={id}>{TIME_CONTROLS[id].label}</option>)}
+        </select>
+      </label>
+      {s.timeControl !== 'none' && <p className="muted small-print">Clocks start after both sides have moved once. If your time runs out you lose; if Stockfish's does, you win (a draw if the other side could not mate anyway). Stockfish also shortens its thinking when it is low on time.</p>}
       <h3>Difficulty (approximate)</h3>
       <div className="level-list" role="radiogroup" aria-label="Difficulty">
         {[...LEVELS, { id: 'custom' as LevelId, label: 'Custom', blurb: 'Choose Skill Level or Elo and thinking time.' }].map((l) => (
@@ -153,7 +188,7 @@ function Setup() {
       <label className="field check"><input type="checkbox" checked={s.practice} onChange={(e) => updatePlaySettings({ practice: e.target.checked })} data-testid="opt-practice" /><span>Practice mode (allow taking moves back)</span></label>
       <CoachingSettings />
       <ResumeBanner />
-      <div className="row"><button className="btn primary" onClick={() => { startGame(); setMobileTab('board'); }} data-testid="play-start">Start game</button></div>
+      <div className="row"><button className="btn primary" onClick={begin} data-testid="play-start">Start game</button></div>
       <Dashboard />
     </>
   );

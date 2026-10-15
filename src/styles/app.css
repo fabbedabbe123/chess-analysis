@@ -471,3 +471,6 @@ fieldset.plain:disabled { opacity: 0.5; }
 .strength-games li.older { opacity: 0.55; }
 .sg-main { flex: 1; min-width: 0; display: grid; }
 .sg-num { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+.clock { font-variant-numeric: tabular-nums; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--surface-2, rgba(127,127,127,.15)); }
+.clock.low { background: var(--danger-bg, rgba(200,50,50,.2)); color: var(--danger, #c0392b); }

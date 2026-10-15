@@ -13,7 +13,7 @@ import { gameStore, playMove, resetGameStoreForTests } from '@/stores/gameStore'
 import { historyStore } from '@/stores/historyStore';
 import {
   initPlay, playBoardLocked, playStore, resetPlayStoreForTests, resign, setPlayEnginesForTests, startGame, takeBack, offerDraw, updatePlaySettings,
-  sanitizePlaySettings, visibleFeedback, retryEngineMove,
+  sanitizePlaySettings, visibleFeedback, retryEngineMove, checkPlayablePosition, sanitizeSession,
 } from '@/stores/playStore';
 import { DEFAULT_ENGINE_OPTIONS } from '@/engine/StockfishEngine';
 import type { EngineCapabilities, SearchRequest, SearchSnapshot, WhiteScore } from '@/types/engine';
@@ -351,5 +351,94 @@ describe('play store', () => {
 
   it('options default values are those of the review (full strength) engine', () => {
     expect(DEFAULT_ENGINE_OPTIONS.skillLevel).toBe(20);
+  });
+});
+
+describe('play from a position and clocks', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    resetGameStoreForTests();
+    resetPlayStoreForTests();
+    historyStore.replace({ records: [], saveFailed: false });
+    initPlay();
+  });
+  afterEach(() => {
+    resetPlayStoreForTests();
+    vi.useRealTimers();
+  });
+  const ROOK_END = '8/8/8/4k3/8/8/8/4K2R w - - 0 1';
+
+  it('refuses illegal and finished positions and starts nothing', () => {
+    expect(checkPlayablePosition('nonsense').ok).toBe(false);
+    expect(checkPlayablePosition('7k/6Q1/6K1/8/8/8/8/8 b - - 0 1')).toMatchObject({ ok: false, error: expect.stringMatching(/checkmate/i) });
+    expect(checkPlayablePosition('7k/8/6QK/8/8/8/8/8 b - - 0 1')).toMatchObject({ ok: false, error: expect.stringMatching(/stalemate/i) });
+    expect(checkPlayablePosition('8/8/8/4k3/8/8/8/4K3 w - - 0 1').ok).toBe(false);
+    expect(checkPlayablePosition(ROOK_END).ok).toBe(true);
+    fakeEngines([]);
+    expect(startGame(Math.random, '7k/6Q1/6K1/8/8/8/8/8 b - - 0 1')).toBe(false);
+    expect(playStore.get().phase).toBe('off');
+  });
+
+  it('starts from a FEN, keeps it in the headers, and lets the engine move first when it is its turn', async () => {
+    fakeEngines(['h1h2']);
+    updatePlaySettings({ color: 'b' });
+    expect(startGame(Math.random, ROOK_END)).toBe(true);
+    const tree0 = gameStore.get().tree;
+    expect(tree0.headers['FEN']).toBe(ROOK_END);
+    expect(tree0.headers['SetUp']).toBe('1');
+    await flush();
+    // White (the engine) moved first from the given position
+    expect(mainLine(gameStore.get().tree)).toHaveLength(2);
+    expect(playStore.get().userColor).toBe('b');
+    expect(getNode(gameStore.get().tree, gameStore.get().tree.rootId).fen).toBe(ROOK_END);
+  });
+
+  it('the user flags: loss normally, draw when the engine could not have mated', async () => {
+    fakeEngines(['e7e5']);
+    updatePlaySettings({ color: 'w', timeControl: '3+2' });
+    startGame();
+    user('e2e4');
+    await flush();
+    expect(playStore.get().clocks).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(190_000);
+    expect(playStore.get().phase).toBe('finished');
+    expect(playStore.get().result).toMatchObject({ outcome: 'loss', reason: 'You ran out of time' });
+    expect(gameStore.get().tree.headers['Result']).toBe('0-1');
+    expect(gameStore.get().tree.headers['TimeControl']).toBe('180+2');
+    expect(gameStore.get().tree.headers['White']).toBe('You'); // finishing must not wipe the other headers
+    resetPlayStoreForTests();
+    fakeEngines(['e5d5']);
+    updatePlaySettings({ color: 'w', timeControl: '5+0' });
+    startGame(Math.random, ROOK_END);
+    user('h1h2');
+    await flush();
+    await vi.advanceTimersByTimeAsync(310_000);
+    expect(playStore.get().result?.outcome).toBe('draw'); // black has a bare king: it cannot checkmate
+  });
+
+  it('clocks do not run before both sides have moved, and the increment is added', async () => {
+    fakeEngines(['e7e5', 'b8c6']);
+    updatePlaySettings({ color: 'w', timeControl: '3+2' });
+    startGame();
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(playStore.get().clocks).toEqual({ w: 180_000, b: 180_000 });
+    user('e2e4');
+    await flush();
+    await vi.advanceTimersByTimeAsync(10_000);
+    user('g1f3');
+    await flush();
+    const c = playStore.get().clocks;
+    expect(c).not.toBeNull();
+    expect(c?.w).toBeGreaterThan(180_000 - 12_000 + 1_500); // about 10 s spent, 2 s added
+    expect(c?.w).toBeLessThan(180_000);
+  });
+
+  it('sanitises the saved session clocks and time control', () => {
+    const pgn = '[Event "x"]\n\n1. e4 e5 *';
+    const ok = sanitizeSession({ pgn, userColor: 'w', level: 'easy', timeControl: '5+0', clocks: { w: 1000, b: 2000 } });
+    expect(ok).toMatchObject({ timeControl: '5+0', clocks: { w: 1000, b: 2000 } });
+    expect(sanitizeSession({ pgn, userColor: 'w', level: 'easy', timeControl: '5+0', clocks: { w: -1, b: 2 } })).toMatchObject({ timeControl: 'none', clocks: null });
+    expect(sanitizeSession({ pgn, userColor: 'w', level: 'easy' })).toMatchObject({ timeControl: 'none', clocks: null });
+    expect(sanitizePlaySettings({ timeControl: 'bogus' }).timeControl).toBe('none');
   });
 });

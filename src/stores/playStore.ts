@@ -6,12 +6,15 @@ import { createTree, getNode, hasNode, lineEnd, mainLine, statusAt } from '@/che
 import { START_FEN } from '@/chess/fen';
 import { createBrowserEngine, type StockfishEngine } from '@/engine/StockfishEngine';
 import { buildCoachReport, type CoachReport } from '@/play/coach';
+import { afterMove, canMate, engineMovetime, newClock, parseTimeControl, pgnTimeControl, remainingAt, TIME_CONTROLS, type ClockState, type TimeControlId } from '@/play/clock';
 import { buildHint, type HintContent } from '@/play/hints';
 import { addGameRecord, attachReview } from '@/stores/historyStore';
 import { DEFAULT_CUSTOM, sanitizeCustom, specFor, strengthFor, type CustomLevel, type LevelId } from '@/play/strength';
 import { openingAt, loadOpeningBook } from '@/analysis/openings';
 import { SearchSupersededError, type Color, type WhiteScore } from '@/types/engine';
 import type { GameTree } from '@/types/game';
+import { Chess } from 'chess.js';
+import { validateAndNormalizeFen } from '@/chess/fen';
 import { storageGet, storageRemove, storageSet } from '@/utils/storage';
 import { exportPgn, parsePgn } from '@/pgn/pgn';
 import { createStore, useStore } from './createStore';
@@ -43,9 +46,10 @@ export interface PlaySettings {
   hints: boolean;
   feedback: FeedbackMode;
   showEval: boolean;
+  timeControl: TimeControlId;
 }
 
-export const DEFAULT_PLAY_SETTINGS: PlaySettings = { level: 'intermediate', custom: DEFAULT_CUSTOM, color: 'w', practice: true, hints: true, feedback: 'every', showEval: true };
+export const DEFAULT_PLAY_SETTINGS: PlaySettings = { level: 'intermediate', custom: DEFAULT_CUSTOM, color: 'w', practice: true, hints: true, feedback: 'every', showEval: true, timeControl: 'none' };
 const SETTINGS_KEY = 'chess-analysis:play-settings:v1';
 
 export function sanitizePlaySettings(raw: unknown): PlaySettings {
@@ -60,6 +64,7 @@ export function sanitizePlaySettings(raw: unknown): PlaySettings {
     hints: typeof r['hints'] === 'boolean' ? r['hints'] : DEFAULT_PLAY_SETTINGS.hints,
     feedback: fb.includes(r['feedback'] as FeedbackMode) ? (r['feedback'] as FeedbackMode) : DEFAULT_PLAY_SETTINGS.feedback,
     showEval: typeof r['showEval'] === 'boolean' ? r['showEval'] : DEFAULT_PLAY_SETTINGS.showEval,
+    timeControl: parseTimeControl(r['timeControl']),
   };
 }
 
@@ -113,6 +118,9 @@ export interface PlayState {
   report: CoachReport | null;
   reviewError: string | null;
   orientation: 'white' | 'black' | null;
+  /** Time control of the running/finished game and the remaining time of both sides (ms); null without a clock. */
+  timeControl: TimeControlId;
+  clocks: { w: number; b: number } | null;
 }
 
 export const FEEDBACK_DEPTH = 12;
@@ -127,6 +135,9 @@ export interface SavedSession {
   level: LevelId;
   plies: number;
   savedAt: number;
+  timeControl: TimeControlId;
+  /** Remaining time (ms) when the game was saved; time spent away is not charged. */
+  clocks: { w: number; b: number } | null;
 }
 
 export function sanitizeSession(raw: unknown): SavedSession | null {
@@ -137,7 +148,11 @@ export function sanitizeSession(raw: unknown): SavedSession | null {
   const parsed = parsePgn(r['pgn']);
   const game = parsed.games[0];
   if (game === undefined) return null;
-  return { pgn: r['pgn'], userColor: r['userColor'], level: r['level'] as LevelId, plies: mainLine(game.tree).length - 1, savedAt: typeof r['savedAt'] === 'number' ? r['savedAt'] : 0 };
+  const c = r['clocks'] as Record<string, unknown> | null | undefined;
+  const tc = parseTimeControl(r['timeControl']);
+  const clocks = tc !== 'none' && c && typeof c['w'] === 'number' && typeof c['b'] === 'number' && c['w'] >= 0 && c['b'] >= 0 && Number.isFinite(c['w']) && Number.isFinite(c['b'])
+    ? { w: Math.min(c['w'], 3_600_000), b: Math.min(c['b'], 3_600_000) } : null;
+  return { pgn: r['pgn'], userColor: r['userColor'], level: r['level'] as LevelId, plies: mainLine(game.tree).length - 1, savedAt: typeof r['savedAt'] === 'number' ? r['savedAt'] : 0, timeControl: clocks === null ? 'none' : tc, clocks };
 }
 
 function readSession(): SavedSession | null {
@@ -159,7 +174,8 @@ function persistSession(): void {
   const { tree } = gameStore.get();
   const plies = mainLine(tree).length - 1;
   if (plies === 0) return;
-  const session: SavedSession = { pgn: exportPgn(tree), userColor: s.userColor, level: s.settings.level, plies, savedAt: Date.now() };
+  const live = clock === null ? null : remainingAt(clock, Date.now());
+  const session: SavedSession = { pgn: exportPgn(tree), userColor: s.userColor, level: s.settings.level, plies, savedAt: Date.now(), timeControl: s.timeControl, clocks: live };
   storageSet(SESSION_KEY, JSON.stringify(session));
   savedSessionStore.set({ session });
 }
@@ -186,6 +202,7 @@ function initial(settings: PlaySettings = load()): PlayState {
   return {
     phase: 'off', settings, userColor: 'w', levelLabel: '', strengthNote: '', thinking: false, tipId: null, message: null, error: null,
     evals: {}, hint: null, feedback: {}, result: null, recordId: null, review: 'idle', report: null, reviewError: null, orientation: null,
+    timeControl: 'none', clocks: null,
   };
 }
 
@@ -228,6 +245,71 @@ const records = new Map<string, PositionRecord>();
 const queue: string[] = [];
 let pumping = false;
 let hintBusy = false;
+
+// ------------------------------------------------------------------- clocks
+let clock: ClockState | null = null;
+let ticker: ReturnType<typeof setInterval> | null = null;
+let lastClockNode: string | null = null;
+
+function stopClock(): void {
+  if (ticker !== null) clearInterval(ticker);
+  ticker = null;
+  clock = null;
+  lastClockNode = null;
+}
+
+function publishClocks(): void {
+  if (clock === null) return;
+  const rem = remainingAt(clock, Date.now());
+  const prev = playStore.get().clocks;
+  if (prev === null || prev.w !== rem.w || prev.b !== rem.b) playStore.set({ clocks: rem });
+}
+
+function startClock(id: TimeControlId, restored: { w: number; b: number } | null): void {
+  stopClock();
+  const tc = TIME_CONTROLS[id];
+  if (tc.id === 'none') {
+    playStore.set({ timeControl: 'none', clocks: null });
+    return;
+  }
+  clock = newClock(tc);
+  if (restored !== null) clock = { ...clock, w: restored.w, b: restored.b };
+  playStore.set({ timeControl: id, clocks: { w: clock.w, b: clock.b } });
+  ticker = setInterval(tick, 200);
+}
+
+/** Stop the clocks and keep the final times on screen. */
+function freezeClock(): void {
+  publishClocks();
+  if (ticker !== null) clearInterval(ticker);
+  ticker = null;
+  clock = null;
+}
+
+function tick(): void {
+  const s = playStore.get();
+  if (clock === null || s.phase !== 'playing') return;
+  publishClocks();
+  const turn = clock.turn;
+  if (turn === null || remainingAt(clock, Date.now())[turn] > 0) return;
+  const { tree } = gameStore.get();
+  if (s.tipId === null || !hasNode(tree, s.tipId)) return;
+  const fen = getNode(tree, s.tipId).fen;
+  const winner: Color = turn === 'w' ? 'b' : 'w';
+  const pgnResult = winner === 'w' ? '1-0' : '0-1';
+  if (!canMate(fen, winner)) finishGame('draw', 'Time ran out, but the opponent cannot checkmate', '1/2-1/2');
+  else if (turn === s.userColor) finishGame('loss', 'You ran out of time', pgnResult);
+  else finishGame('win', 'Stockfish ran out of time', pgnResult);
+}
+
+/** Called when the position changed because a move was played. */
+function clockAfterMove(fen: string, nodeId: string, plies: number): void {
+  if (clock === null || plies === 0 || nodeId === lastClockNode) return;
+  lastClockNode = nodeId;
+  const sideToMove = sideToMoveOf(fen);
+  clock = afterMove(clock, TIME_CONTROLS[playStore.get().timeControl], sideToMove === 'w' ? 'b' : 'w', sideToMove, plies, Date.now());
+  publishClocks();
+}
 
 const nodeCount = (tree: GameTree): number => Object.keys(tree.nodes).length;
 function viaGame<T>(fn: () => T): T {
@@ -398,10 +480,11 @@ function finishGame(outcome: GameResultInfo['outcome'], reason: string, pgnResul
   if (s.phase !== 'playing') return;
   generation += 1; // drop any search still in flight
   playEngine?.stop();
+  freezeClock();
   clearSession();
   setTacticSquares([]);
   const text = outcome === 'win' ? `You won — ${reason}` : outcome === 'loss' ? `You lost — ${reason}` : `Draw — ${reason}`;
-  viaGame(() => updateHeaders({ Result: pgnResult, Termination: reason }));
+  viaGame(() => updateHeaders({ ...gameStore.get().tree.headers, Result: pgnResult, Termination: reason })); // updateHeaders replaces the whole set
   const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
   playStore.set({ phase: 'finished', thinking: false, result: { outcome, reason, text }, recordId: id, hint: null, message: null });
   const { tree } = gameStore.get();
@@ -451,6 +534,7 @@ function advance(): void {
   if (!hasNode(tree, s.tipId)) return;
   const fen = getNode(tree, s.tipId).fen;
   enqueue(fen);
+  clockAfterMove(fen, s.tipId, mainLine(tree).length - 1);
   if (checkEnd()) return;
   persistSession();
   if (sideToMoveOf(fen) !== s.userColor) void engineMove(generation);
@@ -469,8 +553,9 @@ async function engineMove(gen: number): Promise<void> {
     if (gen !== generation) return;
     const spec = specFor(s0.settings.level, s0.settings.custom);
     const st = strengthFor(spec, engine.getCapabilities(), { hashMb: Math.min(32, settingsStore.get().hashMb) });
+    const limits = clock === null ? st.limits : { ...st.limits, movetimeMs: engineMovetime(st.limits.movetimeMs ?? spec.movetimeMs, remainingAt(clock, Date.now())[engineColorOf(s0)], TIME_CONTROLS[s0.timeControl].incMs) };
     const started = Date.now();
-    const snapshot = await engine.search({ fen, multiPv: 1, limits: st.limits, options: st.options, newGame: firstEngineSearch }).result;
+    const snapshot = await engine.search({ fen, multiPv: 1, limits, options: st.options, newGame: firstEngineSearch }).result;
     firstEngineSearch = false;
     if (gen !== generation) return;
     const uci = snapshot.bestMove ?? snapshot.lines[0]?.pv[0] ?? null;
@@ -550,7 +635,28 @@ export function initPlay(): void {
 
 // --------------------------------------------------------------------- actions
 
-export function startGame(randomFn: () => number = Math.random): void {
+export type PositionCheck = { ok: true; fen: string } | { ok: false; error: string };
+
+/** A start position for Play mode must be a legal position in which the game is not already over. */
+export function checkPlayablePosition(fen: string): PositionCheck {
+  const checked = validateAndNormalizeFen(fen);
+  if (!checked.ok) return { ok: false, error: checked.error };
+  const chess = new Chess(checked.fen);
+  if (chess.isCheckmate()) return { ok: false, error: 'That position is already checkmate.' };
+  if (chess.isStalemate()) return { ok: false, error: 'That position is already stalemate.' };
+  if (chess.isInsufficientMaterial()) return { ok: false, error: 'That position is a draw by insufficient material.' };
+  if (chess.isDrawByFiftyMoves()) return { ok: false, error: 'That position is already drawn by the fifty-move rule.' };
+  return { ok: true, fen: checked.fen };
+}
+
+/** Starts a game (from the standard position, or from `startFen`). Returns false, changing nothing, when `startFen` is not playable. */
+export function startGame(randomFn: () => number = Math.random, startFen?: string): boolean {
+  let fenToUse = START_FEN;
+  if (startFen !== undefined) {
+    const check = checkPlayablePosition(startFen);
+    if (!check.ok) return false;
+    fenToUse = check.fen;
+  }
   const prev = playStore.get();
   clearSession();
   generation += 1;
@@ -567,14 +673,15 @@ export function startGame(randomFn: () => number = Math.random): void {
   const userColor: Color = st.color === 'random' ? (randomFn() < 0.5 ? 'w' : 'b') : st.color;
   const spec = specFor(st.level, st.custom);
   const headers = {
-    Event: 'Play vs Stockfish',
+    Event: fenToUse === START_FEN ? 'Play vs Stockfish' : 'Play vs Stockfish (from a position)',
+    ...(st.timeControl !== 'none' ? { TimeControl: pgnTimeControl(TIME_CONTROLS[st.timeControl]) } : {}),
     Site: 'Chess Analysis',
     Date: new Date().toISOString().slice(0, 10).replace(/-/g, '.'),
     White: userColor === 'w' ? 'You' : `Stockfish (${spec.label})`,
     Black: userColor === 'b' ? 'You' : `Stockfish (${spec.label})`,
     Result: '*',
   };
-  const tree = createTree(START_FEN, headers);
+  const tree = createTree(fenToUse, headers);
   stopAnalysis();
   setTacticSquares([]);
   viaGame(() => gameStore.set({ tree, currentId: tree.rootId, redoStack: [], original: null }));
@@ -582,9 +689,11 @@ export function startGame(randomFn: () => number = Math.random): void {
   firstEngineSearch = true;
   playStore.replace({
     ...initial(st), phase: 'playing', userColor, levelLabel: spec.label, tipId: tree.rootId, orientation: userColor === 'w' ? 'white' : 'black',
-    strengthNote: strengthFor(spec, null).note, message: userColor === 'w' ? 'Your move.' : 'Stockfish plays first…',
+    strengthNote: strengthFor(spec, null).note, message: sideToMoveOf(fenToUse) === userColor ? 'Your move.' : 'Stockfish plays first…',
   });
+  startClock(st.timeControl, null);
   advance();
+  return true;
 }
 
 /** Continue the game saved by a previous visit: park the current game, rebuild the position, let the engine move if it is its turn. */
@@ -619,11 +728,13 @@ export function resumeSavedGame(): boolean {
     ...initial({ ...st, level: saved.level }), phase: 'playing', userColor: saved.userColor, levelLabel: spec.label, tipId: tip,
     orientation: saved.userColor === 'w' ? 'white' : 'black', strengthNote: strengthFor(spec, null).note, message: 'Game resumed.',
   });
+  startClock(saved.timeControl, saved.clocks);
   advance();
   return true;
 }
 
 export function exitPlay(): void {
+  stopClock();
   generation += 1;
   cancelReview();
   disposePlayEngine();
@@ -690,6 +801,8 @@ export function takeBack(): boolean {
   setTacticSquares([]);
   const fb = { ...s.feedback };
   for (const id of Object.keys(fb)) if (!hasNode(gameStore.get().tree, id)) delete fb[id];
+  if (clock !== null && clock.turn !== null) clock = { ...clock, turn: s.userColor, since: Date.now() };
+  lastClockNode = parent;
   playStore.set({ tipId: parent, thinking: false, hint: null, feedback: fb, error: null, message: 'Move taken back. Your move.' });
   enqueue(getNode(gameStore.get().tree, parent).fen);
   return true;
@@ -773,6 +886,7 @@ export function resetPlayStoreForTests(): void {
   records.clear();
   pumping = false;
   hintBusy = false;
+  stopClock();
   disposePlayEngine();
   opponentFactory = createBrowserEngine;
   analysisProvider = ensureEngine;
