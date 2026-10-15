@@ -7,7 +7,7 @@ A browser chess analysis platform powered by real Stockfish (WebAssembly, in a W
 ```bash
 npm install          # also copies the Stockfish files from node_modules into public/engine (postinstall)
 npm run dev          # dev server, http://localhost:5173
-npm test             # 382 unit tests (vitest)
+npm test             # unit tests (vitest)
 npm run typecheck    # strict TypeScript (TypeScript 7)
 npm run lint         # ESLint (typescript-eslint runs on the TS 6 API alias, see below)
 npm run build        # typecheck + production build into dist/
@@ -48,7 +48,7 @@ The review and the move list use ten grades: Brilliant (!!), Great (!), Best, Ex
 
 ## Puzzle mode
 
-The Puzzles tab bundles 72 puzzles (`public/data/puzzles.json`) that were generated from weak self-play positions and verified with Stockfish (all 72 re-checked at depth 20). Types: mate in 1-3, tactic, defence. Difficulty = how shallow the engine finds the first move. Wrong moves are judged by Stockfish and taken back; a different move that is as good as the stored one is accepted. Hints, show-solution, streak and progress (localStorage) are included. "Practice from your game" turns review mistakes into puzzles. Your game is parked and restored when you exit.
+The Puzzles tab bundles 79 puzzles (`public/data/puzzles.json`) that were generated from weak self-play positions and verified with Stockfish (re-checked at depth 20: 76 of 79 pass the strict uniqueness check; three older ones, p065, p070 and p072, have an alternative within a few tenths of a pawn in the latest run, which the app handles by accepting equally good moves; 4 newly generated candidates that failed were dropped). Types: mate in 1-3, tactic, defence. Difficulty = how shallow the engine finds the first move. Wrong moves are judged by Stockfish and taken back; a different move that is as good as the stored one is accepted. Hints, show-solution, streak and progress (localStorage) are included. "Practice from your game" turns review mistakes into puzzles. Your game is parked and restored when you exit.
 
 ```bash
 node scripts/generate-puzzles.mjs [target] [maxMinutes]   # MERGE=1 to top up
@@ -75,9 +75,25 @@ The Strength tab turns analysed games into an estimate of your playing strength 
 
 Checks: `tests/strength.test.ts` (maths, bands, focus, plan, sanitising) and `python3 e2e/strength.py` (real Stockfish; uses synthetic 44-ply games from `e2e/strength_pgns.json`, and a seeded tracker for the batch because the Chess.com API is not reachable from the build sandbox).
 
+## More features (added in the third round)
+
+- **Lichess tracking**: the Player tab has a Chess.com / Lichess switch. Lichess games come from `GET /api/games/user/{name}` (NDJSON, `pgnInJson`, `opening`), 100 per page, "Load 100 older games" pages back with `until`. Variants and unfinished games are skipped and counted. Tracked Lichess games can be analysed in the Strength tab like Chess.com ones. Checked against the live API in a real browser (response shape and CORS); the UI flow is tested with a mocked network (`e2e/lichess.py`).
+- **Analyse from a link**: the Import dialog accepts `https://lichess.org/<id>` (fetches the PGN from `lichess.org/game/export/<id>`). Chess.com game links cannot be fetched from a browser (the endpoint sends no CORS headers), so the dialog says so instead of pretending.
+- **Train my mistakes**: every analysed game keeps its (up to 8) worst moves; the Strength tab turns the open ones into puzzles (position before your move, find Stockfish's move), focus-area mistakes first.
+- **Repertoire and book exits** (Player tab): per colour and opening, games, score, the average half-move where the game left the bundled opening book, how often *you* left it first and your most common first non-book move. Offline, no engine.
+- **Progress chart** (Strength tab): rolling 5-game strength estimate over time. Same uncalibrated rule as the estimate.
+- **More lessons**: mating patterns (smothered, Arabian, Anastasia) and pawn breakthrough, engine-verified like the others.
+- **Spaced repetition**: bundled/online puzzles come back after 1, 3, 7, 16, 35 days when solved cleanly; any miss, hint or shown solution resets to 1 day. "Review due" starts a session. Lesson exercises and one-off mistake puzzles are not scheduled (they cannot be rebuilt from an id).
+- **Lichess puzzles (optional, online)**: "Get 20 Lichess puzzles" fetches `/api/puzzle/batch/mix`, replays `game.pgn` to the puzzle position, validates every puzzle for legality and keeps up to 300 in localStorage. The puzzle database is CC0 (https://database.lichess.org/#puzzles). They are not generated or verified by this app's engine, and the button simply reports an error if the network or the hosting page blocks the request.
+- **Play from a position**: standard start, the current board position, or a pasted FEN (rejected if illegal or already over). The FEN/SetUp headers are kept so the game can be resumed, saved and reviewed.
+- **Clocks**: none, 3+2, 5+0, 10+0 or 15+10. Clocks start once both sides have moved; increment after each move; a flag loses unless the other side could not checkmate (simplified rule, see `canMate`), in which case it is a draw. Stockfish limits its thinking time by what it has left. A resumed game restores the clock values saved at the last move (time away is not charged).
+- **Backup**: Settings → Your data exports/imports everything stored by the app (the Lichess token is never exported).
+
+Checks: `tests/lichess.test.ts`, `tests/lichessPuzzles.test.ts`, `tests/repertoire.test.ts`, `tests/clock.test.ts`, extra cases in `tests/strength.test.ts` and `tests/play.test.ts`; browser flows `e2e/lichess.py`, `e2e/puzzles_srs.py`, `e2e/play_position_clock.py`, `e2e/backup.py`; CI runs the e2e scripts (`.github/workflows/ci.yml`, job `e2e`).
+
 ## Known limits
 
-- Standard chess only (no Chess960). Tactics panel is a heuristic (hanging pieces, absolute pins, simple forks); puzzles are a small bundled set (72) generated by Stockfish, not a large database.
+- Standard chess only (no Chess960). Tactics panel is a heuristic (hanging pieces, absolute pins, simple forks); puzzles are a small bundled set (79) generated by Stockfish, not a large database.
 - The Lichess explorer client is unit-tested against mocked responses but could not be exercised live from the build sandbox.
 
 ## License
