@@ -65,6 +65,8 @@ export function ChessBoard() {
   const requestedFen = useEngine((s) => s.requestedFen);
 
   const tacticSquares = useUi((s) => s.tacticSquares);
+  // Engine arrows belong to the analysis tabs; on Strength / My games / Learn they would only be noise.
+  const analyseTab = useUi((s) => ['engine', 'review', 'openings', 'tactics'].includes(s.rightTab));
   const idRef = useRef(currentId);
   idRef.current = currentId;
   const host = useRef<HTMLDivElement>(null);
@@ -149,7 +151,7 @@ export function ChessBoard() {
 
   // Engine arrows (never drawn for another position than the one displayed).
   const engineArrows = useMemo<DrawShape[]>(() => {
-    if (!settings.showEngineArrows || snapshot === null || requestedFen !== fen || snapshot.fen !== fen || gameOver) return [];
+    if (!analyseTab || !settings.showEngineArrows || snapshot === null || requestedFen !== fen || snapshot.fen !== fen || gameOver) return [];
     const arrows: DrawShape[] = [];
     snapshot.lines.slice(0, 3).forEach((line, i) => {
       const first = line.pv[0] !== undefined ? splitUci(line.pv[0]) : null;
@@ -162,7 +164,7 @@ export function ChessBoard() {
       });
     });
     return arrows;
-  }, [snapshot, requestedFen, fen, settings.showEngineArrows, gameOver]);
+  }, [analyseTab, snapshot, requestedFen, fen, settings.showEngineArrows, gameOver]);
 
   const autoShapes = useMemo<DrawShape[]>(
     () => [...engineArrows, ...tacticSquares.map((sq): DrawShape => ({ orig: sq as Key, brush: 'yellow' }))],

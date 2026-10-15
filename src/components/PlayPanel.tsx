@@ -165,9 +165,9 @@ function Setup() {
       </label>
       {s.timeControl !== 'none' && <p className="muted small-print">Clocks start after both sides have moved once. If your time runs out you lose; if Stockfish's does, you win (a draw if the other side could not mate anyway). Stockfish also shortens its thinking when it is low on time.</p>}
       <h3>Difficulty (approximate)</h3>
-      <div className="level-list" role="radiogroup" aria-label="Difficulty">
+      <div className="level-list compact" role="radiogroup" aria-label="Difficulty">
         {[...LEVELS, { id: 'custom' as LevelId, label: 'Custom', blurb: 'Choose Skill Level or Elo and thinking time.' }].map((l) => (
-          <button key={l.id} role="radio" aria-checked={s.level === l.id} className={`level ${s.level === l.id ? 'active' : ''}`} onClick={() => updatePlaySettings({ level: l.id })} data-testid={`level-${l.id}`}>
+          <button key={l.id} role="radio" aria-checked={s.level === l.id} className={`level ${s.level === l.id ? 'active' : ''}`} onClick={() => updatePlaySettings({ level: l.id })} data-testid={`level-${l.id}`} title={l.blurb}>
             <strong>{l.label}</strong><span className="muted small-print">{l.blurb}</span>
           </button>
         ))}
@@ -190,7 +190,7 @@ function Setup() {
       <label className="field check"><input type="checkbox" checked={s.practice} onChange={(e) => updatePlaySettings({ practice: e.target.checked })} data-testid="opt-practice" /><span>Practice mode (allow taking moves back)</span></label>
       <CoachingSettings />
       <ResumeBanner />
-      <div className="row"><button className="btn primary" onClick={begin} data-testid="play-start">Start game</button></div>
+      <div className="sticky-start"><button className="btn primary" onClick={begin} data-testid="play-start">Start game</button></div>
       <Dashboard />
     </>
   );

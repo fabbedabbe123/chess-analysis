@@ -166,16 +166,13 @@ export function ReviewPanel() {
           <div className="accuracy-row">
             {(['w', 'b'] as const).map((c) => (
               <div key={c} className="accuracy">
-                <span className="label">{c === 'w' ? tree.headers['White'] ?? 'White' : tree.headers['Black'] ?? 'Black'}</span>
+                <span className="label">{c === 'w' ? tree.headers['White'] ?? 'White' : tree.headers['Black'] ?? 'Black'} · accuracy (estimate)</span>
                 <strong data-testid={`accuracy-${c}`}>{formatPercent(summary.accuracy[c])}</strong>
               </div>
             ))}
           </div>
           <p className="review-headline" data-testid="review-headline">{headline(summary, tree.headers['White'] ?? 'White', tree.headers['Black'] ?? 'Black')}</p>
           <CountForStrength result={result} stale={stale} />
-          <p className="muted small-print">
-            Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
-          </p>
           <EvalGraph values={result.whiteWinGraph} ids={line} currentPly={currentPly} />
           <table className="counts">
             <thead><tr><th></th><th>White</th><th>Black</th></tr></thead>
@@ -194,21 +191,29 @@ export function ReviewPanel() {
           </table>
 
           <details className="grade-legend">
-            <summary>How the grades are decided</summary>
+            <summary>How accuracy and the grades are decided</summary>
+            <p className="muted small-print">
+              Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
+            </p>
             <p className="muted small-print">These labels follow the familiar Chess.com scheme, but the rules are our own approximation: Chess.com's exact algorithm is not public. Everything comes from Stockfish's evaluations at the review depth.</p>
             <ul className="learn-ideas">
               {GRADE_ORDER.map((g) => <li key={g}><span className={`pill cls-${g}`}>{GRADE_LABEL[g]}</span> {GRADE_HELP[g]}</li>)}
             </ul>
           </details>
-          <h3>Critical moments</h3>
+          <details className="fold" open>
+          <summary>Critical moments</summary>
           {summary.criticalMoments.length === 0 ? <p className="muted pad">None found – a clean game.</p> : (
             <ul className="moments">{summary.criticalMoments.map((m) => <MomentRow key={m.nodeId} m={m} />)}</ul>
           )}
-          <h3>Biggest swings</h3>
+          </details>
+          <details className="fold">
+          <summary>Biggest swings</summary>
           <ul className="moments">
             {summary.biggestSwings.filter((m) => Math.abs(m.swing) >= 1).map((m) => <MomentRow key={m.nodeId} m={m} label={`White's win chance ${m.swing > 0 ? '+' : ''}${m.swing.toFixed(0)}%`} />)}
           </ul>
-          <h3>Study positions</h3>
+          </details>
+          <details className="fold">
+          <summary>Study positions</summary>
           <p className="muted small-print">Positions from your own mistakes: the position <em>before</em> the move, where the engine knows a better one.</p>
           {summary.studyPositions.length === 0 ? <p className="muted pad">No mistakes to study.</p> : (
             <ul className="moments">
@@ -225,6 +230,7 @@ export function ReviewPanel() {
               })}
             </ul>
           )}
+          </details>
           <button className="btn small" disabled={puzzleOpen || playOpen} onClick={continueFromHere} title="Start a new analysis game from the selected position">
             Start new game from selected position
           </button>

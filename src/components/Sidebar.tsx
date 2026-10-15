@@ -16,7 +16,7 @@ import {
 import { deleteSavedGame, saveGameToLibrary, useLibrary } from '@/stores/libraryStore';
 import { updateSettings, useSetting } from '@/stores/settingsStore';
 import { goHome } from '@/stores/viewStore';
-import { confirmThen, openDialog, setMobileTab, setRightTab } from '@/stores/uiStore';
+import { confirmThen, openDialog } from '@/stores/uiStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { parsePgn } from '@/pgn/pgn';
@@ -80,7 +80,6 @@ export function Sidebar() {
           ＋ New game
         </button>
         <button className="btn" onClick={() => openDialog('import')} data-testid="open-import">⇪ Import PGN / FEN</button>
-        <button className="btn" onClick={() => { setRightTab('player'); setMobileTab('player'); }} data-testid="open-my-games">♟ My games (Chess.com / Lichess)</button>
         {changed && (
           <button className="btn" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
             ↺ Restore imported game
@@ -92,10 +91,10 @@ export function Sidebar() {
       </div>
 
       <h3>Export</h3>
-      <div className="stack">
+      <div className="export-grid">
         <button className="btn" onClick={() => void copy('FEN', currentFen())}>Copy FEN</button>
         <button className="btn" onClick={() => void copy('PGN', currentPgn())}>Copy PGN</button>
-        <button className="btn" onClick={() => downloadText('game.pgn', currentPgn(), 'application/x-chess-pgn')}>Download PGN</button>
+        <button className="btn wide" onClick={() => downloadText('game.pgn', currentPgn(), 'application/x-chess-pgn')}>Download PGN</button>
       </div>
 
       <h3>Load position (FEN)</h3>

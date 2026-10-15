@@ -33,7 +33,7 @@ import { useView } from '@/stores/viewStore';
  * The right-hand side has four sections; sections with more than one panel show a second row of sub-tabs.
  * (Fewer tabs at once: what you want to do first, then which tool.)
  */
-const SECTIONS: { id: string; label: string; hint: string; tabs: { id: RightTab; label: string }[] }[] = [
+const SECTIONS: { id: string; label: string; short?: string; hint: string; tabs: { id: RightTab; label: string }[] }[] = [
   {
     id: 'analyse', label: 'Analyse', hint: 'Look at a game or position',
     tabs: [
@@ -51,7 +51,7 @@ const SECTIONS: { id: string; label: string; hint: string; tabs: { id: RightTab;
     ],
   },
   {
-    id: 'games', label: 'My games', hint: 'Your Chess.com / Lichess games and strength',
+    id: 'games', label: 'My games', short: 'Games', hint: 'Your Chess.com / Lichess games and strength',
     tabs: [
       { id: 'player', label: 'Player' },
       { id: 'strength', label: 'Strength' },
@@ -107,7 +107,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
+    <div data-section={section?.id ?? ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
         <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Show side menu' : 'Hide side menu'} title={collapsed ? 'Show side menu' : 'Hide side menu'} onClick={toggleSidebar}>
           {collapsed ? '»' : '« Hide menu'}
@@ -132,7 +132,7 @@ export default function App() {
             <h2>Moves</h2>
             <button className="btn small" onClick={toggleMoves} aria-expanded={!movesCollapsed} aria-label={movesCollapsed ? 'Show moves' : 'Hide moves'} title={movesCollapsed ? 'Show moves' : 'Hide moves to get a bigger board'} data-testid="moves-toggle">{movesCollapsed ? '▴ Show' : '▾ Hide'}</button>
           </div>
-          {!movesCollapsed && <><MoveList /><MoveTools /></>}
+          {!movesCollapsed && <div className="moves-scroll"><MoveList /><MoveTools /></div>}
         </section>
       </main>
 
@@ -142,9 +142,10 @@ export default function App() {
             {SECTIONS.map((sec) => {
               const active = sec.tabs.some((t) => t.id === rightTab);
               return (
-                <button key={sec.id} role="tab" aria-selected={active} className={active ? 'active' : ''} title={sec.hint}
+                <button key={sec.id} role="tab" aria-selected={active} aria-label={sec.label} className={active ? 'active' : ''} title={sec.hint}
                   onClick={() => { const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id; setRightTab(t); setMobileTab(t); }}>
-                  {sec.label}
+                  <span className="lbl-full" aria-hidden="true">{sec.label}</span>
+                  {sec.short !== undefined && <span className="lbl-short" aria-hidden="true">{sec.short}</span>}
                 </button>
               );
             })}

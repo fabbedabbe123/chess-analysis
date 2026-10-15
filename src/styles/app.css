@@ -90,9 +90,10 @@ textarea { width: 100%; resize: vertical; }
   gap: 14px;
   height: 100%;
   padding: 12px;
-  --board: min(calc(100vh - 400px), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px));
+  --board: min(calc(100vh - var(--below)), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px));
 }
 .col-left, .col-right { min-height: 0; min-width: 0; }
+.app { --verdict-h: clamp(120px, 21vh, 190px); --below: calc(296px + var(--verdict-h)); }
 .col-left { overflow-y: auto; }
 .col-center { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; overflow: auto; }
 .col-right {
@@ -322,7 +323,7 @@ kbd { background: var(--bg-3); border: 1px solid var(--line); border-radius: 4px
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
-  .app { grid-template-columns: 190px minmax(0, 1fr) 340px; --board: min(calc(100vh - 250px), 600px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
+  .app { grid-template-columns: 190px minmax(0, 1fr) 340px; --board: min(calc(100vh - var(--below) + 60px), 600px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
 }
 @media (max-width: 900px) {
   html, body, #root { height: auto; }
@@ -422,12 +423,12 @@ fieldset.plain:disabled { opacity: 0.5; }
 /* ---------- collapsible left column (desktop / tablet) ---------- */
 .side-toggle { width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px; font-size: 12px; margin-bottom: 8px; }
 @media (min-width: 901px) {
-  .app.side-collapsed { grid-template-columns: 40px minmax(0, 1fr) 410px; --board: min(calc(100vh - 250px), 760px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
+  .app.side-collapsed { grid-template-columns: 40px minmax(0, 1fr) 410px; --board: min(calc(100vh - var(--below) + 60px), 760px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
   .app.side-collapsed .side-body { display: none; }
   .app.side-collapsed .side-toggle { padding: 8px 0; }
 }
 @media (min-width: 901px) and (max-width: 1180px) {
-  .app.side-collapsed { grid-template-columns: 40px minmax(0, 1fr) 340px; --board: min(calc(100vh - 250px), 700px, calc(100vw - 40px - 340px - 3 * 14px - 24px - 56px)); }
+  .app.side-collapsed { grid-template-columns: 40px minmax(0, 1fr) 340px; --board: min(calc(100vh - var(--below) + 60px), 700px, calc(100vw - 40px - 340px - 3 * 14px - 24px - 56px)); }
 }
 @media (max-width: 900px) { .side-toggle { display: none; } }
 
@@ -482,14 +483,14 @@ fieldset.plain:disabled { opacity: 0.5; }
 /* ---------- round 4: moves under the board, sections, welcome, help ---------- */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: -1px; padding: 0; border: 0; }
 @media (min-width: 901px) {
-  .app { --board: min(calc(100vh - 400px), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
+  .app { --board: min(calc(100vh - var(--below)), 640px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
   .col-center { justify-content: flex-start; }
-  .col-center .moves-panel { width: calc(var(--board) + 46px); flex: 1 1 auto; min-height: 120px; max-height: 260px; margin-left: 0; align-self: center; padding: 6px 10px 8px; }
-  .app.side-collapsed { --board: min(calc(100vh - 400px), 760px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
+  .col-center .moves-panel { width: calc(var(--board) + 46px); flex: 1 1 0; min-height: 96px; max-height: 320px; margin-left: 0; align-self: center; padding: 6px 10px 8px; }
+  .app.side-collapsed { --board: min(calc(100vh - var(--below)), 760px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
 }
 @media (min-width: 901px) and (max-width: 1180px) {
-  .app { --board: min(calc(100vh - 400px), 600px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
-  .app.side-collapsed { --board: min(calc(100vh - 400px), 700px, calc(100vw - 40px - 340px - 3 * 14px - 24px - 56px)); }
+  .app { --board: min(calc(100vh - var(--below)), 600px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
+  .app.side-collapsed { --board: min(calc(100vh - var(--below)), 700px, calc(100vw - 40px - 340px - 3 * 14px - 24px - 56px)); }
 }
 .col-center .moves-panel .move-list { flex: 1 1 auto; min-height: 44px; overflow-y: auto; }
 .col-center .moves-panel .move-tools { margin-top: 4px; }
@@ -511,7 +512,7 @@ fieldset.plain:disabled { opacity: 0.5; }
 .howto dd { margin: 2px 0 0; color: var(--muted); }
 .steps { padding-left: 18px; }
 @media (max-width: 900px) { .col-center .moves-panel { max-height: 40vh; } .help-btn { display: none; } }
-.errors-only { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin: 0 0 4px; color: var(--muted); }
+.errors-only { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin: 0 0 2px; color: var(--muted); position: sticky; top: 0; z-index: 1; background: var(--bg-2); padding: 1px 0; }
 .pill.forced { color: var(--info, #6aa7ff); border-color: currentColor; }
 .review-headline { margin: 6px 0; font-weight: 600; }
 @media (min-width: 901px) {
@@ -520,12 +521,12 @@ fieldset.plain:disabled { opacity: 0.5; }
 .moves-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
 .moves-head h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 @media (min-width: 901px) {
-  .app.moves-collapsed { --board: min(calc(100vh - 250px), 700px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
-  .app.moves-collapsed.side-collapsed { --board: min(calc(100vh - 250px), 800px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
+  .app.moves-collapsed { --board: min(calc(100vh - var(--below) + 60px), 700px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
+  .app.moves-collapsed.side-collapsed { --board: min(calc(100vh - var(--below) + 60px), 800px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
   .app.moves-collapsed .col-center .moves-panel { flex: 0 0 auto; min-height: 0; max-height: none; }
 }
 @media (min-width: 901px) and (max-width: 1180px) {
-  .app.moves-collapsed { --board: min(calc(100vh - 250px), 640px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
+  .app.moves-collapsed { --board: min(calc(100vh - var(--below) + 60px), 640px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
 }
 @media (max-width: 900px) {
   .col-right .tabs { display: flex; }
@@ -558,3 +559,52 @@ fieldset.plain:disabled { opacity: 0.5; }
 .brand-btn:hover strong { color: var(--accent); }
 @media (max-width: 760px) { .home-cards { grid-template-columns: 1fr; } .home-card { min-height: 0; } .home { place-items: start center; padding-top: 24px; } .home-brand h1 { font-size: 28px; } }
 @media (prefers-reduced-motion: reduce) { .home-card { transition: none; } }
+
+/* ---------- round 5: the centre column always fits the window ---------- */
+@media (min-width: 901px) {
+  .col-center { min-height: 0; overflow: hidden; }
+  .col-center > * { flex-shrink: 0; }
+  .col-center > .moves-panel { flex-shrink: 1; }
+  .col-center .verdict { width: calc(var(--board) + 46px); max-height: var(--verdict-h); display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+  .col-center .verdict .why-list { flex: 1 1 auto; min-height: 36px; overflow-y: auto; }
+  .col-center .verdict .verdict-main, .col-center .verdict .verdict-better, .col-center .verdict .verdict-nav { flex: none; }
+  /* the move verdict belongs to the analysis tabs */
+  .app:not([data-section='analyse']) .col-center .verdict { display: none; }
+  /* errors-only toggle sits in the Moves header, not on top of it */
+  .moves-head { gap: 10px; }
+}
+/* the eval bar and engine pictures only mean something while analysing */
+.app[data-section='games'] .eval-bar, .app[data-section='train'] .eval-bar { visibility: hidden; }
+@media (max-width: 900px) { .app:not([data-section='analyse']):not(.mobile-board) .verdict { display: none; } }
+
+.export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.export-grid .btn { text-align: center; padding: 6px 8px; }
+.export-grid .wide { grid-column: 1 / -1; }
+.sidebar h3 { margin: 10px 0 4px; }
+
+/* play setup: compact difficulty grid + always-visible Start button */
+.level-list.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.level-list.compact .level { padding: 7px 10px; min-width: 0; }
+.level-list.compact .level > span { display: none; }
+.sticky-start { position: sticky; bottom: -1px; z-index: 2; background: var(--bg-2); padding: 8px 0 6px; margin-top: 8px; border-top: 1px solid var(--line); }
+.sticky-start .btn { width: 100%; text-align: center; padding: 9px 12px; }
+
+/* help button: a small round icon, clearly not a tab; short section labels when the right column is narrow */
+.help-btn { flex: 0 0 26px; width: 26px; height: 26px; margin-left: 4px; background: transparent; border: 1.5px solid var(--muted); color: var(--muted); font-size: 13px; line-height: 1; padding: 0; }
+.help-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lbl-short { display: none; }
+@media (min-width: 901px) and (max-width: 1180px) { .lbl-full { display: none; } .lbl-short { display: inline; } }
+
+/* review: foldable sections */
+details.fold { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
+details.fold > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; margin-bottom: 6px; }
+details.fold:not([open]) > summary { margin-bottom: 0; }
+.review-panel .grade-legend { margin: 8px 0 0; }
+
+/* the move list and the annotation tools scroll together, so the list gets all the room */
+.moves-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.moves-scroll .move-list, .col-center .moves-panel .moves-scroll .move-list { flex: none; overflow: visible; min-height: 0; }
+.moves-scroll .move-tools { margin-top: 6px; }
+.col-right > .tabs .tab-row.primary button.help-btn { flex: 0 0 26px; width: 26px; padding: 0; background: transparent; color: var(--muted); font-size: 13px; }
+.col-right > .tabs .tab-row.primary button.help-btn:hover { color: var(--accent); background: transparent; }
+@media (max-width: 900px) { .moves-scroll { max-height: 40vh; } }

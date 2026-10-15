@@ -87,7 +87,15 @@ Opening the site with nothing to continue shows a calm start page (Analyse a gam
 - After a review the board jumps to your first error; the review starts with a one-line summary per side; best moves with big swings are marked "Forced sequence".
 - "Show errors only" in the move list; the game result is shown at the end of the game.
 - Import accepts PGN tags written on one line and refuses to "load" a game with no readable moves.
-- Sidebar: "My games" shortcut; settings buttons stay visible on short screens. Fixed SVG NaN console errors on mobile.
+- Sidebar: settings buttons stay visible on short screens. Fixed SVG NaN console errors on mobile.
+
+## Layout round (fifth)
+
+- The centre column always fits the window (checked at 1440x900 and 1280x720): the board size reserves room for the move verdict and the move list; reasons scroll inside the verdict card; the move list and annotation tools scroll together.
+- The move verdict only shows on the Analyse tabs; engine arrows and the eval bar are hidden on Train / My games.
+- Play setup: difficulty as a compact grid (details shown for the selected level) and a Start button that stays visible.
+- Sidebar: duplicate "My games" button removed, Export as a 2-column grid. "?" is a small round icon; "My games" shortens to "Games" in narrow layouts.
+- Game review: critical moments open, biggest swings / study positions / accuracy explanation folded.
 
 ## More features (added in the third round)
 
