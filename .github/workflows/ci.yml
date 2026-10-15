@@ -44,3 +44,4 @@ jobs:
       - run: python3 e2e/move_verdict.py
       - run: python3 e2e/strength.py
       - run: python3 e2e/lichess.py
+      - run: python3 e2e/puzzles_srs.py

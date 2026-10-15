@@ -32,10 +32,10 @@ export const RELATED_LESSONS: Record<CoachCategory, readonly string[]> = {
   opening: ['opening-principles'],
   tactics: ['forks', 'pins', 'skewers', 'discovered'],
   positional: ['trades'],
-  kingSafety: ['backrank'],
+  kingSafety: ['backrank', 'mate-patterns'],
   pieceActivity: ['opening-principles'],
   pawnStructure: [],
-  endgame: ['king-pawn', 'opposition', 'lucena', 'philidor'],
+  endgame: ['king-pawn', 'opposition', 'lucena', 'philidor', 'pawn-breakthrough'],
   calculation: ['sacrifices', 'deflection'],
 };
 export const CATEGORY_ORDER = Object.keys(CATEGORY_LABEL) as CoachCategory[];

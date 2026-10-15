@@ -3,7 +3,7 @@ import { mateDistance, sideWinPercent } from '@/analysis/eval';
 import { pvToSan } from '@/analysis/pv';
 import { reviewOptions, terminalScore } from '@/analysis/review';
 import { createTree, getNode, hasNode } from '@/chess/gameTree';
-import { THEME_LABEL, pickNextPuzzle, sanitizeProgress, loadPuzzles, type Puzzle, type PuzzleFilter, type PuzzleProgress } from '@/puzzles/puzzles';
+import { THEME_LABEL, nextSrs, pickNextPuzzle, sanitizeProgress, loadPuzzles, type Puzzle, type PuzzleFilter, type PuzzleProgress, type SrsEntry } from '@/puzzles/puzzles';
 import type { Color, WhiteScore } from '@/types/engine';
 import type { GameTree } from '@/types/game';
 import { storageGet, storageSet } from '@/utils/storage';
@@ -231,6 +231,12 @@ function solutionSanOf(puzzle: Puzzle): string {
   return conv.moves.map((m, i) => `${m.color === 'w' ? `${m.moveNumber}.` : i === 0 ? `${m.moveNumber}...` : ''}${m.san}`).join(' ') || (first?.san ?? '');
 }
 
+/** Only bundled/online puzzles are scheduled: lesson exercises and one-off mistake puzzles cannot be rebuilt from an id. */
+function withSrs(progress: PuzzleProgress, puzzle: Puzzle, success: boolean): { srs?: Record<string, SrsEntry> } {
+  if (puzzle.skillId !== undefined || puzzle.theme === 'mistake' || puzzle.theme === 'lesson') return progress.srs ? { srs: progress.srs } : {};
+  return { srs: { ...(progress.srs ?? {}), [puzzle.id]: nextSrs(progress.srs?.[puzzle.id], success, Date.now()) } };
+}
+
 function finish(kind: 'solved' | 'revealed', text: string): void {
   const s = puzzleStore.get();
   if (s.puzzle === null) return;
@@ -245,10 +251,11 @@ function finish(kind: 'solved' | 'revealed', text: string): void {
         solved: { ...s.progress.solved, [puzzle.id]: { attempts: s.wrong + 1, clean: clean || previous?.clean === true } },
         streak,
         bestStreak: Math.max(s.progress.bestStreak, streak),
+        ...withSrs(s.progress, puzzle, clean),
       },
     });
   } else {
-    puzzleStore.set({ progress: { ...s.progress, streak: 0 } });
+    puzzleStore.set({ progress: { ...s.progress, streak: 0, ...withSrs(s.progress, puzzle, false) } });
   }
   saveProgress();
   puzzleStore.set({ phase: kind, awaitingUser: false, checking: false, message: { kind: kind === 'solved' ? 'good' : 'info', text }, solutionSan: solutionSanOf(puzzle) });

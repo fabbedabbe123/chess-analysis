@@ -139,9 +139,45 @@ export interface PuzzleProgress {
   solved: Record<string, { attempts: number; clean: boolean }>;
   streak: number;
   bestStreak: number;
+  /** Spaced repetition (Leitner boxes) for bundled puzzles: id -> box 1..5 and due time (ms). Absent in older saved data. */
+  srs?: Record<string, SrsEntry>;
+}
+
+export interface SrsEntry {
+  box: number;
+  due: number;
 }
 
 export const EMPTY_PROGRESS: PuzzleProgress = { solved: {}, streak: 0, bestStreak: 0 };
+
+const DAY_MS = 86_400_000;
+/** Days until the next review per box. A clean solve moves a puzzle up one box; anything else sends it back to box 1. */
+export const SRS_DAYS = [1, 3, 7, 16, 35] as const;
+export const SRS_MAX_ENTRIES = 1000;
+
+export function nextSrs(prev: SrsEntry | undefined, success: boolean, now: number): SrsEntry {
+  const box = success ? Math.min(SRS_DAYS.length, (prev?.box ?? 0) + 1) : 1;
+  return { box, due: now + (SRS_DAYS[box - 1] ?? 1) * DAY_MS };
+}
+
+/** Puzzles whose review is due, most overdue first. Only puzzles present in `all` can be offered. */
+export function duePuzzles(all: readonly Puzzle[], progress: PuzzleProgress, now: number): Puzzle[] {
+  const srs = progress.srs ?? {};
+  return all
+    .filter((p) => (srs[p.id]?.due ?? Infinity) <= now)
+    .sort((a, b) => (srs[a.id]?.due ?? 0) - (srs[b.id]?.due ?? 0));
+}
+
+/** Time of the next scheduled review among puzzles in `all`, or null. */
+export function nextDueTime(all: readonly Puzzle[], progress: PuzzleProgress): number | null {
+  const srs = progress.srs ?? {};
+  let best: number | null = null;
+  for (const p of all) {
+    const e = srs[p.id];
+    if (e !== undefined && (best === null || e.due < best)) best = e.due;
+  }
+  return best;
+}
 
 export function sanitizeProgress(raw: unknown): PuzzleProgress {
   if (typeof raw !== 'object' || raw === null) return { ...EMPTY_PROGRESS, solved: {} };
@@ -155,7 +191,18 @@ export function sanitizeProgress(raw: unknown): PuzzleProgress {
     }
   }
   const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
-  return { solved, streak: n(r['streak']), bestStreak: n(r['bestStreak']) };
+  const srs: Record<string, SrsEntry> = {};
+  if (typeof r['srs'] === 'object' && r['srs'] !== null) {
+    for (const [id, v] of Object.entries(r['srs'] as Record<string, unknown>).slice(0, SRS_MAX_ENTRIES)) {
+      if (typeof v !== 'object' || v === null) continue;
+      const e = v as Record<string, unknown>;
+      const box = e['box'];
+      const due = e['due'];
+      if (typeof box !== 'number' || !Number.isInteger(box) || box < 1 || box > SRS_DAYS.length || typeof due !== 'number' || !Number.isFinite(due)) continue;
+      srs[id] = { box, due };
+    }
+  }
+  return { solved, streak: n(r['streak']), bestStreak: n(r['bestStreak']), ...(Object.keys(srs).length > 0 ? { srs } : {}) };
 }
 
 export interface PuzzleFilter {

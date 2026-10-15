@@ -298,4 +298,37 @@ export const SKILLS = [
       { fen: '4k3/8/r3P3/3K4/8/8/8/7R b - - 0 1', moves: 'Ra2 Rh8+ Ke7 Rh7+ Kd8', balanced: true, why: 'The pawn has reached the sixth, so the rook leaves the sixth rank for the far side (Ra2) and checks from behind. The king steps next to the pawn and the checks keep the attacker from making progress: a draw.' },
     ],
   },
+  {
+    id: 'mate-patterns', title: 'Mating patterns', category: 'tactics',
+    blurb: 'Recognise the shapes that finish a game: smothered, Arabian and Anastasia mates.',
+    intro: [
+      'Most checkmates repeat a few shapes. Once you recognise the shape, the winning move is easy to find.',
+      'In a smothered mate the king is boxed in by its own pieces and a knight gives the final check. In the Arabian mate a rook and a knight together trap a king in the corner. In Anastasia\'s mate a knight takes away the flight squares while a rook checks along the edge.',
+    ],
+    ideas: [
+      'A king surrounded by its own pieces is a target for a knight check.',
+      'A knight covers the squares next to the king and also protects the rook that gives the check.',
+      'Before you play a check, count the king\'s escape squares one by one.',
+    ],
+    exercises: [
+      { fen: '6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1', moves: 'Nf7#', exact: true, why: 'The king on h8 is boxed in by its own rook on g8 and its pawns on g7 and h7. The knight check from f7 cannot be captured, and the king has nowhere to go: a smothered mate.' },
+      { fen: '7k/R7/5N2/8/8/8/8/6K1 w - - 0 1', moves: 'Rh7#', why: 'The rook checks on h7 and the knight on f6 protects it, so the king cannot take. The same knight also covers g8, so there is no flight square: the Arabian mate.' },
+      { fen: '5r2/4N1pk/8/8/8/8/8/K2R4 w - - 0 1', moves: 'Rh1#', exact: true, why: 'The knight on e7 covers g8 and g6, and the pawn on g7 blocks the king\'s own way out. The rook checks along the h-file and nothing can block it: Anastasia\'s mate.' },
+    ],
+  },
+  {
+    id: 'pawn-breakthrough', title: 'Pawn breakthrough', category: 'endgames',
+    blurb: 'Three pawns against three: sacrifice one to make a passed pawn that cannot be stopped.',
+    intro: [
+      'When pawns face pawns and nobody can pass, a sacrifice can open the position. The breakthrough gives up one pawn so that another one is left without an enemy pawn in front of it or beside it.',
+      'Always count the race before you start: the new passed pawn must queen before the enemy king or pawns can stop it.',
+    ],
+    ideas: [
+      'Push the middle pawn of the three to the sixth rank, so that every capture opens a path for a neighbour.',
+      'Count the moves to promotion for both sides before sacrificing.',
+    ],
+    exercises: [
+      { fen: '7k/ppp5/8/PPP5/8/8/8/K7 w - - 0 1', moves: 'b6 axb6 c6 bxc6 a6', why: 'b6! offers a pawn. After axb6 the c-pawn also steps forward with c6, and after bxc6 the a-pawn is free and runs to the eighth rank before the black king arrives. The other recapture, cxb6, is met by a6.' },
+    ],
+  },
 ];
