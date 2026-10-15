@@ -47,3 +47,4 @@ jobs:
       - run: python3 e2e/puzzles_srs.py
       - run: python3 e2e/play_position_clock.py
       - run: python3 e2e/play_analyse.py
+      - run: python3 e2e/play_settings_after.py

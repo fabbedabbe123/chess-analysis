@@ -315,6 +315,7 @@ function Finished() {
   const tree = useGame((g) => g.tree);
   const currentId = useGame((g) => g.currentId);
   const line = useMemo(() => mainLine(tree), [tree]);
+  const [showSetup, setShowSetup] = useState(false);
   const report = s.report;
   const recs = useMemo(() => (report ? recommendPuzzles(report, all, puzzleProgress) : []), [report, all, puzzleProgress]);
   const summary = result?.summary;
@@ -327,12 +328,14 @@ function Finished() {
       <div className={`callout result-${s.result?.outcome}`} data-testid="play-result" role="status"><strong>{s.result?.text}</strong>{' '}<span className="muted small-print">{line.length - 1} half-moves · {s.levelLabel}</span></div>
       <div className="row wrap">
         <button className="btn primary" onClick={() => void analyzeGame()} disabled={s.review === 'running' || s.review === 'done' || puzzleOpen} data-testid="play-analyze">{s.review === 'running' ? `Analysing… ${progressPct.done}/${progressPct.total}` : s.review === 'done' ? 'Analysis complete' : 'Analyse game'}</button>
-        <button className="btn" onClick={() => startGame()} data-testid="play-again">New game</button>
+        <button className="btn" onClick={() => startGame()} data-testid="play-again">Rematch (same settings)</button>
+        <button className={`btn ${showSetup ? 'active' : ''}`} onClick={() => setShowSetup((v) => !v)} aria-expanded={showSetup} data-testid="play-settings">{showSetup ? 'Hide settings' : 'New game…'}</button>
         <button className="btn small" onClick={exitPlay} disabled={puzzleOpen} data-testid="play-exit">Back to analysis</button>
       </div>
       {s.review === 'error' && <div className="callout error" role="alert">{s.reviewError}</div>}
+      {showSetup && <div data-testid="finished-setup"><Setup /></div>}
 
-      {s.review === 'done' && result && summary && report && (
+      {!showSetup && s.review === 'done' && result && summary && report && (
         <div data-testid="play-report">
           <h3>Performance</h3>
           <table className="counts">
