@@ -61,7 +61,7 @@ export function materialAlong(fen: string, pv: readonly string[], color: 'w' | '
 function worth(points: number): string {
   const n = Math.abs(Math.round(points));
   const kind = n >= 9 ? ' (a queen or more)' : n >= 5 ? ' (about a rook)' : n >= 3 ? ' (about a minor piece)' : '';
-  return `${n === 1 ? '1 pawn\'s' : `${n} pawns\'`} worth${kind}`;
+  return `${n === 1 ? '1 pawn\'s' : `${n} pawns'`} worth${kind}`;
 }
 
 const line = (fen: string, pv: readonly string[], n: number): string => {
