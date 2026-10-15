@@ -5,10 +5,10 @@ import {
   buildPlan, estimateStrength, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
   type AnalysedGame, type Trend,
 } from '@/strength/strength';
-import { analyseTrackedGames, cancelBatch, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
+import { analyseTrackedGames, cancelBatch, clearAnalysedBySource, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
 import { startPuzzleSession, usePuzzle } from '@/stores/puzzleStore';
-import { useLichess } from '@/stores/lichessStore';
-import { useTracker } from '@/stores/trackerStore';
+import { clearLichess, useLichess } from '@/stores/lichessStore';
+import { clearTracker, useTracker } from '@/stores/trackerStore';
 import { confirmThen, openLesson, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { formatDate } from '@/utils/format';
 
@@ -229,6 +229,38 @@ function GameList({ games }: { games: AnalysedGame[] }) {
   );
 }
 
+function ResetTracking({ games }: { games: AnalysedGame[] }) {
+  const ccUser = useTracker((s) => s.username);
+  const liUser = useLichess((s) => s.username);
+  const count = (src: AnalysedGame['source']) => games.filter((g) => g.source === src).length;
+  const rows: { src: 'chesscom' | 'lichess'; name: string; user: string | null; stop: () => void }[] = [
+    { src: 'chesscom', name: 'Chess.com', user: ccUser, stop: clearTracker },
+    { src: 'lichess', name: 'Lichess', user: liUser, stop: clearLichess },
+  ];
+  const shown = rows.filter((r) => r.user !== null || count(r.src) > 0);
+  if (shown.length === 0 && games.length === 0) return null;
+  return (
+    <div className="card" data-testid="strength-reset">
+      <strong>Switch account or start over</strong>
+      <p className="muted small-print">Removes what was collected for an account, so you can track another one or look at other games. Only data in this browser is removed; your accounts are untouched.</p>
+      {shown.map((r) => (
+        <div className="row wrap" key={r.src}>
+          <span>{r.name}{r.user ? ` · ${r.user}` : ''} · {count(r.src)} analysed</span>
+          <span className="spacer" />
+          <button className="btn small danger" data-testid={`reset-${r.src}`}
+            onClick={() => confirmThen(true, `Stop tracking ${r.name}${r.user ? ` (${r.user})` : ''} and remove its ${count(r.src)} analysed game${count(r.src) === 1 ? '' : 's'}? The estimate and focus areas are recalculated without them.`, 'Remove', () => { r.stop(); clearAnalysedBySource(r.src); })}>
+            Reset {r.name}
+          </button>
+        </div>
+      ))}
+      {games.length > 0 && (
+        <div className="row"><button className="btn small danger" data-testid="reset-all"
+          onClick={() => confirmThen(true, 'Remove all analysed games (Play, imported and tracked accounts) from this browser? The estimate and focus areas start over.', 'Remove all', clearAnalysedGames)}>Remove all analysed games</button></div>
+      )}
+    </div>
+  );
+}
+
 export function StrengthPanel() {
   const games = useStrength((s) => s.games);
   const saveFailed = useStrength((s) => s.saveFailed);
@@ -243,6 +275,7 @@ export function StrengthPanel() {
       <h3>Add games</h3>
       <Batch />
       <GameList games={games} />
+      <ResetTracking games={games} />
       <p className="small-print"><button className="linklike" onClick={() => { setRightTab('review'); setMobileTab('review'); }}>Open the Review tab</button></p>
     </section>
   );

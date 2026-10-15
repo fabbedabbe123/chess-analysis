@@ -57,6 +57,12 @@ export function clearAnalysedGames(): void {
   persist();
 }
 
+/** Removes the analysed games that came from one source (e.g. one tracked account). */
+export function clearAnalysedBySource(source: AnalysedGame['source']): void {
+  strengthStore.set((s) => ({ games: s.games.filter((g) => g.source !== source) }));
+  persist();
+}
+
 /** Record a finished review of the main-board game as one of the user's games. */
 export function addFromReview(
   result: ReviewResult,
