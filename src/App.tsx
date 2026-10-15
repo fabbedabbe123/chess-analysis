@@ -25,7 +25,7 @@ import { useKeyboard } from '@/hooks/useKeyboard';
 import { useGame } from '@/stores/gameStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { useSetting } from '@/stores/settingsStore';
-import { openDialog, setMobileTab, setRightTab, toggleSidebar, useUi, type MobileTab, type RightTab } from '@/stores/uiStore';
+import { openDialog, setMobileTab, setRightTab, toggleMoves, toggleSidebar, useUi, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
 
 /**
@@ -60,19 +60,6 @@ const SECTIONS: { id: string; label: string; hint: string; tabs: { id: RightTab;
 ];
 const lastInSection = new Map<string, RightTab>();
 
-const MOBILE_TABS: { id: MobileTab; label: string }[] = [
-  { id: 'board', label: 'Board' },
-  { id: 'engine', label: 'Engine' },
-  { id: 'review', label: 'Review' },
-  { id: 'openings', label: 'Openings' },
-  { id: 'tactics', label: 'Tactics' },
-  { id: 'learn', label: 'Learn' },
-  { id: 'puzzles', label: 'Puzzles' },
-  { id: 'play', label: 'Play' },
-  { id: 'strength', label: 'Strength' },
-  { id: 'player', label: 'Player' },
-  { id: 'menu', label: 'Menu' },
-];
 
 function StatusLine() {
   const tree = useGame((s) => s.tree);
@@ -95,6 +82,7 @@ export default function App() {
   const rightTab = useUi((s) => s.rightTab);
   const mobileTab = useUi((s) => s.mobileTab);
   const collapsed = useUi((s) => s.sidebarCollapsed);
+  const movesCollapsed = useUi((s) => s.movesCollapsed);
   const puzzleActive = usePuzzle((s) => s.phase !== 'off');
   const section = SECTIONS.find((sec) => sec.tabs.some((t) => t.id === rightTab));
   if (section) lastInSection.set(section.id, rightTab);
@@ -106,7 +94,7 @@ export default function App() {
   }, [theme]);
 
   return (
-    <div className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''}`}>
+    <div className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
         <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Show side menu' : 'Hide side menu'} title={collapsed ? 'Show side menu' : 'Hide side menu'} onClick={toggleSidebar}>
           {collapsed ? '»' : '« Hide menu'}
@@ -127,9 +115,11 @@ export default function App() {
         <MoveVerdict />
         <BoardControls />
         <section className="panel moves-panel" aria-label="Move list">
-          <h2 className="sr-only">Moves</h2>
-          <MoveList />
-          <MoveTools />
+          <div className="moves-head">
+            <h2>Moves</h2>
+            <button className="btn small" onClick={toggleMoves} aria-expanded={!movesCollapsed} aria-label={movesCollapsed ? 'Show moves' : 'Hide moves'} title={movesCollapsed ? 'Show moves' : 'Hide moves to get a bigger board'} data-testid="moves-toggle">{movesCollapsed ? '▴ Show' : '▾ Hide'}</button>
+          </div>
+          {!movesCollapsed && <><MoveList /><MoveTools /></>}
         </section>
       </main>
 
@@ -140,7 +130,7 @@ export default function App() {
               const active = sec.tabs.some((t) => t.id === rightTab);
               return (
                 <button key={sec.id} role="tab" aria-selected={active} className={active ? 'active' : ''} title={sec.hint}
-                  onClick={() => { const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id; setRightTab(t); }}>
+                  onClick={() => { const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id; setRightTab(t); setMobileTab(t); }}>
                   {sec.label}
                 </button>
               );
@@ -150,7 +140,7 @@ export default function App() {
           {section && section.tabs.length > 1 && (
             <div className="tab-row sub" role="presentation">
               {section.tabs.map((t) => (
-                <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => setRightTab(t.id)}>
+                <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => { setRightTab(t.id); setMobileTab(t.id); }}>
                   {t.label}
                 </button>
               ))}
@@ -172,11 +162,17 @@ export default function App() {
       </div>
 
       <nav className="mobile-tabs" aria-label="Sections">
-        {MOBILE_TABS.map((t) => (
-          <button key={t.id} className={mobileTab === t.id ? 'active' : ''} onClick={() => { setMobileTab(t.id); if (t.id === 'engine' || t.id === 'review' || t.id === 'openings' || t.id === 'tactics' || t.id === 'puzzles' || t.id === 'play' || t.id === 'player' || t.id === 'learn' || t.id === 'strength') setRightTab(t.id); }}>
-            {t.label}
-          </button>
-        ))}
+        <button className={mobileTab === 'board' ? 'active' : ''} onClick={() => setMobileTab('board')}>Board</button>
+        {SECTIONS.map((sec) => {
+          const active = sec.tabs.some((t) => t.id === mobileTab);
+          return (
+            <button key={sec.id} className={active ? 'active' : ''} onClick={() => {
+              const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id;
+              setRightTab(t); setMobileTab(t);
+            }}>{sec.label}</button>
+          );
+        })}
+        <button className={mobileTab === 'menu' ? 'active' : ''} onClick={() => setMobileTab('menu')}>Menu</button>
       </nav>
 
       {dialog === 'import' && <ImportDialog />}

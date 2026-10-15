@@ -15,6 +15,8 @@ export interface UiState {
   reanalyzeNonce: number;
   /** Desktop/tablet: left column folded to a thin rail so the board can grow. */
   sidebarCollapsed: boolean;
+  /** Moves list under the board folded to a thin bar so the board can grow. */
+  movesCollapsed: boolean;
   /** A lesson (skill id) another panel wants the Learn tab to open; consumed by the Learn tab. */
   learnRequest: string | null;
   confirm: { message: string; confirmLabel: string; onConfirm: () => void } | null;
@@ -38,6 +40,24 @@ export function toggleSidebar(): void {
   }
 }
 
+const MOVES_KEY = 'chess-analysis:moves-collapsed:v1';
+function readMovesCollapsed(): boolean {
+  try {
+    return localStorage.getItem(MOVES_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+export function toggleMoves(): void {
+  const next = !uiStore.get().movesCollapsed;
+  uiStore.set({ movesCollapsed: next });
+  try {
+    localStorage.setItem(MOVES_KEY, next ? '1' : '0');
+  } catch {
+    /* not remembered */
+  }
+}
+
 export const uiStore = createStore<UiState>({
   rightTab: 'engine',
   mobileTab: 'board',
@@ -45,6 +65,7 @@ export const uiStore = createStore<UiState>({
   tacticSquares: [],
   reanalyzeNonce: 0,
   sidebarCollapsed: readCollapsed(),
+  movesCollapsed: readMovesCollapsed(),
   learnRequest: null,
   confirm: null,
 });

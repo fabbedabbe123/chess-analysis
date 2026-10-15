@@ -38,8 +38,9 @@ async def main():
         print('explorer:', await pg.locator('.openings-panel .callout.warn').all_inner_texts(), '| book moves still shown:', await pg.locator('.book-move').count())
         # mobile nav
         m=await b.new_page(viewport={'width':390,'height':800}); await m.goto(URL); await m.wait_for_selector('cg-board')
-        for t in ['Engine','Review','Openings','Tactics','Menu','Board']:
-            await m.get_by_role('button',name=t,exact=True).last.click(); await m.wait_for_timeout(150)
+        bar=await m.locator('.mobile-tabs button').all_inner_texts(); print('mobile bar:',bar)
+        for t in ['Analyse','Train','My games','Play','Menu','Board']:
+            await m.locator('.mobile-tabs button',has_text=t).first.click(); await m.wait_for_timeout(150)
             vis=await m.evaluate("[...document.querySelectorAll('.col-left,.col-center,.col-right,.right-panels>div,.moves-panel')].filter(e=>e.offsetParent!==null).map(e=>e.className.split(' ')[0]).join(',')")
             hs=await m.evaluate('document.documentElement.scrollWidth>innerWidth'); print(f'mobile {t:8}',vis,'hscroll',hs)
         print('LOGS',logs); await b.close()

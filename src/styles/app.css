@@ -517,3 +517,20 @@ fieldset.plain:disabled { opacity: 0.5; }
 @media (min-width: 901px) {
   .sidebar > .spacer + .stack { position: sticky; bottom: 0; background: var(--bg); padding: 6px 0 2px; border-top: 1px solid var(--line); }
 }
+.moves-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.moves-head h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+@media (min-width: 901px) {
+  .app.moves-collapsed { --board: min(calc(100vh - 250px), 700px, calc(100vw - 250px - 410px - 3 * 14px - 24px - 56px)); }
+  .app.moves-collapsed.side-collapsed { --board: min(calc(100vh - 250px), 800px, calc(100vw - 40px - 410px - 3 * 14px - 24px - 56px)); }
+  .app.moves-collapsed .col-center .moves-panel { flex: 0 0 auto; min-height: 0; max-height: none; }
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .app.moves-collapsed { --board: min(calc(100vh - 250px), 640px, calc(100vw - 190px - 340px - 3 * 14px - 24px - 56px)); }
+}
+@media (max-width: 900px) {
+  .col-right .tabs { display: flex; }
+  .col-right .tabs .tab-row.primary { display: none; }
+  .app.mobile-board .col-right .tabs, .app.mobile-menu .col-right .tabs { display: none; }
+  .mobile-tabs button { flex: 1 1 0; min-width: 0; }
+}
+@media (max-width: 900px) { .app:not(.mobile-board) .welcome { display: none; } }

@@ -103,7 +103,7 @@ async def main():
         # --- mobile
         m=await (await b.new_context(viewport={'width':390,'height':800})).new_page(); mlogs=[]
         m.on('pageerror',lambda e: mlogs.append(str(e)))
-        await m.goto(URL); await m.wait_for_selector('cg-board'); await m.get_by_role('button',name='Learn',exact=True).click()
+        await m.goto(URL); await m.wait_for_selector('cg-board'); await m.locator('.mobile-tabs button',has_text='Train').click(); await m.get_by_role('tab',name='Learn',exact=True).click()
         await m.wait_for_selector('[data-testid=learn-summary]'); ok(await m.locator('.skill-card').count()==len(LES), 'mobile: Learn tab lists the skills')
         ow=await m.evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"); ok(ow, 'mobile: no horizontal overflow')
         await m.screenshot(path='/tmp/claude-0/learn_mobile.png')
