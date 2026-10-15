@@ -474,3 +474,7 @@ fieldset.plain:disabled { opacity: 0.5; }
 
 .clock { font-variant-numeric: tabular-nums; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--surface-2, rgba(127,127,127,.15)); }
 .clock.low { background: var(--danger-bg, rgba(200,50,50,.2)); color: var(--danger, #c0392b); }
+
+.why-list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.45; }
+.why-list li { margin: 2px 0; }
+.why-list li[data-kind='mate'], .why-list li[data-kind='material'], .why-list li[data-kind='hanging'] { color: var(--danger); }

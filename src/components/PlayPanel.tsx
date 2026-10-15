@@ -5,6 +5,8 @@ import { loadLessons, type Skill } from '@/lessons/lessons';
 import { summarizeHistory } from '@/play/history';
 import { LEVELS, MAX_MOVETIME, MIN_MOVETIME, STRENGTH_DISCLAIMER, specFor, type LevelId } from '@/play/strength';
 import { recommendPuzzles } from '@/play/training';
+import { GRADE_LABEL } from '@/analysis/gradeInfo';
+import { explainBadMove } from '@/analysis/whyBad';
 import { TIME_CONTROLS, TIME_CONTROL_IDS, type TimeControlId } from '@/play/clock';
 import { loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { parsePgn } from '@/pgn/pgn';
@@ -337,7 +339,9 @@ function Finished() {
             <thead><tr><th></th><th>You</th><th>Stockfish</th></tr></thead>
             <tbody>
               <tr><td>Accuracy (estimate)</td><td data-testid="acc-you">{acc(me)}</td><td>{acc(them)}</td></tr>
-              {(['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder'] as const).map((k) => <tr key={k}><td style={{ textTransform: 'capitalize' }}>{k}</td><td>{summary.counts[me][k]}</td><td>{summary.counts[them][k]}</td></tr>)}
+              {(['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'] as const)
+                .filter((k) => summary.grades[me][k] + summary.grades[them][k] > 0)
+                .map((k) => <tr key={k}><td>{GRADE_LABEL[k]}</td><td>{summary.grades[me][k]}</td><td>{summary.grades[them][k]}</td></tr>)}
             </tbody>
           </table>
           <p className="muted small-print">Accuracy is this app's own estimate from winning-chance loss (a model adapted from Lichess's published formula), not Chess.com's or Lichess's number. Review depth {result.depth}. The engine's numbers are affected by its handicap.</p>
@@ -351,9 +355,10 @@ function Finished() {
                 <li key={m.move.nodeId} className="study">
                   <button className="moment" onClick={() => { const p = getNode(tree, m.move.nodeId).parentId; if (p) goTo(p); }} data-testid="key-moment">
                     <span className="moment-move">{m.move.moveNumber}{m.move.color === 'w' ? '.' : '...'} {m.move.san}</span>
-                    <span className={`pill cls-${m.move.classification.moveClass}`}>{m.move.classification.moveClass}</span>
+                    <span className={`pill cls-${m.move.classification.grade ?? m.move.classification.moveClass}`}>{m.move.classification.grade ? GRADE_LABEL[m.move.classification.grade] : m.move.classification.moveClass}</span>
                     <span className="muted">{CATEGORY_LABEL[m.category]}{m.bestSan ? ` · better: ${m.bestSan}` : ''}</span>
                   </button>
+                  <ul className="why-list" data-testid="key-moment-why">{explainBadMove(m.move).map((r, i) => <li key={i} data-kind={r.kind}>{r.text}</li>)}</ul>
                   {m.move.before.bestPv.length > 0 && <button className="btn small" onClick={() => { const p = getNode(tree, m.move.nodeId).parentId; if (p) { goTo(p); playLine(m.move.before.bestPv.slice(0, 6)); } }}>Play the recommended line</button>}
                 </li>
               ))}

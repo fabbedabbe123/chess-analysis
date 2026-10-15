@@ -28,6 +28,8 @@ async def main():
         t=await pg.inner_text('[data-testid=move-verdict]'); print('   after Next error:', t.replace('\n',' | '))
         cls=(await pg.inner_text('[data-testid=verdict-class]')).strip()
         ok(cls in ('Inaccuracy','Mistake','Blunder','Miss'), f'Next error lands on a bad move ({cls})')
+        wt=await pg.inner_text('[data-testid=verdict-why]')
+        ok('Stockfish' in wt and '%' in wt, 'the bad move is explained with Stockfish data: '+wt.replace(chr(10),' / ')[:120])
         sel=await pg.locator('.move-list .current, .move-list .mv.active, .move-list [aria-current]').count()
         before=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
         if await pg.locator('[data-testid=verdict-try]').count():

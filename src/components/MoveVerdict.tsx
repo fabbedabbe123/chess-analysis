@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { GRADE_HELP, GRADE_LABEL } from '@/analysis/gradeInfo';
 import { formatScore } from '@/analysis/eval';
 import { pvToSan } from '@/analysis/pv';
+import { explainBadMove } from '@/analysis/whyBad';
 import type { ReviewMove } from '@/analysis/review';
 import { getNode, hasNode, mainLine } from '@/chess/gameTree';
 import { goTo, playMove, useGame } from '@/stores/gameStore';
@@ -82,6 +83,11 @@ export function MoveVerdict() {
           </>
         )}
       </div>
+      {here !== null && cls !== null && BAD.has(cls) && (
+        <ul className="why-list" data-testid="verdict-why">
+          {explainBadMove(here).map((r, i) => <li key={i} data-kind={r.kind}>{r.text}</li>)}
+        </ul>
+      )}
       {betterSan !== null && (
         <div className="verdict-better">
           Engine preferred <strong>{betterSan}</strong>
