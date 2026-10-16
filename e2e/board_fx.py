@@ -12,13 +12,17 @@ async def resign(pg):
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(**LAUNCH,args=['--no-sandbox'])
-        ctx=await b.new_context(viewport={'width':1440,'height':900}); pg=await ctx.new_page(); errs=[]
+        ctx=await b.new_context(viewport={'width':1440,'height':900})
+        await ctx.add_init_script("(()=>{window.__osc=0;const A=window.AudioContext;window.AudioContext=class extends A{createOscillator(){window.__osc++;return super.createOscillator()}};})();")
+        pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         check('no effect before anything happens', await pg.locator('[data-testid=board-fx]').count()==0)
         await resign(pg)
         await pg.wait_for_selector('[data-testid=board-fx]',timeout=3000)
         check('resigning shows the "lose" effect', await pg.get_attribute('[data-testid=board-fx]','data-fx')=='lose')
+        await pg.wait_for_timeout(800)
+        check('the losing jingle is played (4 notes)', await pg.evaluate('window.__osc')>=4)
         check('effect does not block the board', await pg.evaluate("getComputedStyle(document.querySelector('[data-testid=board-fx]')).pointerEvents")=='none')
         await pg.wait_for_timeout(1800)
         check('effect disappears again', await pg.locator('[data-testid=board-fx]').count()==0)

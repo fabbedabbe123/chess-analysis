@@ -1,3 +1,4 @@
+import { playSound, unlockAudio } from '@/utils/sound';
 import { DEFAULT_THRESHOLDS } from '@/analysis/classify';
 import { clearEvalCache, restartEngine, useEngine } from '@/stores/engineStore';
 import {
@@ -104,7 +105,8 @@ export function SettingsDialog() {
           <Check k="showLegalMoves" label="Show legal moves" />
           <Check k="highlightLastMove" label="Highlight last move" />
           <Check k="showEngineArrows" label="Engine arrows on the board" />
-          <Check k="soundEnabled" label="Move sounds" />
+          <Check k="moveSounds" label="Move sounds (moves, captures, win / lose)" />
+          <button className="btn small" type="button" onClick={() => { unlockAudio(); playSound("capture"); setTimeout(() => playSound("win"), 450); }} data-testid="sound-test">▶ Play test sound</button>
           <Check k="winAnimations" label="Win / lose animations" />
           <label className="field"><span>Evaluation format</span>
             <select value={s.evalDisplay} onChange={(e) => updateSettings({ evalDisplay: e.target.value as Settings['evalDisplay'] })}>

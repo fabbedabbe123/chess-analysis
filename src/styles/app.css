@@ -699,7 +699,7 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 }
 @media (max-width: 400px) { .strength-count > span { flex: 1 1 100%; } }
 @media (max-width: 900px) {
-  .col-right .tabs:not(:has(.tab-row.sub button)) { display: none; }
+  .col-right > nav.tabs:not(:has(.tab-row.sub button)) { display: none; }
 }
 
 /* ---------- phone layout: full-width board, slim horizontal eval bar, compact moves ---------- */

@@ -10,6 +10,7 @@ import { initPlay } from './stores/playStore';
 import { initView } from './stores/viewStore';
 import { initSync } from './sync/syncStore';
 import { installPieceCss } from './utils/boardStyle';
+import { installAudioUnlock } from './utils/sound';
 import { VersionBadge } from './components/VersionBadge';
 
 installPieceCss();
@@ -18,6 +19,7 @@ initPuzzles();
 initPlay();
 initView();
 void initSync();
+installAudioUnlock();
 
 const rootEl = document.getElementById('root');
 if (rootEl === null) throw new Error('Missing #root element');

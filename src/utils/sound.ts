@@ -9,8 +9,36 @@ export type SoundKind = 'move' | 'capture' | 'castle' | 'check' | 'end' | 'win' 
 
 function audio(): AudioContext {
   ctx ??= new AudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx.state !== 'running') void ctx.resume();
   return ctx;
+}
+
+/**
+ * Browsers (iOS above all) only allow audio after a tap. Call once from the first user gesture: it creates and resumes
+ * the AudioContext, plays a silent buffer, and asks Safari to treat the page as media playback so the ring/silent
+ * switch does not mute the sounds.
+ */
+export function unlockAudio(): void {
+  try {
+    const nav = navigator as Navigator & { audioSession?: { type: string } };
+    if (nav.audioSession !== undefined) nav.audioSession.type = 'playback';
+    const c = audio();
+    const src = c.createBufferSource();
+    src.buffer = c.createBuffer(1, 1, 22050);
+    src.connect(c.destination);
+    src.start(0);
+  } catch {
+    // no audio available
+  }
+}
+
+/** Install a one-time listener that unlocks audio on the first tap, click or key press. */
+export function installAudioUnlock(): void {
+  const once = () => {
+    unlockAudio();
+    for (const e of ['pointerdown', 'touchend', 'keydown']) window.removeEventListener(e, once, true);
+  };
+  for (const e of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(e, once, { capture: true, passive: true });
 }
 
 function noiseBuffer(c: AudioContext): AudioBuffer {

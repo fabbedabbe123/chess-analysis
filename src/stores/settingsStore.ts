@@ -33,7 +33,7 @@ export interface Settings {
   showLegalMoves: boolean;
   highlightLastMove: boolean;
   showEngineArrows: boolean;
-  soundEnabled: boolean;
+  moveSounds: boolean;
   winAnimations: boolean;
   evalDisplay: EvalDisplayMode;
   autoAnalyze: boolean;
@@ -67,7 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showLegalMoves: true,
   highlightLastMove: true,
   showEngineArrows: true,
-  soundEnabled: true,
+  moveSounds: true,
   winAnimations: true,
   evalDisplay: 'pawns',
   autoAnalyze: true,
@@ -122,7 +122,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     showLegalMoves: bool(r['showLegalMoves'], d.showLegalMoves),
     highlightLastMove: bool(r['highlightLastMove'], d.highlightLastMove),
     showEngineArrows: bool(r['showEngineArrows'], d.showEngineArrows),
-    soundEnabled: bool(r['soundEnabled'], d.soundEnabled),
+    moveSounds: bool(r['moveSounds'], d.moveSounds),
     winAnimations: bool(r['winAnimations'], d.winAnimations),
     evalDisplay: oneOf(r['evalDisplay'], ['pawns', 'centipawns', 'winpercent'], d.evalDisplay),
     autoAnalyze: bool(r['autoAnalyze'], d.autoAnalyze),

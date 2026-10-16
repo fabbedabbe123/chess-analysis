@@ -73,7 +73,7 @@ describe('settings sanitising', () => {
       multiPv: 99, // clamped
       analysisDepth: -5, // clamped
       hashMb: 'big', // invalid
-      soundEnabled: 'yes', // invalid
+      moveSounds: 'yes', // invalid
       elo: 5000, // clamped
     });
     expect(result.theme).toBe('light');
@@ -82,7 +82,7 @@ describe('settings sanitising', () => {
     expect(result.multiPv).toBe(8);
     expect(result.analysisDepth).toBe(1);
     expect(result.hashMb).toBe(DEFAULT_SETTINGS.hashMb);
-    expect(result.soundEnabled).toBe(true); // invalid value falls back to the default (on)
+    expect(result.moveSounds).toBe(true); // invalid value falls back to the default (on)
     expect(result.elo).toBe(3190);
   });
 
