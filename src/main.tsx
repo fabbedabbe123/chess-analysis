@@ -10,6 +10,7 @@ import { initPlay } from './stores/playStore';
 import { initView } from './stores/viewStore';
 import { initSync } from './sync/syncStore';
 import { installPieceCss } from './utils/boardStyle';
+import { VersionBadge } from './components/VersionBadge';
 
 installPieceCss();
 startGamePersistence();
@@ -24,6 +25,7 @@ createRoot(rootEl).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
+      <VersionBadge />
     </ErrorBoundary>
   </StrictMode>,
 );

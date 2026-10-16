@@ -739,3 +739,7 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 @keyframes fx-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
 @keyframes fx-fall { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), 720px) rotate(calc(var(--rot) + 540deg)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .board-fx { display: none; } }
+
+/* ---------- version marker ---------- */
+.version-badge { position: fixed; right: 6px; bottom: 4px; z-index: 5; font-size: 10px; line-height: 1; color: var(--muted); opacity: .6; pointer-events: none; user-select: none; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .version-badge { bottom: calc(60px + env(safe-area-inset-bottom)); } }
