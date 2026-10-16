@@ -104,7 +104,7 @@ How it works (`src/sync/`): one row per (user, name) in `public.user_data`, prot
 2. SQL editor: run `supabase/schema.sql`.
 3. Authentication -> Providers: keep **Email** enabled (magic link). Authentication -> URL Configuration: set *Site URL* to `https://<user>.github.io/<repo>/` and add the same address (and `http://localhost:5173/`) to *Redirect URLs*.
 4. Project Settings -> API: copy the **Project URL** and the **anon public** key (both are public by design; the *service_role* key must never be put in the site).
-5. GitHub repo -> Settings -> Secrets and variables -> Actions: add `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The next push redeploys the site with sync on. Locally: put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`.
+5. Put the URL and the key in `.github/workflows/pages.yml` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; already done for this site's project). The next push redeploys with sync on. Locally: `.env.local` with the same two names. Plain `vite build` without them leaves sync off.
 
 Supabase's built-in mail sender is rate-limited (a few e-mails per hour); for heavier use add your own SMTP in the Supabase dashboard.
 
