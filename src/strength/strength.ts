@@ -314,6 +314,20 @@ export function estimateStrength(all: readonly AnalysedGame[]): StrengthEstimate
   };
 }
 
+/** The rating range is only shown from this many analysed games; before that the app shows accuracy only. */
+export const MIN_GAMES_RATING = 10;
+
+/** The estimate the UI may show as a rating range: null until MIN_GAMES_RATING games are analysed. */
+export function ratingEstimate(all: readonly AnalysedGame[]): StrengthEstimate | null {
+  return recentGames(all).length >= MIN_GAMES_RATING ? estimateStrength(all) : null;
+}
+
+/** Mean accuracy (0-100) over the recent games that carry one; null when none does. */
+export function averageAccuracy(all: readonly AnalysedGame[]): number | null {
+  const acc = recentGames(all).flatMap((g) => (g.accuracy === null ? [] : [g.accuracy]));
+  return acc.length === 0 ? null : acc.reduce((a, b) => a + b, 0) / acc.length;
+}
+
 /** Average of the user's real ratings in recent Chess.com games (null if none carries a rating). */
 export function recentActualRating(all: readonly AnalysedGame[]): { rating: number; games: number } | null {
   const rated = recentGames(all).filter((g) => g.myRating !== null);

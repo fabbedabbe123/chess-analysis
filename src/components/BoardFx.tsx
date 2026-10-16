@@ -31,13 +31,13 @@ export function BoardFx() {
     else if (puzzlePhase === 'solved' && was.puzzlePhase !== 'solved') kind = 'solved';
     else if (puzzlePhase === 'solving' && wrong > was.wrong) kind = 'wrong';
     if (kind === null) return;
-    if (settings.moveSounds) setTimeout(() => playSound(SOUND[kind]), kind === 'wrong' ? 0 : 250);
+    if (settings.moveSounds) setTimeout(() => playSound(SOUND[kind], settings.soundVolume / 100), kind === 'wrong' ? 0 : 250);
     if (!settings.winAnimations) return;
     counter.current += 1;
     setFx({ id: counter.current, kind });
     const t = setTimeout(() => setFx(null), kind === 'win' ? 2600 : 1400);
     return () => clearTimeout(t);
-  }, [outcome, puzzlePhase, wrong, settings.moveSounds, settings.winAnimations]);
+  }, [outcome, puzzlePhase, wrong, settings.moveSounds, settings.soundVolume, settings.winAnimations]);
 
   if (fx === null) return null;
   return (

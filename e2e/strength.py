@@ -24,8 +24,8 @@ async def main():
             if i==0:
                 check('count button reports it was counted', 'Counted' in await pg.inner_text('[data-testid=count-strength]'))
         await goto_tab(pg,'Strength')
-        check('estimate shown', await pg.locator('[data-testid=strength-range]').count()==1)
-        print('range:', await pg.inner_text('[data-testid=strength-range]'), '|', await pg.inner_text('[data-testid=strength-confidence]'))
+        check('with 3 games: accuracy / progress card shown, no rating range yet', await pg.locator('[data-testid=strength-accuracy]').count()==1 and await pg.locator('[data-testid=strength-range]').count()==0)
+        print('accuracy card:', (await pg.inner_text('[data-testid=strength-accuracy]')).replace('\n',' | ')[:160])
         check('3 games in the list', await pg.locator('[data-testid=strength-games] li').count()==3)
         check('focus list or too-few message visible', await pg.locator('[data-testid=focus-list]').count()+await pg.locator('.muted:has-text("No categorised")').count()==1)
         if await pg.locator('[data-testid=plan]').count(): 
@@ -49,7 +49,7 @@ async def main():
         await goto_tab(pg,'Strength')
         # persistence
         await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
-        check('estimate survives reload', await pg.locator('[data-testid=strength-range]').count()==1)
+        check('accuracy card survives reload', await pg.locator('[data-testid=strength-accuracy]').count()==1)
         # batch with a seeded tracker (analysis is real; the tracked games are example input, the Chess.com API is not reachable here)
         seeded={'username':'tester','games':[{'url':f'https://example.test/g{i}','endTime':1700000000+i,'timeClass':'blitz','color':'w','outcome':'loss','reason':'resigned','opponent':'opp','rating':1100+i,'opponentRating':1150,'eco':None,'opening':None,'pgn':PGNS[i]} for i in range(2)],'fetchedMonths':[],'allArchives':[],'lastSync':1}
         await pg.evaluate("v=>localStorage.setItem('chess-analysis:tracker:v1', v)", json.dumps(seeded)); await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
@@ -58,6 +58,11 @@ async def main():
         await pg.wait_for_selector('[data-testid=batch-note]',timeout=180000)
         print('note:', await pg.inner_text('[data-testid=batch-note]'))
         check('batch analysed both tracked games', 'Analysed 2' in await pg.inner_text('[data-testid=batch-note]'))
+        # 10 games (the 3 analysed here + 2 tracked + seeded ones) unlock the rating range
+        sg=await pg.evaluate("JSON.parse(localStorage.getItem('chess-analysis:strength-games:v1')||'[]')")
+        extra=[{**sg[0],'id':f'seed{i}','endedAt':1700000000+i,'myRating':1100} for i in range(10)]
+        await pg.evaluate("v=>localStorage.setItem('chess-analysis:strength-games:v1', v)", json.dumps(sg+extra)); await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Strength')
+        check('with 10+ games the rating range appears', await pg.locator('[data-testid=strength-range]').count()==1 and await pg.locator('[data-testid=strength-accuracy]').count()==0)
         check('compare-with-rating line appears', await pg.locator('[data-testid=strength-compare]').count()==1)
         # remove all
         await pg.click('.card-details summary'); await pg.click('[data-testid=strength-clear]'); await pg.get_by_role('button',name='Remove all').last.click()

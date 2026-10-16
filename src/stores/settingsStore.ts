@@ -34,6 +34,8 @@ export interface Settings {
   highlightLastMove: boolean;
   showEngineArrows: boolean;
   moveSounds: boolean;
+  /** 0-100 */
+  soundVolume: number;
   winAnimations: boolean;
   evalDisplay: EvalDisplayMode;
   autoAnalyze: boolean;
@@ -68,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   highlightLastMove: true,
   showEngineArrows: true,
   moveSounds: true,
+  soundVolume: 35,
   winAnimations: true,
   evalDisplay: 'pawns',
   autoAnalyze: true,
@@ -123,6 +126,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     highlightLastMove: bool(r['highlightLastMove'], d.highlightLastMove),
     showEngineArrows: bool(r['showEngineArrows'], d.showEngineArrows),
     moveSounds: bool(r['moveSounds'], d.moveSounds),
+    soundVolume: typeof r['soundVolume'] === 'number' && Number.isFinite(r['soundVolume']) ? Math.max(0, Math.min(100, Math.round(r['soundVolume']))) : d.soundVolume,
     winAnimations: bool(r['winAnimations'], d.winAnimations),
     evalDisplay: oneOf(r['evalDisplay'], ['pawns', 'centipawns', 'winpercent'], d.evalDisplay),
     autoAnalyze: bool(r['autoAnalyze'], d.autoAnalyze),

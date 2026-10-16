@@ -7,7 +7,7 @@ import type { SearchRequest, SearchSnapshot, WhiteScore } from '@/types/engine';
 import type { Skill } from '@/lessons/lessons';
 import { EMPTY_PROGRESS } from '@/puzzles/puzzles';
 import {
-  buildPlan, estimateStrength, openMistakeCount, progressSeries, trainingPuzzles, focusAreas, gameFromReview, moverCp, ratingFromAcpl, recentActualRating, sanitizeAnalysed, RECENT_GAMES,
+  averageAccuracy, buildPlan, estimateStrength, MIN_GAMES_RATING, ratingEstimate, openMistakeCount, progressSeries, trainingPuzzles, focusAreas, gameFromReview, moverCp, ratingFromAcpl, recentActualRating, sanitizeAnalysed, RECENT_GAMES,
   type AnalysedGame,
 } from '@/strength/strength';
 import { parseAnalysed } from '@/stores/strengthStore';
@@ -187,5 +187,22 @@ describe('progress series', () => {
     expect(s[2]?.acpl).toBe(70);
     const short = progressSeries([game({ id: 'z', moves: 5 })]);
     expect(short[0]?.rating).toBeNull();
+  });
+});
+
+describe('rating range only after enough games', () => {
+  const many = (n: number) => Array.from({ length: n }, (_, i) => game({ id: `g${i}`, endedAt: i, moves: 30, acpl: 50, accuracy: 80 }));
+  it('no rating range before MIN_GAMES_RATING games, even though a raw estimate exists', () => {
+    expect(estimateStrength(many(3))).not.toBeNull();
+    expect(ratingEstimate(many(3))).toBeNull();
+    expect(ratingEstimate(many(MIN_GAMES_RATING - 1))).toBeNull();
+  });
+  it('the range appears from MIN_GAMES_RATING games', () => {
+    expect(ratingEstimate(many(MIN_GAMES_RATING))).not.toBeNull();
+  });
+  it('average accuracy ignores games without one and is null when none has it', () => {
+    expect(averageAccuracy([game({ accuracy: 70 }), game({ id: 'b', accuracy: null }), game({ id: 'c', accuracy: 90 })])).toBe(80);
+    expect(averageAccuracy([game({ accuracy: null })])).toBeNull();
+    expect(averageAccuracy([])).toBeNull();
   });
 });

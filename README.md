@@ -177,3 +177,7 @@ Friends see whether you are online and what you are doing ("Online - Solving puz
 - **Sounds** are synthesised in the browser (WebAudio, no audio files): move, capture, castling, check, game end, plus win / lose / draw jingles and puzzle solved / wrong. On by default; Settings → "Move sounds".
 - **Win / lose effects** on the board: confetti for a win or solved puzzle, a shake and dimming for a loss or wrong puzzle move, a soft tint for a draw. Settings → "Win / lose animations"; disabled automatically with "reduce motion".
 - **Knight arrows** (drawn with right-click, and engine arrows) are bent into an "L" like on Lichess: two squares along the long side, then one across. Chessground only draws straight lines, so its SVG is post-processed (`src/utils/knightArrows.ts`).
+
+## Rating range only after 10 games
+
+The strength rating range (e.g. 900–1300) is shown only once 10 games are analysed (`MIN_GAMES_RATING`). Before that the Strength tab, the start page and the shared profile stats show accuracy and a progress bar instead, because the estimate from `ACPL` swings a lot between single games. Sound volume is a setting (default 35 %).

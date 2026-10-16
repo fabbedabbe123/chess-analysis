@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { duePuzzles, loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
-import { estimateStrength, focusAreas } from '@/strength/strength';
+import { averageAccuracy, estimateStrength, focusAreas, MIN_GAMES_RATING, ratingEstimate } from '@/strength/strength';
 import { mainLine } from '@/chess/gameTree';
 import { useGame } from '@/stores/gameStore';
 import { usePlay, useSavedSession } from '@/stores/playStore';
@@ -27,6 +27,8 @@ export function Home() {
     return () => { alive = false; };
   }, []);
   const est = useMemo(() => estimateStrength(games), [games]);
+  const rated = useMemo(() => ratingEstimate(games), [games]);
+  const accuracy = useMemo(() => averageAccuracy(games), [games]);
   const focus = useMemo(() => focusAreas(games), [games]);
   const due = useMemo(() => duePuzzles(puzzles, progress, Date.now()).length, [puzzles, progress]);
   const players = `${tree.headers['White'] ?? ''}${tree.headers['White'] && tree.headers['Black'] ? ' – ' : ''}${tree.headers['Black'] ?? ''}`.trim();
@@ -80,8 +82,8 @@ export function Home() {
               )}
               {est !== null && (
                 <button className="home-row" onClick={() => go('strength')} data-testid="home-strength">
-                  <strong>Your estimated level: {est.low}–{est.high}</strong>
-                  <span>{focus.areas[0] ? `Biggest weakness: ${focus.areas[0].label}` : `${est.games} analysed game${est.games === 1 ? '' : 's'}`}</span>
+                  <strong>{rated !== null ? `Your estimated level: ${rated.low}–${rated.high}` : accuracy !== null ? `Your accuracy: ${accuracy.toFixed(0)}%` : 'Your strength so far'}</strong>
+                  <span>{focus.areas[0] ? `Biggest weakness: ${focus.areas[0].label}` : rated !== null ? `${est.games} analysed games` : `${est.games} of ${MIN_GAMES_RATING} games analysed for a rating range`}</span>
                 </button>
               )}
               {due > 0 && (

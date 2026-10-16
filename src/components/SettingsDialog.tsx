@@ -106,7 +106,10 @@ export function SettingsDialog() {
           <Check k="highlightLastMove" label="Highlight last move" />
           <Check k="showEngineArrows" label="Engine arrows on the board" />
           <Check k="moveSounds" label="Move sounds (moves, captures, win / lose)" />
-          <button className="btn small" type="button" onClick={() => { unlockAudio(); playSound("capture"); setTimeout(() => playSound("win"), 450); }} data-testid="sound-test">▶ Play test sound</button>
+          <button className="btn small" type="button" onClick={() => { unlockAudio(); playSound("capture", s.soundVolume / 100); setTimeout(() => playSound("win", s.soundVolume / 100), 450); }} data-testid="sound-test">▶ Play test sound</button>
+          <label className="field"><span>Sound volume: {s.soundVolume}%</span>
+            <input type="range" min={0} max={100} step={5} value={s.soundVolume} onChange={(e) => updateSettings({ soundVolume: Number(e.target.value) })} onPointerUp={() => { unlockAudio(); playSound("move", s.soundVolume / 100); }} data-testid="sound-volume" />
+          </label>
           <Check k="winAnimations" label="Win / lose animations" />
           <label className="field"><span>Evaluation format</span>
             <select value={s.evalDisplay} onChange={(e) => updateSettings({ evalDisplay: e.target.value as Settings['evalDisplay'] })}>

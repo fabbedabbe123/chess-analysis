@@ -210,8 +210,8 @@ export function ChessBoard() {
     lastSoundNode.current = currentId;
     if (!settings.moveSounds || node.uci === '') return;
     const inGame = playOpen || puzzleOpen; // in a game or puzzle the win / lose / solved jingle replaces the "end" sound
-    playSound(gameOver && !inGame ? 'end' : inCheck ? 'check' : node.san.includes('x') ? 'capture' : node.san.startsWith('O-O') ? 'castle' : 'move');
-  }, [currentId, settings.moveSounds, node.uci, node.san, gameOver, inCheck, playOpen, puzzleOpen]);
+    playSound(gameOver && !inGame ? 'end' : inCheck ? 'check' : node.san.includes('x') ? 'capture' : node.san.startsWith('O-O') ? 'castle' : 'move', settings.soundVolume / 100);
+  }, [currentId, settings.moveSounds, settings.soundVolume, node.uci, node.san, gameOver, inCheck, playOpen, puzzleOpen]);
 
   const choosePromotion = (piece: PromotionPiece | null) => {
     const pending = promotion;

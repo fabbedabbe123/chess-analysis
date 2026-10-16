@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadLessons, MASTERY_LABEL, type Skill } from '@/lessons/lessons';
 import { CATEGORY_LABEL } from '@/play/coach';
 import {
-  buildPlan, estimateStrength, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
+  averageAccuracy, buildPlan, estimateStrength, MIN_GAMES_RATING, ratingEstimate, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
   type AnalysedGame, type Trend,
 } from '@/strength/strength';
 import { analyseTrackedGames, cancelBatch, clearAnalysedBySource, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
@@ -35,6 +35,22 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
           <li>Run a review on any game (Review tab) and press “Count this game for my strength”.</li>
           <li>Track your Chess.com or Lichess account in <button className="linklike" onClick={() => setRightTab('player')}>Player</button> and analyse your recent games below.</li>
         </ul>
+      </div>
+    );
+  }
+  if (ratingEstimate(games) === null) {
+    const acc = averageAccuracy(games);
+    return (
+      <div className="card strength-card" data-testid="strength-accuracy">
+        <div className="strength-range" data-testid="strength-accuracy-value">{acc === null ? `${est.acpl.toFixed(0)} cp` : `${acc.toFixed(0)}%`}</div>
+        <div className="row wrap">
+          <span className="pill tag">{acc === null ? 'average loss per move' : 'average accuracy'}</span>
+          <span className="muted small-print">{est.games} of {MIN_GAMES_RATING} games · {est.moves} moves · avg loss {est.acpl.toFixed(0)} cp</span>
+        </div>
+        <progress value={Math.min(est.games, MIN_GAMES_RATING)} max={MIN_GAMES_RATING} aria-label="Games analysed towards a rating range" />
+        <p className="muted small-print">
+          A rating range is shown after {MIN_GAMES_RATING} analysed games. One or two games say too little: the estimate swings a lot with the opponent and the positions. Until then you get your accuracy, which is measured directly. {MIN_GAMES_RATING - est.games} more to go.
+        </p>
       </div>
     );
   }
@@ -120,8 +136,9 @@ function Focus({ games }: { games: AnalysedGame[] }) {
 }
 
 function ProgressChart({ games }: { games: AnalysedGame[] }) {
+  const enough = games.length >= MIN_GAMES_RATING;
   const series = useMemo(() => progressSeries(games).filter((p) => p.rating !== null), [games]);
-  if (series.length < 4) return null;
+  if (!enough || series.length < 4) return null;
   const w = 360, h = 90;
   const vals = series.map((p) => p.rating as number);
   const lo = Math.min(...vals), hi = Math.max(...vals);

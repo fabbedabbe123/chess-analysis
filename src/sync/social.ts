@@ -1,4 +1,4 @@
-import { estimateStrength, type AnalysedGame } from '@/strength/strength';
+import { ratingEstimate, type AnalysedGame } from '@/strength/strength';
 import type { PuzzleProgress } from '@/puzzles/puzzles';
 import { isAvatarDataUrl } from '@/utils/avatar';
 
@@ -54,7 +54,7 @@ export function sanitizeStats(raw: unknown): FriendStats | null {
 }
 
 export function buildStats(games: readonly AnalysedGame[], progress: PuzzleProgress): FriendStats {
-  const est = estimateStrength(games);
+  const est = ratingEstimate(games);
   return { level: est === null ? null : { low: est.low, high: est.high }, games: games.length, solved: Object.keys(progress.solved).length, bestStreak: progress.bestStreak };
 }
 
