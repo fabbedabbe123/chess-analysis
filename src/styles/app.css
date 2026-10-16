@@ -682,3 +682,22 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 .online-text { color: #4caf50; }
 .friend-main { display: grid; min-width: 0; }
 .friend-main small { font-size: 12px; }
+
+/* ---------- mobile polish ---------- */
+@media (max-width: 900px) {
+  /* one row of board controls: icons only for Undo / Redo / Flip (they keep their aria-labels) */
+  .board-controls { flex-wrap: nowrap; gap: 4px; }
+  .board-controls .sep { width: 2px; }
+  .board-controls button { padding: 8px 9px; min-width: 38px; }
+  .board-controls .btn-lbl { display: none; }
+  /* the toast must not sit on top of the bottom tab bar */
+  .toast { bottom: calc(68px + env(safe-area-inset-bottom)); }
+  /* sections whose first screen is a list or a setup form: no board until a puzzle or game is open */
+  .app[data-live=''][data-section='games'] :is(.board-stack, .status-line, .verdict, .board-controls),
+  .app[data-live=''][data-section='train'] :is(.board-stack, .status-line, .verdict, .board-controls),
+  .app[data-live=''][data-section='play'] :is(.board-stack, .status-line, .verdict, .board-controls) { display: none; }
+}
+@media (max-width: 400px) { .strength-count > span { flex: 1 1 100%; } }
+@media (max-width: 900px) {
+  .col-right .tabs:not(:has(.tab-row.sub button)) { display: none; }
+}

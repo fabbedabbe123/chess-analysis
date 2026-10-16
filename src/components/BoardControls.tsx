@@ -15,15 +15,15 @@ export function BoardControls() {
       <button onClick={goForward} disabled={atEnd} title="Next move (→)" aria-label="Next move">▶</button>
       <button onClick={goEnd} disabled={atEnd} title="Last position (End)" aria-label="Last position">⏭</button>
       <span className="sep" />
-      <button onClick={undo} disabled={!canU} title="Undo (Ctrl+Z)" aria-label="Undo">↶ Undo</button>
-      <button onClick={redo} disabled={!canR} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷ Redo</button>
+      <button onClick={undo} disabled={!canU} title="Undo (Ctrl+Z)" aria-label="Undo"><span aria-hidden>↶</span><span className="btn-lbl"> Undo</span></button>
+      <button onClick={redo} disabled={!canR} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><span aria-hidden>↷</span><span className="btn-lbl"> Redo</span></button>
       <span className="sep" />
       <button
         onClick={flipBoard}
         title="Flip board (F)"
         aria-label="Flip board"
       >
-        ⇅ Flip
+        <span aria-hidden>⇅</span><span className="btn-lbl"> Flip</span>
       </button>
     </div>
   );

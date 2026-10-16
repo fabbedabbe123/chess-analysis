@@ -63,8 +63,8 @@ export function Home() {
         <SignInBanner />
 
         {(hasContinue || est !== null || due > 0) && (
-          <section className="home-continue" aria-label="Pick up where you left off">
-            <h2>Pick up where you left off</h2>
+          <section className="home-continue" aria-label="Your progress">
+            <h2>{hasContinue ? 'Pick up where you left off' : 'Your progress'}</h2>
             <div className="home-rows">
               {saved !== null && (
                 <button className="home-row" onClick={() => go('play')} data-testid="home-resume-play">

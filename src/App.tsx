@@ -25,6 +25,7 @@ import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { useKeyboard } from '@/hooks/useKeyboard';
 import { useGame } from '@/stores/gameStore';
 import { usePuzzle } from '@/stores/puzzleStore';
+import { usePlay } from '@/stores/playStore';
 import { useSetting } from '@/stores/settingsStore';
 import { openDialog, setMobileTab, setRightTab, toggleMoves, toggleSidebar, useUi, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
@@ -86,6 +87,7 @@ export default function App() {
   const collapsed = useUi((s) => s.sidebarCollapsed);
   const movesCollapsed = useUi((s) => s.movesCollapsed);
   const puzzleActive = usePuzzle((s) => s.phase !== 'off');
+  const playActive = usePlay((s) => s.phase !== 'off');
   const view = useView();
   const section = SECTIONS.find((sec) => sec.tabs.some((t) => t.id === rightTab));
   if (section) lastInSection.set(section.id, rightTab);
@@ -109,7 +111,7 @@ export default function App() {
   }
 
   return (
-    <div data-section={section?.id ?? ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
+    <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
         <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Show side menu' : 'Hide side menu'} title={collapsed ? 'Show side menu' : 'Hide side menu'} onClick={toggleSidebar}>
           {collapsed ? '»' : '« Hide menu'}
