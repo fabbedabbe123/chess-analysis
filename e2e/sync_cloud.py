@@ -31,6 +31,8 @@ async def mock(ctx, state):
         if '/rest/v1/profile_stats' in u:
             if req.method in ('POST','PATCH'): state.setdefault('stats_posts',[]).append(json.loads(req.post_data or '{}')); return await route.fulfill(status=201, headers=CORS, content_type='application/json', body='[]')
             if req.method=='DELETE': return await route.fulfill(status=204, headers=CORS)
+        if '/rest/v1/rpc/set_presence' in u: state.setdefault('beats',[]).append(json.loads(req.post_data or '{}')); return await route.fulfill(status=204, headers=CORS)
+        if '/rest/v1/rpc/clear_presence' in u: state.setdefault('clears',[]).append(1); return await route.fulfill(status=204, headers=CORS)
         if '/rest/v1/rpc/friends_overview' in u: return await route.fulfill(status=200, headers=CORS, content_type='application/json', body=json.dumps(state.get('friends',[])))
         if '/rest/v1/rpc/search_user' in u:
             nm=json.loads(req.post_data or '{}').get('p_name','').lower()
@@ -44,7 +46,7 @@ async def mock(ctx, state):
             d=json.loads(req.post_data or '{}')
             for f in state.get('friends',[]):
                 if f['friendship_id']==d['p_id']:
-                    if d['p_accept']: f.update({'status':'accepted','member_since':'2026-02-01T00:00:00Z','stats':{'level':{'low':1100,'high':1300},'games':12,'solved':40,'bestStreak':6}})
+                    if d['p_accept']: f.update({'status':'accepted','member_since':'2026-02-01T00:00:00Z','stats':{'level':{'low':1100,'high':1300},'games':12,'solved':40,'bestStreak':6},'seen_ago':20,'activity':'puzzles'})
                     else: state['friends'].remove(f)
                     break
             return await route.fulfill(status=200, headers=CORS, content_type='application/json', body='"accepted"' if d['p_accept'] else '"declined"')
@@ -175,7 +177,8 @@ async def main():
         await ctx2.close()
         # friends, picture, shared numbers
         st3={'reqs':[],'rows':[],'users':[{'user_id':'u-alice','username':'Alice','avatar':None}],
-             'friends':[{'friendship_id':'f-bob','user_id':'u-bob','username':'Bob','avatar':None,'status':'pending','incoming':True,'member_since':None,'stats':None}]}
+             'friends':[{'friendship_id':'f-bob','user_id':'u-bob','username':'Bob','avatar':None,'status':'pending','incoming':True,'member_since':None,'stats':None},
+                        {'friendship_id':'f-carl','user_id':'u-carl','username':'Carl','avatar':None,'status':'accepted','incoming':False,'member_since':'2026-03-01T00:00:00Z','stats':None,'seen_ago':600,'activity':'games'}]}
         ctx3=await b.new_context(viewport={'width':1440,'height':900}); await mock(ctx3,st3)
         games3=json.dumps([{'id':'imp-9','source':'import','endedAt':1700000000,'userColor':'w','label':'x','moves':30,'acpl':50,'accuracy':80,'counts':{'inaccuracy':1,'mistake':0,'blunder':0},'catCount':{},'catLoss':{},'myRating':None,'depth':12,'mistakes':[]}])
         await ctx3.add_init_script("if(!localStorage.getItem('sb-testproj-auth-token')) { localStorage.setItem('sb-testproj-auth-token', %s); localStorage.setItem('chess-analysis:strength-games:v1', %s); }" % (json.dumps(session()), json.dumps(games3)))
@@ -185,10 +188,18 @@ async def main():
         await pg3.click('[data-testid=account-open]'); await pg3.wait_for_selector('[data-testid=friend-requests]')
         check('incoming request from Bob is listed', 'Bob' in await pg3.inner_text('[data-testid=friend-requests]'))
         await pg3.click('[data-testid=friend-accept]'); await pg3.wait_for_selector('[data-testid=friend-item]')
+        items=await pg3.query_selector_all('[data-testid=friend-item]')
+        t0=await items[0].inner_text(); t1=await items[1].inner_text()
+        check('online friends are listed first, with what they are doing', 'Bob' in t0 and 'Online · Solving puzzles' in t0)
+        check('an offline friend shows when they were last seen, with a grey dot', 'Carl' in t1 and 'Last seen 10 min ago' in t1 and len(await pg3.query_selector_all('[data-testid=presence-online]'))==1 and len(await pg3.query_selector_all('[data-testid=presence-offline]'))==1)
+        check('the side button counts friends who are online', '1 friend online' in await pg3.inner_text('[data-testid=account-open]'))
+        beats=st3.get('beats',[])
+        check('a heartbeat is sent after sign-in with a coarse activity only', len(beats)>=1 and beats[0]=={'p_activity':'analysing'})
         check('after accepting, Bob is in the friend list with his level', 'Bob' in await pg3.inner_text('[data-testid=friend-item]') and '1100' in await pg3.inner_text('[data-testid=friend-item]'))
         await pg3.click('[data-testid=friend-item]'); await pg3.wait_for_selector('[data-testid=friend-profile]')
         ftxt=await pg3.inner_text('[data-testid=friend-profile]')
         check('friend profile shows name, since-date and the shared numbers', 'Bob' in ftxt and '1100–1300' in ftxt and '40' in ftxt and 'Member since' in ftxt)
+        check('the friend profile shows the status line', 'Online · Solving puzzles' in await pg3.inner_text('[data-testid=friend-presence]'))
         check('viewing a friend replaces my own profile header (no mix-up)', not await pg3.query_selector('[data-testid=profile-name]'))
         await pg3.screenshot(path='/tmp/claude-0/friend_profile.png')
         await pg3.click('[data-testid=friend-back]'); await pg3.wait_for_selector('[data-testid=friends]')
@@ -201,8 +212,10 @@ async def main():
         await pg3.screenshot(path='/tmp/claude-0/friends_list.png')
         await pg3.click('[data-testid=friend-cancel]'); await pg3.wait_for_timeout(500)
         check('a sent request can be cancelled', not await pg3.query_selector('[data-testid=friend-sent]'))
-        await pg3.click('[data-testid=friend-item]'); await pg3.click('[data-testid=friend-remove]'); await pg3.get_by_role('button',name='Remove friend').last.click(); await pg3.wait_for_selector('[data-testid=no-friends]')
-        check('a friend can be removed', True)
+        for _ in range(2):
+            await pg3.click('[data-testid=friend-item]'); await pg3.click('[data-testid=friend-remove]'); await pg3.get_by_role('button',name='Remove friend').last.click(); await pg3.wait_for_timeout(500)
+        await pg3.wait_for_selector('[data-testid=no-friends]')
+        check('friends can be removed', True)
         # numbers shared with friends: only plain numbers, own user id
         for _ in range(20):
             if st3.get('stats_posts'): break
@@ -227,6 +240,11 @@ async def main():
         await pg3.uncheck('[data-testid=share-stats]'); await pg3.wait_for_timeout(800)
         dl=[r for r in st3['reqs'] if r[0]=='DELETE' and 'profile_stats' in r[1]]
         check('turning sharing off deletes the shared numbers and is remembered', len(dl)==1 and 'user_id=eq.user-1' in dl[0][1] and await pg3.evaluate("localStorage.getItem('chess-analysis-sync:share-stats:v1')")=='0')
+        n0=len(st3.get('beats',[]))
+        await pg3.uncheck('[data-testid=share-presence]'); await pg3.wait_for_timeout(800)
+        check('turning the status off clears it on the server and is remembered', len(st3.get('clears',[]))==1 and await pg3.evaluate("localStorage.getItem('chess-analysis-sync:share-presence:v1')")=='0')
+        await pg3.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); await pg3.wait_for_timeout(800)
+        check('no heartbeat is sent while the status is off', len(st3.get('beats',[]))==n0)
         check('no page errors in friends / picture flow', not errs3)
         if errs3: print(errs3[:3])
         await ctx3.close()

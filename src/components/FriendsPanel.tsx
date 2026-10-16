@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { confirmThen } from '@/stores/uiStore';
 import { findUser, loadFriends, removeFriend, requestFriend, respondFriend, useSync } from '@/sync/syncStore';
-import { levelText, type Friend, type FoundUser, type FriendStats } from '@/sync/social';
+import { levelText, presenceOf, type Friend, type FoundUser, type FriendStats } from '@/sync/social';
 import { Avatar } from './Avatar';
 
 function dateText(ms: number | null): string | null {
@@ -26,9 +26,10 @@ export function FriendProfile({ friend, onBack }: { friend: Friend; onBack: () =
     <div className="friend-profile" data-testid="friend-profile">
       <button className="linklike" onClick={onBack} data-testid="friend-back">← Back to friends</button>
       <div className="account-card">
-        <Avatar name={friend.username} src={friend.avatar} size={64} />
+        <Avatar name={friend.username} src={friend.avatar} size={64} online={presenceOf(friend).online} />
         <div>
           <div className="profile-name" data-testid="friend-profile-name">{friend.username}</div>
+          <div className={`small-print ${presenceOf(friend).online ? 'online-text' : 'muted'}`} data-testid="friend-presence">{presenceOf(friend).label}</div>
           <div className="muted small-print">{since !== null ? `Member since ${since}` : 'Friend'}</div>
         </div>
       </div>
@@ -98,7 +99,7 @@ export function FriendsPanel({ onOpen }: { onOpen: (friendshipId: string) => voi
 
   const incoming = (friends ?? []).filter((f) => f.status === 'pending' && f.incoming);
   const sent = (friends ?? []).filter((f) => f.status === 'pending' && !f.incoming);
-  const accepted = (friends ?? []).filter((f) => f.status === 'accepted');
+  const accepted = (friends ?? []).filter((f) => f.status === 'accepted').sort((a, b) => Number(presenceOf(b).online) - Number(presenceOf(a).online) || a.username.localeCompare(b.username));
   return (
     <div className="friends" data-testid="friends">
       <AddFriend />
@@ -121,10 +122,10 @@ export function FriendsPanel({ onOpen }: { onOpen: (friendshipId: string) => voi
       {friends !== null && accepted.length === 0 && <p className="muted small-print" data-testid="no-friends">No friends yet. Ask a friend for their username and add them above.</p>}
       {accepted.map((f) => (
         <button key={f.friendshipId} className="friend-row clickable" onClick={() => onOpen(f.friendshipId)} data-testid="friend-item">
-          <Avatar name={f.username} src={f.avatar} size={36} />
-          <strong>{f.username}</strong>
+          <Avatar name={f.username} src={f.avatar} size={36} online={presenceOf(f).online} />
+          <span className="friend-main"><strong>{f.username}</strong><small className={presenceOf(f).online ? 'online-text' : 'muted'} data-testid="friend-status">{presenceOf(f).label}</small></span>
           <span className="spacer" />
-          <span className="muted small-print">{f.stats === null ? 'no numbers shared' : `level ${levelText(f.stats)}`}</span>
+          <span className="muted small-print">{f.stats === null ? '' : `level ${levelText(f.stats)}`}</span>
           <span aria-hidden>›</span>
         </button>
       ))}

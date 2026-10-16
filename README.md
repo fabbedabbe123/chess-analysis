@@ -167,3 +167,7 @@ After the first sign-in the app asks for a unique username (3-20 characters: let
 - What a friend sees: username, picture, member-since and, if the owner allows it (Settings -> Account), level estimate, games analysed, puzzles solved and best streak (`profile_stats`). Never games, e-mail or settings.
 - Account details (picture, username, e-mail, sync, delete cloud data, sign out) live in Settings -> Account; the profile dialog shows your numbers and your friends.
 - `tests/sql.test.ts` runs `supabase/schema.sql` in a real Postgres (PGlite) and checks row level security, friend rules and limits. Run the new part of `schema.sql` once in the Supabase SQL editor.
+
+### Online status
+
+Friends see whether you are online and what you are doing ("Online - Solving puzzles", or "Last seen 10 min ago"). While you are signed in and the page is visible, the app calls `set_presence(activity)` once a minute (the server stamps the time; activity is one coarse word from a fixed list). Friends read it only through `friends_overview()`, and only for accepted friendships; the `presence` table itself is closed to everybody. Online means a heartbeat in the last 150 s, so the status can lag by up to a couple of minutes. Turn it off in Settings -> Account (the row is deleted and no more heartbeats are sent). Signing out clears it at once. No Supabase Realtime is used.

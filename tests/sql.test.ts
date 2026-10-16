@@ -121,3 +121,54 @@ describe('friends', () => {
     expect(await fails(B, `select public.friend_request('00000000-0000-0000-0000-000000000150')`)).toMatch(/Too many/);
   });
 });
+
+describe('online status', () => {
+  const E = '00000000-0000-0000-0000-0000000000e1';
+  const F = '00000000-0000-0000-0000-0000000000e2';
+  const G = '00000000-0000-0000-0000-0000000000e3';
+  beforeAll(async () => {
+    for (const [id, n] of [[E, 'Erin'], [F, 'Finn'], [G, 'Gus']] as const) {
+      await db.exec(`insert into auth.users values ('${id}'); insert into public.profiles (user_id, username) values ('${id}', '${n}')`);
+    }
+    await as(E, `select public.friend_request('${F}')`);
+    await as(F, `select public.friend_respond((select id from public.friendships where requester = '${E}'), true)`);
+    await as(G, `select public.friend_request('${E}')`); // pending only
+  });
+  const seen = async (viewer: string, name: string) => ((await as(viewer, 'select * from public.friends_overview()')).rows as { username: string; seen_ago: number | null; activity: string | null }[]).find((r) => r.username === name);
+
+  it('the table is closed to everybody, and only a signed-in user with a profile can send a heartbeat', async () => {
+    expect(await fails(E, 'select * from public.presence')).toMatch(/permission/i);
+    expect(await fails(E, `insert into public.presence (user_id) values ('${E}')`)).toMatch(/permission/i);
+    expect(await fails(null, `select public.set_presence('puzzles')`)).toMatch(/permission/i);
+    await db.exec(`insert into auth.users values ('00000000-0000-0000-0000-0000000000e9')`);
+    expect(await fails('00000000-0000-0000-0000-0000000000e9', `select public.set_presence('puzzles')`)).toMatch(/username/i);
+  });
+  it('a friend sees a fresh heartbeat with the activity', async () => {
+    await as(F, `select public.set_presence('puzzles')`);
+    const r = await seen(E, 'Finn');
+    expect(r?.activity).toBe('puzzles');
+    expect(r?.seen_ago).toBeLessThan(5);
+  });
+  it('unknown activities are stored as null, never as free text', async () => {
+    await as(F, `select public.set_presence('<script>')`);
+    expect((await seen(E, 'Finn'))?.activity).toBeNull();
+  });
+  it('the age is computed by the server from its own clock', async () => {
+    await db.exec(`update public.presence set last_seen = now() - interval '10 minutes' where user_id = '${F}'`);
+    const r = await seen(E, 'Finn');
+    expect(r?.seen_ago).toBeGreaterThanOrEqual(599);
+    expect(r?.seen_ago).toBeLessThan(620);
+  });
+  it('pending requesters and strangers see nothing', async () => {
+    await as(E, `select public.set_presence('games')`);
+    const asPending = await seen(G, 'Erin');
+    expect(asPending?.seen_ago).toBeNull();
+    expect(asPending?.activity).toBeNull();
+    expect(await seen(G, 'Finn')).toBeUndefined();
+  });
+  it('clearing the status hides it from friends', async () => {
+    await as(F, `select public.clear_presence()`);
+    expect((await seen(E, 'Finn'))?.seen_ago).toBeNull();
+    expect((await db.query(`select count(*)::int c from public.presence where user_id = '${F}'`)).rows[0]).toEqual({ c: 0 });
+  });
+});

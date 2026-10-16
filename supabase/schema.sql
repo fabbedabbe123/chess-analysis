@@ -124,6 +124,36 @@ create policy "profile_stats_own" on public.profile_stats for all to authenticat
 revoke all on public.profile_stats from anon;
 grant select, insert, update, delete on public.profile_stats to authenticated;
 
+-- Online status: a heartbeat row per user, written only through set_presence() (the server stamps the time), read by
+-- friends only through friends_overview(). The table itself is closed to everybody.
+create table if not exists public.presence (
+  user_id   uuid        primary key references auth.users (id) on delete cascade,
+  last_seen timestamptz not null default now(),
+  activity  text        check (activity is null or activity in ('analysing', 'puzzles', 'playing', 'games', 'learning', 'browsing'))
+);
+alter table public.presence enable row level security;
+revoke all on public.presence from anon;
+revoke all on public.presence from authenticated;
+
+create or replace function public.set_presence(p_activity text default null) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if not exists (select 1 from public.profiles where user_id = auth.uid()) then raise exception 'Choose a username first.'; end if;
+  insert into public.presence (user_id, last_seen, activity)
+  values (auth.uid(), now(), case when p_activity in ('analysing', 'puzzles', 'playing', 'games', 'learning', 'browsing') then p_activity end)
+  on conflict (user_id) do update set last_seen = now(), activity = excluded.activity;
+end;
+$$;
+
+create or replace function public.clear_presence() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  delete from public.presence where user_id = auth.uid();
+end;
+$$;
+
 -- Exact (case-insensitive) username lookup. There is no way to list or browse users.
 create or replace function public.search_user(p_name text) returns table (user_id uuid, username text, avatar text)
 language sql security definer set search_path = public stable as $$
@@ -177,18 +207,22 @@ begin
 end;
 $$;
 
--- Everyone I have a friendship row with. Stats and member-since are only included for accepted friends.
-create or replace function public.friends_overview() returns table (friendship_id uuid, user_id uuid, username text, avatar text, status text, incoming boolean, member_since timestamptz, stats jsonb)
+-- Everyone I have a friendship row with. Stats, member-since and online status are only included for accepted friends.
+drop function if exists public.friends_overview();
+create or replace function public.friends_overview() returns table (friendship_id uuid, user_id uuid, username text, avatar text, status text, incoming boolean, member_since timestamptz, stats jsonb, seen_ago integer, activity text)
 language sql security definer set search_path = public stable as $$
   select f.id, p.user_id, p.username, p.avatar, f.status, (f.addressee = auth.uid()),
          case when f.status = 'accepted' then p.created_at end,
-         case when f.status = 'accepted' then s.stats end
+         case when f.status = 'accepted' then s.stats end,
+         case when f.status = 'accepted' and pr.user_id is not null then extract(epoch from (now() - pr.last_seen))::integer end,
+         case when f.status = 'accepted' then pr.activity end
   from public.friendships f
   join public.profiles p on p.user_id = case when f.requester = auth.uid() then f.addressee else f.requester end
   left join public.profile_stats s on s.user_id = p.user_id
+  left join public.presence pr on pr.user_id = p.user_id
   where auth.uid() is not null and auth.uid() in (f.requester, f.addressee)
   order by f.status, lower(p.username);
 $$;
 
-revoke all on function public.search_user(text), public.friend_request(uuid), public.friend_respond(uuid, boolean), public.friend_remove(uuid), public.friends_overview() from public, anon;
-grant execute on function public.search_user(text), public.friend_request(uuid), public.friend_respond(uuid, boolean), public.friend_remove(uuid), public.friends_overview() to authenticated;
+revoke all on function public.search_user(text), public.friend_request(uuid), public.friend_respond(uuid, boolean), public.friend_remove(uuid), public.friends_overview(), public.set_presence(text), public.clear_presence() from public, anon;
+grant execute on function public.search_user(text), public.friend_request(uuid), public.friend_respond(uuid, boolean), public.friend_remove(uuid), public.friends_overview(), public.set_presence(text), public.clear_presence() to authenticated;

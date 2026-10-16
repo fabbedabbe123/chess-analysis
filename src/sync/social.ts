@@ -10,6 +10,14 @@ export interface FriendStats {
   bestStreak: number;
 }
 
+export type Activity = 'analysing' | 'puzzles' | 'playing' | 'games' | 'learning' | 'browsing';
+export const ACTIVITY_LABEL: Record<Activity, string> = {
+  analysing: 'Analysing', puzzles: 'Solving puzzles', playing: 'Playing Stockfish', games: 'Looking at games', learning: 'Learning', browsing: 'Browsing',
+};
+const isActivity = (v: unknown): v is Activity => typeof v === 'string' && v in ACTIVITY_LABEL;
+/** A heartbeat is sent every minute while the page is visible; two missed beats and a bit means offline. */
+export const ONLINE_WITHIN_S = 150;
+
 export interface Friend {
   friendshipId: string;
   userId: string;
@@ -20,6 +28,10 @@ export interface Friend {
   incoming: boolean;
   memberSince: number | null;
   stats: FriendStats | null;
+  /** Seconds since their last heartbeat, as measured by the server when `fetchedAt` was taken (null: never / hidden). */
+  seenAgo: number | null;
+  activity: Activity | null;
+  fetchedAt: number;
 }
 
 export interface FoundUser { userId: string; username: string; avatar: string | null }
@@ -47,10 +59,10 @@ export function buildStats(games: readonly AnalysedGame[], progress: PuzzleProgr
 }
 
 interface OverviewRow {
-  friendship_id: string; user_id: string; username: string; avatar: string | null; status: string; incoming: boolean; member_since: string | null; stats: unknown;
+  friendship_id: string; user_id: string; username: string; avatar: string | null; status: string; incoming: boolean; member_since: string | null; stats: unknown; seen_ago?: unknown; activity?: unknown;
 }
 
-export function parseOverview(rows: unknown): Friend[] {
+export function parseOverview(rows: unknown, now: number = Date.now()): Friend[] {
   if (!Array.isArray(rows)) return [];
   const out: Friend[] = [];
   for (const r of rows as OverviewRow[]) {
@@ -61,6 +73,9 @@ export function parseOverview(rows: unknown): Friend[] {
       avatar: isAvatarDataUrl(r.avatar) ? r.avatar : null, status: r.status, incoming: r.incoming === true,
       memberSince: typeof r.member_since === 'string' ? Date.parse(r.member_since) || null : null,
       stats: sanitizeStats(r.stats),
+      seenAgo: typeof r.seen_ago === 'number' && Number.isFinite(r.seen_ago) && r.seen_ago >= 0 ? r.seen_ago : null,
+      activity: isActivity(r.activity) ? r.activity : null,
+      fetchedAt: now,
     });
   }
   return out;
@@ -68,4 +83,16 @@ export function parseOverview(rows: unknown): Friend[] {
 
 export function levelText(s: FriendStats | null): string {
   return s === null || s.level === null ? '–' : `${s.level.low}–${s.level.high}`;
+}
+
+export interface Presence { online: boolean; label: string }
+
+/** "Online · Solving puzzles", "Last seen 5 min ago" or "Offline". Ages forward from when the data was fetched. */
+export function presenceOf(f: Friend, now: number = Date.now()): Presence {
+  if (f.seenAgo === null) return { online: false, label: 'Offline' };
+  const ago = f.seenAgo + Math.max(0, (now - f.fetchedAt) / 1000);
+  if (ago <= ONLINE_WITHIN_S) return { online: true, label: f.activity !== null ? `Online · ${ACTIVITY_LABEL[f.activity]}` : 'Online' };
+  if (ago < 3600) return { online: false, label: `Last seen ${Math.max(1, Math.round(ago / 60))} min ago` };
+  if (ago < 86400) return { online: false, label: `Last seen ${Math.round(ago / 3600)} h ago` };
+  return { online: false, label: 'Offline' };
 }

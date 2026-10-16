@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { closeDialog, confirmThen, openDialog } from '@/stores/uiStore';
 import { SYNC_LABEL, SYNC_NAMES } from '@/sync/keys';
-import { checkUsername, deleteMyCloudData, resetLinkForm, saveAvatar, saveUsername, sendLink, setShareStats, signOut, syncNow, useSync, type UsernameCheck } from '@/sync/syncStore';
+import { checkUsername, deleteMyCloudData, resetLinkForm, saveAvatar, saveUsername, sendLink, setSharePresence, setShareStats, signOut, syncNow, useSync, type UsernameCheck } from '@/sync/syncStore';
 import { USERNAME_MAX, USERNAME_MIN, usernameProblem } from '@/sync/profile';
 import { useStrength } from '@/stores/strengthStore';
 import { usePuzzle } from '@/stores/puzzleStore';
-import { buildStats } from '@/sync/social';
+import { buildStats, presenceOf } from '@/sync/social';
 import { resizeToAvatar } from '@/utils/avatar';
 import { Avatar } from './Avatar';
 import { FriendProfile, FriendsPanel, StatTiles } from './FriendsPanel';
@@ -39,7 +39,8 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
   }
   const state = s.error !== null ? 'error' : s.busy === 'syncing' ? 'syncing' : 'ok';
   const requests = (s.friends ?? []).filter((f) => f.status === 'pending' && f.incoming).length;
-  const label = s.profileLoaded && s.profile === null ? 'Choose a username' : requests > 0 ? `${requests} friend request${requests === 1 ? '' : 's'}` : s.error !== null ? 'Sync problem' : s.busy === 'syncing' ? 'Syncing…' : s.lastSync !== null ? `Synced ${ago(s.lastSync)}` : 'Signed in';
+  const onlineNow = (s.friends ?? []).filter((f) => f.status === 'accepted' && presenceOf(f).online).length;
+  const label = s.profileLoaded && s.profile === null ? 'Choose a username' : requests > 0 ? `${requests} friend request${requests === 1 ? '' : 's'}` : onlineNow > 0 ? `${onlineNow} friend${onlineNow === 1 ? '' : 's'} online` : s.error !== null ? 'Sync problem' : s.busy === 'syncing' ? 'Syncing…' : s.lastSync !== null ? `Synced ${ago(s.lastSync)}` : 'Signed in';
   return (
     <button className={`account-btn signed ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" title="Your profile and friends">
       <span className="avatar-wrap"><Avatar name={s.profile?.username ?? null} src={s.profile?.avatar} size={30} /><i className={`dot ${state}`} />{requests > 0 && <b className="badge-count" aria-hidden>{requests}</b>}</span>
@@ -258,7 +259,11 @@ export function AccountSettings() {
             <input type="checkbox" checked={s.shareStats} onChange={(e) => setShareStats(e.target.checked)} data-testid="share-stats" />
             <span>Show my level, puzzle and game numbers to my friends</span>
           </label>
-          <p className="muted small-print">Friends only see your username, picture and these numbers. Never your games, e-mail or settings.</p>
+          <label className="field check">
+            <input type="checkbox" checked={s.sharePresence} onChange={(e) => setSharePresence(e.target.checked)} data-testid="share-presence" />
+            <span>Show friends when I am online and what I am doing</span>
+          </label>
+          <p className="muted small-print">Friends only see your username, picture, these numbers and (if allowed) a status like "Online · Solving puzzles" or when you were last here. Never your games, moves, e-mail or settings. Turn the status off and you appear offline.</p>
 
           <h3>Sync</h3>
           <p className="muted small-print">{s.busy === 'syncing' ? 'Syncing…' : s.lastSync !== null ? `Synced ${ago(s.lastSync)}` : 'Not synced yet'} · changes upload automatically. Synced between devices: {SYNC_NAMES.map((n) => SYNC_LABEL[n]).join(', ')}. Not synced: the game on the board, downloaded Chess.com/Lichess games, the Lichess token. If two devices changed the same data, lists are merged; other settings keep the newer version.</p>

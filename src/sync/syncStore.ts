@@ -2,7 +2,7 @@ import { createStore, useStore } from '@/stores/createStore';
 import { notify } from '@/stores/gameStore';
 import { playStore } from '@/stores/playStore';
 import { puzzleStore } from '@/stores/puzzleStore';
-import { openDialog } from '@/stores/uiStore';
+import { openDialog, uiStore } from '@/stores/uiStore';
 import { storageGet, setStorageWriteListener } from '@/utils/storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncConfig } from './config';
@@ -10,7 +10,7 @@ import { EMPTY_META, runSync, type SyncMeta, type SyncResult } from './engine';
 import { nameForLocalKey } from './keys';
 import { localStorageData } from './local';
 import { usernameProblem, type Profile } from './profile';
-import { buildStats, parseOverview, type Friend, type FoundUser } from './social';
+import { buildStats, parseOverview, type Activity, type Friend, type FoundUser } from './social';
 import { strengthStore } from '@/stores/strengthStore';
 import { isAvatarDataUrl } from '@/utils/avatar';
 import { deleteCloudData, supabaseRemote } from './remote';
@@ -37,6 +37,8 @@ export interface SyncState {
   friends: Friend[] | null;
   /** Show my level / puzzle numbers to friends (stored on this device; default on). */
   shareStats: boolean;
+  /** Show my online status and what I am doing to friends (stored on this device; default on). */
+  sharePresence: boolean;
 }
 
 const SHARE_KEY = 'chess-analysis-sync:share-stats:v1'; // outside the backup prefix
@@ -44,8 +46,13 @@ function readShare(): boolean {
   try { return localStorage.getItem(SHARE_KEY) !== '0'; } catch { return true; }
 }
 
+const PRESENCE_KEY = 'chess-analysis-sync:share-presence:v1'; // outside the backup prefix
+function readPresence(): boolean {
+  try { return localStorage.getItem(PRESENCE_KEY) !== '0'; } catch { return true; }
+}
+
 export const syncStore = createStore<SyncState>({
-  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, linkSentAt: null, lastSync: null, last: null, error: null, profile: null, profileLoaded: false, friends: null, shareStats: readShare(),
+  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, linkSentAt: null, lastSync: null, last: null, error: null, profile: null, profileLoaded: false, friends: null, shareStats: readShare(), sharePresence: readPresence(),
 });
 export const useSync = <S,>(sel: (s: SyncState) => S): S => useStore(syncStore, sel);
 
@@ -124,7 +131,7 @@ function onLocalWrite(key: string): void {
 }
 
 async function applySession(session: { user: { id: string; email?: string | null } } | null): Promise<void> {
-  if (session === null) { syncStore.set({ userId: null, email: null, profile: null, profileLoaded: false, friends: null }); return; }
+  if (session === null) { stopPresence(); syncStore.set({ userId: null, email: null, profile: null, profileLoaded: false, friends: null }); return; }
   const already = syncStore.get().userId === session.user.id;
   syncStore.set({ userId: session.user.id, email: session.user.email ?? null, linkSentTo: null, error: null });
   if (!already && arrivedByLink) {
@@ -135,6 +142,7 @@ async function applySession(session: { user: { id: string; email?: string | null
     await loadProfile();
     void loadFriends();
     schedulePublish();
+    startPresence();
     if (syncStore.get().profile === null && syncStore.get().profileLoaded) openDialog('account'); // first sign-in: ask for a username
     await syncNow(false);
   }
@@ -158,6 +166,7 @@ export async function initSync(): Promise<void> {
     if (data.session !== null) await applySession(data.session);
     document.addEventListener('visibilitychange', () => {
       const { lastSync, userId } = syncStore.get();
+      if (document.visibilityState === 'visible' && userId !== null) { void beat(); void loadFriends(); }
       if (document.visibilityState === 'visible' && userId !== null && (lastSync === null || Date.now() - lastSync > FOCUS_SYNC_MS)) void syncNow();
     });
   } catch (e) {
@@ -298,6 +307,55 @@ export async function publishStatsNow(): Promise<void> {
   } catch { /* sharing is optional; try again at the next change */ }
 }
 
+// ------------------------------------------------------------------------------------------ online status
+
+const BEAT_MS = 60_000;
+let beatTimer: ReturnType<typeof setInterval> | null = null;
+
+/** What I am doing, as one coarse word (never anything more specific). */
+function currentActivity(): Activity {
+  if (playStore.get().phase !== 'off') return 'playing';
+  if (puzzleStore.get().phase !== 'off') return 'puzzles';
+  switch (uiStore.get().rightTab) {
+    case 'engine': case 'review': case 'openings': case 'tactics': return 'analysing';
+    case 'puzzles': return 'puzzles';
+    case 'play': return 'playing';
+    case 'player': case 'strength': return 'games';
+    case 'learn': return 'learning';
+    default: return 'browsing';
+  }
+}
+
+async function beat(): Promise<void> {
+  const { userId, profile, sharePresence } = syncStore.get();
+  if (client === null || userId === null || profile === null || !sharePresence) return;
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return; // a hidden tab is not "online"
+  await client.rpc('set_presence', { p_activity: currentActivity() });
+}
+
+/** Heartbeat + friend list refresh once a minute while signed in and the page is visible. */
+function startPresence(): void {
+  stopPresence();
+  void beat();
+  beatTimer = setInterval(() => {
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    void beat();
+    void loadFriends();
+  }, BEAT_MS);
+}
+
+function stopPresence(): void {
+  if (beatTimer !== null) { clearInterval(beatTimer); beatTimer = null; }
+}
+
+export function setSharePresence(on: boolean): void {
+  try { localStorage.setItem(PRESENCE_KEY, on ? '1' : '0'); } catch { /* not remembered */ }
+  syncStore.set({ sharePresence: on });
+  if (client === null || syncStore.get().userId === null) return;
+  // supabase-js builders only send when awaited, so run it inside an async function
+  if (on) void beat(); else void (async () => { await client?.rpc('clear_presence'); })();
+}
+
 export function setShareStats(on: boolean): void {
   try { localStorage.setItem(SHARE_KEY, on ? '1' : '0'); } catch { /* not remembered */ }
   syncStore.set({ shareStats: on });
@@ -307,6 +365,8 @@ export function setShareStats(on: boolean): void {
 
 export async function signOut(): Promise<void> {
   if (client === null) return;
+  if (syncStore.get().sharePresence) await client.rpc('clear_presence'); // appear offline right away
+  stopPresence();
   await client.auth.signOut();
   lastPublished = '';
   if (pushTimer !== null) { clearTimeout(pushTimer); pushTimer = null; }
