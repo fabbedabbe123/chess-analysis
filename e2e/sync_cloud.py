@@ -188,6 +188,7 @@ async def main():
         await pg3.click('[data-testid=account-open]'); await pg3.wait_for_selector('[data-testid=friend-requests]')
         check('incoming request from Bob is listed', 'Bob' in await pg3.inner_text('[data-testid=friend-requests]'))
         await pg3.click('[data-testid=friend-accept]'); await pg3.wait_for_selector('[data-testid=friend-item]')
+        await pg3.wait_for_function("document.querySelectorAll('[data-testid=friend-item]').length===2")
         items=await pg3.query_selector_all('[data-testid=friend-item]')
         t0=await items[0].inner_text(); t1=await items[1].inner_text()
         check('online friends are listed first, with what they are doing', 'Bob' in t0 and 'Online · Solving puzzles' in t0)
