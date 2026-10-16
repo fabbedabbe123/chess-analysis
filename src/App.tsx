@@ -2,6 +2,7 @@ import { BoardControls } from '@/components/BoardControls';
 import { ChessBoard } from '@/components/ChessBoard';
 import { EnginePanel } from '@/components/EnginePanel';
 import { EvalBar } from '@/components/EvalBar';
+import { AccountDialog } from '@/components/AccountSection';
 import { HelpDialog } from '@/components/HelpDialog';
 import { ImportDialog } from '@/components/ImportDialog';
 import { MoveList, MoveTools } from '@/components/MoveList';
@@ -101,6 +102,7 @@ export default function App() {
         <Home />
         {dialog === 'help' && <HelpDialog />}
         {dialog === 'import' && <ImportDialog />}
+        {dialog === 'account' && <AccountDialog />}
         <Notices />
       </>
     );
@@ -191,6 +193,7 @@ export default function App() {
       {dialog === 'import' && <ImportDialog />}
       {dialog === 'settings' && <SettingsDialog />}
       {dialog === 'help' && <HelpDialog />}
+      {dialog === 'account' && <AccountDialog />}
       <Notices />
     </div>
   );

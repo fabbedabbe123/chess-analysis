@@ -22,6 +22,7 @@ import { usePlay } from '@/stores/playStore';
 import { parsePgn } from '@/pgn/pgn';
 import { copyText, downloadText } from '@/utils/download';
 import { formatDate } from '@/utils/format';
+import { AccountButton } from './AccountSection';
 
 const HEADER_FIELDS = ['White', 'Black', 'Event', 'Site', 'Date', 'Result'] as const;
 
@@ -72,6 +73,8 @@ export function Sidebar() {
           <small>⌂ Start page</small>
         </div>
       </button>
+
+      <AccountButton />
 
       {puzzleOpen && <div className="callout info small">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
       <fieldset className="plain" disabled={puzzleOpen}>

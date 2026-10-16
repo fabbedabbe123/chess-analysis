@@ -608,3 +608,38 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 .col-right > .tabs .tab-row.primary button.help-btn { flex: 0 0 26px; width: 26px; padding: 0; background: transparent; color: var(--muted); font-size: 13px; }
 .col-right > .tabs .tab-row.primary button.help-btn:hover { color: var(--accent); background: transparent; }
 @media (max-width: 900px) { .moves-scroll { max-height: 40vh; } }
+
+/* ---------- account / sign-in ---------- */
+.account-btn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: inherit; cursor: pointer; margin-bottom: 8px; }
+.account-btn:hover, .account-btn:focus-visible { border-color: var(--accent); }
+.account-btn.signin { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg-2)); }
+.account-btn .account-text { display: grid; min-width: 0; }
+.account-btn .account-text strong, .account-btn .account-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-btn small { color: var(--muted); font-size: 11.5px; }
+.account-icon { font-size: 22px; color: var(--accent); line-height: 1; }
+.account-avatar { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.account-avatar.big { width: 44px; height: 44px; font-size: 20px; }
+.account-avatar .dot { position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-2); background: #4caf50; }
+.account-avatar .dot.syncing { background: #e0a030; }
+.account-avatar .dot.error { background: var(--danger); }
+.account-btn.top { width: auto; max-width: 320px; margin: 0; }
+.home-top { position: absolute; top: 14px; right: 16px; }
+.signin-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--accent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, var(--bg-2)); }
+.signin-banner > div { flex: 1; min-width: 0; }
+.signin-banner p { margin: 2px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.signin-banner .account-icon { font-size: 28px; }
+.account-dialog { display: grid; gap: 12px; }
+.account-dialog .lead { margin: 0; font-size: 16px; font-weight: 600; }
+.benefits { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.benefits li { display: flex; gap: 10px; align-items: baseline; }
+.benefits li span { width: 20px; text-align: center; color: var(--accent); }
+.signin-form { display: grid; gap: 10px; }
+.signin-form .field { display: grid; gap: 4px; }
+.signin-form input { padding: 10px 12px; font-size: 16px; }
+.btn.big { padding: 11px 14px; font-size: 15px; }
+.signin-sent { display: grid; gap: 8px; justify-items: start; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-3); }
+.signin-sent h3 { margin: 0; }
+.signin-sent p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.signin-sent .big-icon { font-size: 30px; color: var(--accent); }
+.account-card { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-3); }
+@media (max-width: 760px) { .home-top { position: static; display: flex; justify-content: flex-end; margin-bottom: 8px; } .account-btn.top { max-width: 100%; } .signin-banner { flex-wrap: wrap; } .signin-banner .btn { width: 100%; } }

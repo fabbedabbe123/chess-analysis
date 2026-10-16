@@ -151,3 +151,7 @@ GPL-3.0 (bundles Stockfish and Chessground). Piece sets: cburnett/merida GPLv2+,
 `e2e/*.py` are Playwright scripts (Python) used for the QA audit; they drive the real UI against `npm run preview` (port 4173) with real Stockfish: board/move-list/FEN synchronisation under random play, evaluation perspective and mate display, PGN round trip, review/cancel/engine controls, settings persistence, mobile navigation, corrupted/blocked localStorage. Run e.g. `python3 e2e/sync_random_walk.py 7` (needs `pip install playwright` and a Chromium).
 
 Learn flow: `python3 e2e/lessons.py`. Puzzle flows: `python3 e2e/puzzles.py` and `python3 e2e/puzzle_from_mistakes.py`.
+
+### Sign-in UI
+
+When sync is configured the site shows a **Sign in** button in the side menu and on the start page (plus a banner there), which opens a sign-in dialog: benefits, e-mail field, a "check your e-mail" state with a 60 s resend timer and "use another e-mail", and, once signed in, the account card with sync status, Sync now, Sign out and Delete cloud data. Without a Supabase project none of this is shown.

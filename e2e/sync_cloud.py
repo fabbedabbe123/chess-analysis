@@ -40,12 +40,17 @@ async def main():
         ctx=await b.new_context(viewport={'width':1440,'height':900}); await mock(ctx,st); pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
         await pg.goto(SURL); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
-        await pg.click('[data-testid=open-settings]'); await pg.wait_for_selector('[data-testid=account-email]')
+        await pg.click('[data-testid=account-open]'); await pg.wait_for_selector('[data-testid=account-email]')
+        await pg.click('[data-testid=account-open]') if False else None
         check('signed out: no cloud request is made before the user signs in', not [r for r in st['reqs'] if '/rest/v1' in r[1]])
         await pg.fill('[data-testid=account-email]','fabian@example.com'); await pg.click('[data-testid=account-send]')
         await pg.wait_for_selector('[data-testid=account-link-sent]')
         otp=[r for r in st['reqs'] if '/auth/v1/otp' in r[1]]
         check('sign-in link request sent once with the address', len(otp)==1 and 'fabian@example.com' in (otp[0][3] or ''))
+        check('after sending: resend is locked for a minute and the address can be changed', await pg.is_disabled('[data-testid=account-resend]') and await pg.is_visible('[data-testid=account-other-email]'))
+        await pg.click('[data-testid=account-other-email]'); await pg.wait_for_selector('[data-testid=account-email]')
+        check('"use another e-mail" brings the form back', await pg.is_visible('[data-testid=account-send]'))
+        await pg.screenshot(path='/tmp/claude-0/signin_dialog.png')
         check('sign-in link asks for no password and sends the public key only', 'password' not in (otp[0][3] or '') and otp[0][2].get('apikey')=='a'*40)
         await ctx.close()
         # 2) signed in on a new device: cloud data is downloaded and applied
@@ -63,7 +68,7 @@ async def main():
         check('settings from the cloud applied but the local Lichess token is kept', sett.get('theme')=='light' and sett.get('explorerToken')=='lip_SECRET')
         gets=[r for r in st['reqs'] if r[0]=='GET' and '/rest/v1/user_data' in r[1]]
         check('requests carry the signed-in user token and the public key', gets and gets[0][2].get('authorization')=='Bearer '+JWT and gets[0][2].get('apikey')=='a'*40)
-        await pg.click('[data-testid=open-settings]'); await pg.wait_for_selector('[data-testid=account-status]')
+        await pg.click('[data-testid=account-open]'); await pg.wait_for_selector('[data-testid=account-status]')
         check('settings show who is signed in', 'fabian@example.com' in await pg.inner_text('[data-testid=account-status]'))
         await ctx.close()
         # 3) signed in with local data and an empty cloud: uploaded, token never included
@@ -85,7 +90,7 @@ async def main():
         check('every uploaded row belongs to the signed-in user', all(r['user_id']=='user-1' for r in rows))
         check('the Lichess token is never uploaded', 'lip_SECRET' not in body and 'explorerToken' not in body)
         # delete cloud data and sign out
-        await pg.click('[data-testid=open-settings]'); await pg.wait_for_selector('[data-testid=account-delete]')
+        await pg.click('[data-testid=account-open]'); await pg.click('text=Delete my cloud data'); await pg.wait_for_selector('[data-testid=account-delete]')
         await pg.click('[data-testid=account-delete]'); await pg.get_by_role('button',name='Delete cloud data').last.click(); await pg.wait_for_timeout(800)
         dels=[r for r in st['reqs'] if r[0]=='DELETE']
         check('delete cloud data removes only this user\'s rows', len(dels)==1 and 'user_id=eq.user-1' in dels[0][1])

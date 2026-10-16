@@ -3,7 +3,7 @@ import { createStore, useStore } from './createStore';
 
 export type RightTab = 'engine' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn' | 'strength';
 export type MobileTab = 'board' | 'engine' | 'moves' | 'review' | 'openings' | 'tactics' | 'puzzles' | 'play' | 'player' | 'learn' | 'strength' | 'menu';
-export type DialogId = 'import' | 'settings' | 'help' | null;
+export type DialogId = 'import' | 'settings' | 'help' | 'account' | null;
 
 export interface UiState {
   rightTab: RightTab;

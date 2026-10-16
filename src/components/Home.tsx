@@ -8,6 +8,7 @@ import { usePuzzle } from '@/stores/puzzleStore';
 import { useStrength } from '@/stores/strengthStore';
 import { openDialog, setMobileTab, setRightTab, type RightTab } from '@/stores/uiStore';
 import { enterApp } from '@/stores/viewStore';
+import { AccountButton, SignInBanner } from './AccountSection';
 
 const go = (tab: RightTab) => { setRightTab(tab); setMobileTab(tab); enterApp(); };
 
@@ -33,6 +34,7 @@ export function Home() {
 
   return (
     <main className="home" data-testid="home">
+      <div className="home-top"><AccountButton variant="top" /></div>
       <div className="home-inner">
         <div className="home-brand">
           <span className="logo" aria-hidden>♞</span>
@@ -57,6 +59,8 @@ export function Home() {
             <span>Pick a level and a clock, get hints and feedback, and review the game afterwards.</span>
           </button>
         </div>
+
+        <SignInBanner />
 
         {(hasContinue || est !== null || due > 0) && (
           <section className="home-continue" aria-label="Pick up where you left off">

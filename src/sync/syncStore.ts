@@ -21,13 +21,14 @@ export interface SyncState {
   email: string | null;
   busy: 'idle' | 'sending' | 'syncing';
   linkSentTo: string | null;
+  linkSentAt: number | null;
   lastSync: number | null;
   last: SyncResult | null;
   error: string | null;
 }
 
 export const syncStore = createStore<SyncState>({
-  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, lastSync: null, last: null, error: null,
+  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, linkSentAt: null, lastSync: null, last: null, error: null,
 });
 export const useSync = <S,>(sel: (s: SyncState) => S): S => useStore(syncStore, sel);
 
@@ -48,6 +49,8 @@ const saveMeta = () => { try { localStorage.setItem(META_KEY, JSON.stringify(met
 let client: SupabaseClient | null = null;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
+/** The page was opened from the e-mail sign-in link (the link puts the session in the URL). */
+let arrivedByLink = typeof window !== 'undefined' && /access_token=|error_description=/.test(window.location.hash);
 
 function describe(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e);
@@ -106,6 +109,10 @@ async function applySession(session: { user: { id: string; email?: string | null
   if (session === null) { syncStore.set({ userId: null, email: null }); return; }
   const already = syncStore.get().userId === session.user.id;
   syncStore.set({ userId: session.user.id, email: session.user.email ?? null, linkSentTo: null, error: null });
+  if (!already && arrivedByLink) {
+    arrivedByLink = false;
+    notify('info', `Signed in as ${session.user.email ?? 'your account'}. Your progress now syncs between your devices.`);
+  }
   if (!already) await syncNow(false);
 }
 
@@ -141,7 +148,17 @@ export async function sendLink(email: string): Promise<void> {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { syncStore.set({ error: 'Enter a valid e-mail address.' }); return; }
   syncStore.set({ busy: 'sending', error: null });
   const { error } = await client.auth.signInWithOtp({ email: address, options: { emailRedirectTo: window.location.href.split(/[?#]/)[0] ?? window.location.origin, shouldCreateUser: true } });
-  syncStore.set(error ? { busy: 'idle', error: `Could not send the link: ${error.message}` } : { busy: 'idle', linkSentTo: address });
+  syncStore.set(error ? { busy: 'idle', error: friendlySendError(error.message) } : { busy: 'idle', linkSentTo: address, linkSentAt: Date.now() });
+}
+
+/** Back to the e-mail form (wrong address, or the link never arrived). */
+export function resetLinkForm(): void {
+  syncStore.set({ linkSentTo: null, linkSentAt: null, error: null });
+}
+
+function friendlySendError(message: string): string {
+  if (/rate limit|too many|seconds/i.test(message)) return 'Too many sign-in e-mails were requested. Wait a few minutes and try again.';
+  return `Could not send the link: ${message}`;
 }
 
 export async function signOut(): Promise<void> {
