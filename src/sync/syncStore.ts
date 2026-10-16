@@ -116,7 +116,7 @@ async function applySession(session: { user: { id: string; email?: string | null
   syncStore.set({ userId: session.user.id, email: session.user.email ?? null, linkSentTo: null, error: null });
   if (!already && arrivedByLink) {
     arrivedByLink = false;
-    notify('info', `Signed in as ${session.user.email ?? 'your account'}. Your progress now syncs between your devices.`);
+    notify('info', 'Signed in. Your progress now syncs between your devices.');
   }
   if (!already) {
     await loadProfile();

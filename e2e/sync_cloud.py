@@ -79,7 +79,10 @@ async def main():
         gets=[r for r in st['reqs'] if r[0]=='GET' and '/rest/v1/user_data' in r[1]]
         check('requests carry the signed-in user token and the public key', gets and gets[0][2].get('authorization')=='Bearer '+JWT and gets[0][2].get('apikey')=='a'*40)
         await pg.click('[data-testid=account-open]'); await pg.wait_for_selector('[data-testid=account-status]')
-        check('settings show who is signed in', 'fabian@example.com' in await pg.inner_text('[data-testid=account-status]'))
+        txt=await pg.inner_text('[data-testid=account-dialog]')
+        check('signed-in profile does NOT show the e-mail address by default', 'fabian@example.com' not in txt and 'fabian' not in (await pg.inner_text('[data-testid=account-open]')).lower() and 'f***@example.com' in txt)
+        await pg.click('[data-testid=account-email-toggle]')
+        check('e-mail is shown only after pressing Show', 'fabian@example.com' in await pg.inner_text('[data-testid=account-email-shown]'))
         await ctx.close()
         # 3) signed in with local data and an empty cloud: uploaded, token never included
         st={'reqs':[],'rows':[]}
@@ -126,7 +129,7 @@ async def main():
         await pg2.click('[data-testid=username-save]'); await pg2.wait_for_selector('[data-testid=profile-name]')
         ins=[r for r in st2['reqs'] if r[0]=='POST' and '/rest/v1/profiles' in r[1]]
         check('profile row inserted with this user id and the chosen name', len(ins)==1 and json.loads(ins[0][3])=={'user_id':'user-1','username':'Knight_Rider'})
-        check('profile view shows the username, e-mail and stats', 'Knight_Rider' in await pg2.inner_text('[data-testid=profile-name]') and 'fabian@example.com' in await pg2.inner_text('[data-testid=account-status]') and await pg2.is_visible('[data-testid=profile-stats]'))
+        check('profile view shows the username, e-mail and stats', 'Knight_Rider' in await pg2.inner_text('[data-testid=profile-name]') and 'fabian@example.com' not in await pg2.inner_text('[data-testid=account-dialog]') and await pg2.is_visible('[data-testid=profile-stats]'))
         await pg2.screenshot(path='/tmp/claude-0/profile_view.png')
         await pg2.keyboard.press('Escape'); await pg2.wait_for_timeout(200)
         check('the side button now shows the username', 'Knight_Rider' in await pg2.inner_text('[data-testid=account-open]'))

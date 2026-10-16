@@ -18,7 +18,8 @@ function ago(ms: number): string {
 }
 
 const initial = (name: string | null) => (name?.trim()[0] ?? '?').toUpperCase();
-const shownName = (s: { profile: { username: string } | null; email: string | null }) => s.profile?.username ?? s.email ?? 'Your account';
+/** The e-mail address is private: it is never used as a display name. */
+const shownName = (s: { profile: { username: string } | null }) => s.profile?.username ?? 'Your account';
 
 /** Always-visible entry point: "Sign in" when signed out, the account chip (with sync state) when signed in. Hidden when the site has no sync backend. */
 export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }) {
@@ -36,7 +37,7 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
   const label = s.error !== null ? 'Sync problem' : s.busy === 'syncing' ? 'Syncing…' : s.lastSync !== null ? `Synced ${ago(s.lastSync)}` : 'Signed in';
   return (
     <button className={`account-btn signed ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" title="Your profile and sync">
-      <span className="account-avatar" aria-hidden>{initial(s.profile?.username ?? s.email)}<i className={`dot ${state}`} /></span>
+      <span className="account-avatar" aria-hidden>{initial(s.profile?.username ?? null)}<i className={`dot ${state}`} /></span>
       <span className="account-text"><strong>{shownName(s)}</strong><small>{s.profileLoaded && s.profile === null ? 'Choose a username' : label}</small></span>
     </button>
   );
@@ -139,6 +140,14 @@ function UsernameForm({ first }: { first: boolean }) {
   );
 }
 
+/** f***@gmail.com */
+export function maskEmail(email: string | null): string {
+  if (email === null) return '–';
+  const at = email.lastIndexOf('@');
+  if (at < 1) return '***';
+  return `${email[0]}***${email.slice(at)}`;
+}
+
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return <div className="stat-tile"><strong>{value}</strong><span>{label}</span>{note !== undefined && <small>{note}</small>}</div>;
 }
@@ -148,18 +157,26 @@ function ProfileView() {
   const s = useSync((x) => x);
   const games = useStrength((g) => g.games);
   const progress = usePuzzle((p) => p.progress);
+  const [showEmail, setShowEmail] = useState(false);
   const est = estimateStrength(games);
   const solved = Object.keys(progress.solved).length;
   const member = s.profile !== null && s.profile.createdAt > 0 ? new Date(s.profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : null;
   return (
     <>
       <div className="account-card">
-        <span className="account-avatar big" aria-hidden>{initial(s.profile?.username ?? s.email)}</span>
+        <span className="account-avatar big" aria-hidden>{initial(s.profile?.username ?? null)}</span>
         <div>
           <div className="profile-name" data-testid="profile-name">{s.profile?.username ?? ''}</div>
-          <div className="muted small-print" data-testid="account-status">Signed in as <strong>{s.email ?? 'your account'}</strong>{member !== null && ` · member since ${member}`}</div>
+          <div className="muted small-print" data-testid="account-status">Signed in{member !== null && ` · member since ${member}`}</div>
         </div>
       </div>
+
+      <h3>E-mail</h3>
+      <p className="small-print" data-testid="account-email-row">
+        {showEmail ? <strong data-testid="account-email-shown">{s.email ?? '–'}</strong> : <span data-testid="account-email-hidden">{maskEmail(s.email)}</span>}{' '}
+        <button className="linklike" onClick={() => setShowEmail(!showEmail)} data-testid="account-email-toggle">{showEmail ? 'Hide' : 'Show'}</button>
+      </p>
+      <p className="muted small-print">Only you can see this. It is used just to sign you in and is never shown to other people.</p>
 
       <h3>Your progress</h3>
       <div className="stat-grid" data-testid="profile-stats">
@@ -235,7 +252,7 @@ export function AccountSettingsRow() {
   return (
     <fieldset data-testid="account">
       <legend>Account</legend>
-      <p className="small-print">{s.userId === null ? 'Not signed in. Everything stays in this browser.' : <><strong>{shownName(s)}</strong> ({s.email ?? 'signed in'}).</>}</p>
+      <p className="small-print">{s.userId === null ? 'Not signed in. Everything stays in this browser.' : <><strong>{shownName(s)}</strong>.</>}</p>
       <button className="btn" onClick={() => openDialog('account')} data-testid="settings-account">{s.userId === null ? 'Sign in…' : 'Open profile…'}</button>
     </fieldset>
   );
