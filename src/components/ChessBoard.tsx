@@ -14,6 +14,8 @@ import { boardLocked, useOrientation, usePuzzle } from '@/stores/puzzleStore';
 import { playBoardLocked, usePlay } from '@/stores/playStore';
 import type { MoveInput, PromotionPiece, Shape, ShapeColor, Square } from '@/types/game';
 import { playSound } from '@/utils/sound';
+import { watchKnightArrows } from '@/utils/knightArrows';
+import { BoardFx } from '@/components/BoardFx';
 
 const USER_BRUSHES = new Set<string>(['green', 'red', 'blue', 'yellow']);
 
@@ -76,6 +78,7 @@ export function ChessBoard() {
 
   const turn = fen.split(' ')[1] === 'b' ? 'black' : 'white';
   const puzzleOpen = usePuzzle((s) => s.phase !== 'off');
+  const playOpen = usePlay((s) => s.phase !== 'off');
   const puzzleLocked = usePuzzle(boardLocked);
   const playLocked = usePlay(playBoardLocked);
   const locked = puzzleOpen ? puzzleLocked : playLocked;
@@ -102,7 +105,9 @@ export function ChessBoard() {
       },
     });
     cg.current = api;
+    const stopBending = host.current === null ? () => undefined : watchKnightArrows(host.current);
     return () => {
+      stopBending();
       api.destroy();
       cg.current = null;
     };
@@ -204,8 +209,9 @@ export function ChessBoard() {
     if (lastSoundNode.current === currentId) return;
     lastSoundNode.current = currentId;
     if (!settings.soundEnabled || node.uci === '') return;
-    playSound(gameOver ? 'end' : inCheck ? 'check' : node.san.includes('x') ? 'capture' : 'move');
-  }, [currentId, settings.soundEnabled, node.uci, node.san, gameOver, inCheck]);
+    const inGame = playOpen || puzzleOpen; // in a game or puzzle the win / lose / solved jingle replaces the "end" sound
+    playSound(gameOver && !inGame ? 'end' : inCheck ? 'check' : node.san.includes('x') ? 'capture' : node.san.startsWith('O-O') ? 'castle' : 'move');
+  }, [currentId, settings.soundEnabled, node.uci, node.san, gameOver, inCheck, playOpen, puzzleOpen]);
 
   const choosePromotion = (piece: PromotionPiece | null) => {
     const pending = promotion;
@@ -230,6 +236,7 @@ export function ChessBoard() {
         aria-label={`Chess board. ${turn === 'white' ? 'White' : 'Black'} to move.`}
       >
         <div ref={host} className="board-host" data-testid="board" />
+        <BoardFx />
         {promotion !== null && (
           <div className="promotion" role="dialog" aria-label="Choose promotion piece" onClick={() => choosePromotion(null)}>
             <div className="promotion-box" onClick={(e) => e.stopPropagation()}>

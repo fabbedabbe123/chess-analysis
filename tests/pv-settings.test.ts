@@ -82,7 +82,7 @@ describe('settings sanitising', () => {
     expect(result.multiPv).toBe(8);
     expect(result.analysisDepth).toBe(1);
     expect(result.hashMb).toBe(DEFAULT_SETTINGS.hashMb);
-    expect(result.soundEnabled).toBe(false);
+    expect(result.soundEnabled).toBe(true); // invalid value falls back to the default (on)
     expect(result.elo).toBe(3190);
   });
 

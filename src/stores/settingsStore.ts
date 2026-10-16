@@ -34,6 +34,7 @@ export interface Settings {
   highlightLastMove: boolean;
   showEngineArrows: boolean;
   soundEnabled: boolean;
+  winAnimations: boolean;
   evalDisplay: EvalDisplayMode;
   autoAnalyze: boolean;
   /** Start a full-game review right after a PGN is imported. */
@@ -66,7 +67,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showLegalMoves: true,
   highlightLastMove: true,
   showEngineArrows: true,
-  soundEnabled: false,
+  soundEnabled: true,
+  winAnimations: true,
   evalDisplay: 'pawns',
   autoAnalyze: true,
   autoReviewOnImport: true,
@@ -121,6 +123,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     highlightLastMove: bool(r['highlightLastMove'], d.highlightLastMove),
     showEngineArrows: bool(r['showEngineArrows'], d.showEngineArrows),
     soundEnabled: bool(r['soundEnabled'], d.soundEnabled),
+    winAnimations: bool(r['winAnimations'], d.winAnimations),
     evalDisplay: oneOf(r['evalDisplay'], ['pawns', 'centipawns', 'winpercent'], d.evalDisplay),
     autoAnalyze: bool(r['autoAnalyze'], d.autoAnalyze),
     autoReviewOnImport: bool(r['autoReviewOnImport'], d.autoReviewOnImport),

@@ -722,3 +722,20 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
   .col-center .moves-panel { max-height: none; padding: 6px 10px 8px; }
   .move-list { max-height: none; }
 }
+
+/* ---------- win / lose effects ---------- */
+.board-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20; border-radius: 4px; }
+.fx-badge { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); font-size: clamp(40px, 14vw, 88px); line-height: 1; animation: fx-pop 1.3s ease-out forwards; text-shadow: 0 4px 18px rgba(0,0,0,.5); }
+.fx-solved .fx-badge { color: var(--accent); font-weight: 800; }
+.fx-wrong .fx-badge { color: var(--danger); font-weight: 800; animation-duration: .9s; }
+.fx-win::before { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px #e0a93a, inset 0 0 40px rgba(224,169,58,.55); animation: fx-fade 1.6s ease-out forwards; }
+.fx-solved::before { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 28px rgba(129,182,76,.5); animation: fx-fade 1.2s ease-out forwards; }
+.fx-lose { background: rgba(20, 20, 24, .45); animation: fx-fade 1.4s ease-out forwards, fx-shake .5s ease-in-out; }
+.fx-wrong { background: rgba(224, 82, 74, .22); animation: fx-fade .9s ease-out forwards, fx-shake .4s ease-in-out; }
+.fx-draw { background: rgba(120, 140, 170, .25); animation: fx-fade 1.2s ease-out forwards; }
+.confetti { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: fx-fall 2.1s ease-in forwards; }
+@keyframes fx-pop { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } 45% { transform: translate(-50%, -50%) scale(1); } 100% { transform: translate(-50%, -80%) scale(1); opacity: 0; } }
+@keyframes fx-fade { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@keyframes fx-fall { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), 720px) rotate(calc(var(--rot) + 540deg)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .board-fx { display: none; } }

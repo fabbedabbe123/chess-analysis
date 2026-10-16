@@ -171,3 +171,9 @@ After the first sign-in the app asks for a unique username (3-20 characters: let
 ### Online status
 
 Friends see whether you are online and what you are doing ("Online - Solving puzzles", or "Last seen 10 min ago"). While you are signed in and the page is visible, the app calls `set_presence(activity)` once a minute (the server stamps the time; activity is one coarse word from a fixed list). Friends read it only through `friends_overview()`, and only for accepted friendships; the `presence` table itself is closed to everybody. Online means a heartbeat in the last 150 s, so the status can lag by up to a couple of minutes. Turn it off in Settings -> Account (the row is deleted and no more heartbeats are sent). Signing out clears it at once. No Supabase Realtime is used.
+
+## Sounds, effects and knight arrows
+
+- **Sounds** are synthesised in the browser (WebAudio, no audio files): move, capture, castling, check, game end, plus win / lose / draw jingles and puzzle solved / wrong. On by default; Settings → "Move sounds".
+- **Win / lose effects** on the board: confetti for a win or solved puzzle, a shake and dimming for a loss or wrong puzzle move, a soft tint for a draw. Settings → "Win / lose animations"; disabled automatically with "reduce motion".
+- **Knight arrows** (drawn with right-click, and engine arrows) are bent into an "L" like on Lichess: two squares along the long side, then one across. Chessground only draws straight lines, so its SVG is post-processed (`src/utils/knightArrows.ts`).

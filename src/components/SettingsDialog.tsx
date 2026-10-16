@@ -105,6 +105,7 @@ export function SettingsDialog() {
           <Check k="highlightLastMove" label="Highlight last move" />
           <Check k="showEngineArrows" label="Engine arrows on the board" />
           <Check k="soundEnabled" label="Move sounds" />
+          <Check k="winAnimations" label="Win / lose animations" />
           <label className="field"><span>Evaluation format</span>
             <select value={s.evalDisplay} onChange={(e) => updateSettings({ evalDisplay: e.target.value as Settings['evalDisplay'] })}>
               <option value="pawns">Pawns (+0.35)</option><option value="centipawns">Centipawns (+35)</option><option value="winpercent">White win % (59%)</option>
