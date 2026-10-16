@@ -14,4 +14,4 @@ export function usernameProblem(name: string): string | null {
   return null;
 }
 
-export interface Profile { username: string; createdAt: number }
+export interface Profile { username: string; createdAt: number; avatar: string | null }

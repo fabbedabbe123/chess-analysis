@@ -159,3 +159,11 @@ When sync is configured the site shows a **Sign in** button in the side menu and
 ### Profile and usernames
 
 After the first sign-in the app asks for a unique username (3-20 characters: letters, digits, underscore; unique ignoring case; a few names are reserved). The name lives in `public.profiles` (see `supabase/schema.sql`, run that part once too); availability is checked through `username_available()`, which only answers true/false. The profile dialog gathers username, e-mail, level estimate, puzzle progress, sync and sign-out. Profiles are private to their owner for now.
+
+### Profile picture and friends
+
+- The profile picture is cropped to a square, scaled to 128x128 and stored as a small JPEG data URL (max 60 000 characters, enforced by a database check) in `public.profiles.avatar`.
+- Friends: find someone by their exact username, send a request, accept or decline. Everything goes through `security definer` functions (`search_user`, `friend_request`, `friend_respond`, `friend_remove`, `friends_overview`); the `friendships` table cannot be written directly. There is no way to list or browse users.
+- What a friend sees: username, picture, member-since and, if the owner allows it (Settings -> Account), level estimate, games analysed, puzzles solved and best streak (`profile_stats`). Never games, e-mail or settings.
+- Account details (picture, username, e-mail, sync, delete cloud data, sign out) live in Settings -> Account; the profile dialog shows your numbers and your friends.
+- `tests/sql.test.ts` runs `supabase/schema.sql` in a real Postgres (PGlite) and checks row level security, friend rules and limits. Run the new part of `schema.sql` once in the Supabase SQL editor.
