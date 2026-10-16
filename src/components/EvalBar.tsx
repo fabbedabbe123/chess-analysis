@@ -37,7 +37,7 @@ export function EvalBar() {
       title={describeScore(score)}
       data-testid="eval-bar"
     >
-      <div className="eval-white" style={{ height: `${share * 100}%` }} />
+      <div className="eval-white" style={{ height: `${share * 100}%`, ['--w' as string]: `${share * 100}%` }} />
       <span className={`eval-label ${whiteAhead ? 'at-white' : 'at-black'}`}>{label}</span>
     </div>
   );

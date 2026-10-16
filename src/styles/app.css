@@ -701,3 +701,24 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 @media (max-width: 900px) {
   .col-right .tabs:not(:has(.tab-row.sub button)) { display: none; }
 }
+
+/* ---------- phone layout: full-width board, slim horizontal eval bar, compact moves ---------- */
+@media (max-width: 900px) {
+  .app { --board: calc(100vw - 16px); }
+  .board-stack { align-items: stretch; width: var(--board); }
+  .strip-wrap { width: var(--board); padding-left: 0; }
+  .board-area { flex-direction: column; gap: 4px; height: auto; }
+  .eval-bar { width: 100%; height: 18px; min-height: 18px; flex: none; flex-direction: row; border-radius: 7px; box-shadow: none; }
+  .eval-bar.white-top { flex-direction: row-reverse; }
+  .eval-bar .eval-white { height: 100% !important; width: var(--w); transition-property: width; }
+  .eval-label { top: 0; bottom: 0; padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .eval-label.at-white { left: 0; right: auto; bottom: 0; }
+  .eval-label.at-black { right: 0; left: auto; top: 0; }
+  .eval-bar.white-top .eval-label.at-white { left: auto; right: 0; top: 0; bottom: 0; }
+  .eval-bar.white-top .eval-label.at-black { right: auto; left: 0; top: 0; bottom: 0; }
+  .app.has-puzzle .eval-bar, .app[data-section='games'] .eval-bar, .app[data-section='train'] .eval-bar { display: none; }
+  /* moves stay small so the board stays the main thing; the list and its tools scroll together */
+  .moves-scroll { max-height: 24vh; }
+  .col-center .moves-panel { max-height: none; padding: 6px 10px 8px; }
+  .move-list { max-height: none; }
+}
