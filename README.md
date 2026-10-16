@@ -181,3 +181,7 @@ Friends see whether you are online and what you are doing ("Online - Solving puz
 ## Rating range only after 10 games
 
 The strength rating range (e.g. 900–1300) is shown only once 10 games are analysed (`MIN_GAMES_RATING`). Before that the Strength tab, the start page and the shared profile stats show accuracy and a progress bar instead, because the estimate from `ACPL` swings a lot between single games. Sound volume is a setting (default 35 %).
+
+## Checkmate markers
+
+On a checkmate position the mated king gets a red "#" badge and the piece that moved to give mate a gold star (`src/components/MateMarkers.tsx`). When the mate has just been played, and you were not the one mated in a Play game, confetti bursts around the mating piece (Settings → "Win / lose animations"). The badges stay while the position is shown and follow the board when it is flipped.

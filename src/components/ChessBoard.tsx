@@ -16,6 +16,7 @@ import type { MoveInput, PromotionPiece, Shape, ShapeColor, Square } from '@/typ
 import { playSound } from '@/utils/sound';
 import { watchKnightArrows } from '@/utils/knightArrows';
 import { BoardFx } from '@/components/BoardFx';
+import { MateMarkers } from '@/components/MateMarkers';
 
 const USER_BRUSHES = new Set<string>(['green', 'red', 'blue', 'yellow']);
 
@@ -79,6 +80,7 @@ export function ChessBoard() {
   const turn = fen.split(' ')[1] === 'b' ? 'black' : 'white';
   const puzzleOpen = usePuzzle((s) => s.phase !== 'off');
   const playOpen = usePlay((s) => s.phase !== 'off');
+  const playUserColor = usePlay((s) => s.userColor);
   const puzzleLocked = usePuzzle(boardLocked);
   const playLocked = usePlay(playBoardLocked);
   const locked = puzzleOpen ? puzzleLocked : playLocked;
@@ -237,6 +239,15 @@ export function ChessBoard() {
       >
         <div ref={host} className="board-host" data-testid="board" />
         <BoardFx />
+        <MateMarkers
+          fen={fen}
+          mated={status.kind === 'checkmate'}
+          matingSquare={node.uci !== '' ? (splitUci(node.uci)?.to ?? null) : null}
+          orientation={orientation}
+          nodeId={currentId}
+          celebrate={!(playOpen && playUserColor === (turn === 'white' ? 'w' : 'b'))}
+          animate={settings.winAnimations}
+        />
         {promotion !== null && (
           <div className="promotion" role="dialog" aria-label="Choose promotion piece" onClick={() => choosePromotion(null)}>
             <div className="promotion-box" onClick={(e) => e.stopPropagation()}>

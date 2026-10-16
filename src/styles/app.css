@@ -743,3 +743,15 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 /* ---------- version marker ---------- */
 .version-badge { position: fixed; right: 6px; bottom: 4px; z-index: 5; font-size: 10px; line-height: 1; color: var(--muted); opacity: .6; pointer-events: none; user-select: none; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { .version-badge { bottom: calc(60px + env(safe-area-inset-bottom)); } }
+
+/* ---------- checkmate markers ---------- */
+.mate-layer { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
+.mate-sq { position: absolute; width: 12.5%; height: 12.5%; }
+.mate-badge { position: absolute; top: -7%; right: -7%; width: 40%; height: 40%; min-width: 14px; min-height: 14px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: clamp(9px, 2.6vw, 17px); line-height: 1; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); animation: mate-pop .35s ease-out; }
+.mate-lost { background: #d6403a; }
+.mate-won { background: #e0a93a; color: #3b2a00; }
+.mate-burst { position: absolute; inset: -150%; }
+.mate-burst i { position: absolute; left: 50%; top: 50%; width: 3%; height: 5%; min-width: 5px; min-height: 8px; border-radius: 2px; opacity: 0; animation: mate-confetti 1.5s ease-out forwards; }
+@keyframes mate-pop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes mate-confetti { 0% { left: 50%; top: 50%; transform: rotate(0) scale(.6); opacity: 1; } 70% { opacity: 1; } 100% { left: calc(50% + var(--dx)); top: calc(50% + var(--dy)); transform: rotate(calc(var(--rot) + 360deg)) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mate-burst { display: none; } }
