@@ -155,3 +155,7 @@ Learn flow: `python3 e2e/lessons.py`. Puzzle flows: `python3 e2e/puzzles.py` and
 ### Sign-in UI
 
 When sync is configured the site shows a **Sign in** button in the side menu and on the start page (plus a banner there), which opens a sign-in dialog: benefits, e-mail field, a "check your e-mail" state with a 60 s resend timer and "use another e-mail", and, once signed in, the account card with sync status, Sync now, Sign out and Delete cloud data. Without a Supabase project none of this is shown.
+
+### Profile and usernames
+
+After the first sign-in the app asks for a unique username (3-20 characters: letters, digits, underscore; unique ignoring case; a few names are reserved). The name lives in `public.profiles` (see `supabase/schema.sql`, run that part once too); availability is checked through `username_available()`, which only answers true/false. The profile dialog gathers username, e-mail, level estimate, puzzle progress, sync and sign-out. Profiles are private to their owner for now.

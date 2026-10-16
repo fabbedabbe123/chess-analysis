@@ -2,12 +2,14 @@ import { createStore, useStore } from '@/stores/createStore';
 import { notify } from '@/stores/gameStore';
 import { playStore } from '@/stores/playStore';
 import { puzzleStore } from '@/stores/puzzleStore';
+import { openDialog } from '@/stores/uiStore';
 import { storageGet, setStorageWriteListener } from '@/utils/storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncConfig } from './config';
 import { EMPTY_META, runSync, type SyncMeta, type SyncResult } from './engine';
 import { nameForLocalKey } from './keys';
 import { localStorageData } from './local';
+import { usernameProblem, type Profile } from './profile';
 import { deleteCloudData, supabaseRemote } from './remote';
 
 const META_KEY = 'chess-analysis-sync:meta:v1'; // outside the "chess-analysis:" prefix: never part of a backup file
@@ -25,10 +27,13 @@ export interface SyncState {
   lastSync: number | null;
   last: SyncResult | null;
   error: string | null;
+  /** The chosen username; `profileLoaded` is false until the cloud has answered. */
+  profile: Profile | null;
+  profileLoaded: boolean;
 }
 
 export const syncStore = createStore<SyncState>({
-  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, linkSentAt: null, lastSync: null, last: null, error: null,
+  configured: syncConfig() !== null, ready: false, userId: null, email: null, busy: 'idle', linkSentTo: null, linkSentAt: null, lastSync: null, last: null, error: null, profile: null, profileLoaded: false,
 });
 export const useSync = <S,>(sel: (s: SyncState) => S): S => useStore(syncStore, sel);
 
@@ -106,14 +111,18 @@ function onLocalWrite(key: string): void {
 }
 
 async function applySession(session: { user: { id: string; email?: string | null } } | null): Promise<void> {
-  if (session === null) { syncStore.set({ userId: null, email: null }); return; }
+  if (session === null) { syncStore.set({ userId: null, email: null, profile: null, profileLoaded: false }); return; }
   const already = syncStore.get().userId === session.user.id;
   syncStore.set({ userId: session.user.id, email: session.user.email ?? null, linkSentTo: null, error: null });
   if (!already && arrivedByLink) {
     arrivedByLink = false;
     notify('info', `Signed in as ${session.user.email ?? 'your account'}. Your progress now syncs between your devices.`);
   }
-  if (!already) await syncNow(false);
+  if (!already) {
+    await loadProfile();
+    if (syncStore.get().profile === null && syncStore.get().profileLoaded) openDialog('account'); // first sign-in: ask for a username
+    await syncNow(false);
+  }
 }
 
 /** Starts the sync service (call once at startup). Does nothing when the site was built without a Supabase project. */
@@ -161,11 +170,50 @@ function friendlySendError(message: string): string {
   return `Could not send the link: ${message}`;
 }
 
+/** Reads the signed-in user's profile row (if they have chosen a username yet). */
+export async function loadProfile(): Promise<void> {
+  const { userId } = syncStore.get();
+  if (client === null || userId === null) return;
+  const { data, error } = await client.from('profiles').select('username,created_at').eq('user_id', userId).maybeSingle();
+  if (error) { syncStore.set({ error: `Could not load your profile: ${error.message}` }); return; }
+  const row = data as { username: string; created_at: string } | null;
+  syncStore.set({ profile: row === null ? null : { username: row.username, createdAt: Date.parse(row.created_at) || 0 }, profileLoaded: true });
+}
+
+export type UsernameCheck = 'ok' | 'taken' | 'same' | { problem: string } | 'error';
+
+/** Asks the database whether a name is free (only a true/false answer, nobody else's data is exposed). */
+export async function checkUsername(name: string): Promise<UsernameCheck> {
+  const problem = usernameProblem(name);
+  if (problem !== null) return { problem };
+  if (client === null) return 'error';
+  if (syncStore.get().profile?.username === name) return 'same';
+  const { data, error } = await client.rpc('username_available', { name });
+  if (error) return 'error';
+  return data === true ? 'ok' : 'taken';
+}
+
+/** Creates the profile (first time) or renames it. Returns an error text or null. */
+export async function saveUsername(name: string): Promise<string | null> {
+  const { userId, profile } = syncStore.get();
+  const problem = usernameProblem(name);
+  if (problem !== null) return problem;
+  if (client === null || userId === null) return 'You are not signed in.';
+  const res = profile === null
+    ? await client.from('profiles').insert({ user_id: userId, username: name }).select('username,created_at').single()
+    : await client.from('profiles').update({ username: name }).eq('user_id', userId).select('username,created_at').single();
+  if (res.error) return res.error.code === '23505' ? 'That username was just taken. Try another.' : `Could not save the username: ${res.error.message}`;
+  const row = res.data as { username: string; created_at: string };
+  syncStore.set({ profile: { username: row.username, createdAt: Date.parse(row.created_at) || 0 }, profileLoaded: true });
+  notify('info', `Your username is now ${row.username}.`);
+  return null;
+}
+
 export async function signOut(): Promise<void> {
   if (client === null) return;
   await client.auth.signOut();
   if (pushTimer !== null) { clearTimeout(pushTimer); pushTimer = null; }
-  syncStore.set({ userId: null, email: null, last: null, lastSync: null });
+  syncStore.set({ userId: null, email: null, last: null, lastSync: null, profile: null, profileLoaded: false });
 }
 
 /** Deletes everything this account stored in the cloud (this device keeps its data). */

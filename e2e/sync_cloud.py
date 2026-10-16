@@ -17,6 +17,16 @@ async def mock(ctx, state):
         u=req.url; state['reqs'].append((req.method,u,dict(req.headers),req.post_data))
         if '/auth/v1/otp' in u: return await route.fulfill(status=200, headers=CORS, content_type='application/json', body='{}')
         if '/auth/v1/logout' in u: return await route.fulfill(status=204, headers=CORS)
+        if '/rest/v1/profiles' in u:
+            if req.method=='GET': return await route.fulfill(status=200, headers=CORS, content_type='application/json', body=json.dumps(state.get('profiles',[{'username':'fabbed','created_at':'2026-01-01T00:00:00Z'}])))
+            if req.method in ('POST','PATCH'):
+                body=json.loads(req.post_data or '{}'); 
+                if body.get('username','').lower()=='raced': return await route.fulfill(status=409, headers=CORS, content_type='application/json', body=json.dumps({'code':'23505','message':'duplicate key value'}))
+                row={'username':body['username'],'created_at':'2026-10-16T10:00:00Z'}; state['profiles']=[row]; return await route.fulfill(status=201, headers=CORS, content_type='application/json', body=json.dumps(row))
+            if req.method=='DELETE': return await route.fulfill(status=204, headers=CORS)
+        if '/rest/v1/rpc/username_available' in u:
+            nm=json.loads(req.post_data or '{}').get('name','').lower()
+            return await route.fulfill(status=200, headers=CORS, content_type='application/json', body='false' if nm in ('taken_name','race') else 'true')
         if '/rest/v1/user_data' in u:
             if req.method=='GET': return await route.fulfill(status=200, headers=CORS, content_type='application/json', body=json.dumps(state['rows']))
             if req.method in ('POST','PATCH'): return await route.fulfill(status=201, headers=CORS, content_type='application/json', body='[]')
@@ -98,6 +108,34 @@ async def main():
         check('after sign out the sign-in form is back and local data is kept', await pg.evaluate("localStorage.getItem('chess-analysis:strength-games:v1')!==null"))
         check('no page errors', not errs)
         if errs: print(errs[:3])
+        # profile: first sign-in asks for a unique username
+        st2={'reqs':[],'rows':[],'profiles':[]}
+        ctx2=await b.new_context(viewport={'width':1440,'height':900}); await mock(ctx2,st2)
+        await ctx2.add_init_script("if(!localStorage.getItem('sb-testproj-auth-token')) { localStorage.setItem('sb-testproj-auth-token', %s); }" % json.dumps(session()))
+        pg2=await ctx2.new_page(); errs2=[]; pg2.on('pageerror',lambda e: errs2.append(str(e)))
+        await pg2.goto(SURL); await pg2.wait_for_selector('[data-testid=username-input]', timeout=15000)
+        check('first sign-in without a profile opens the username step', await pg2.is_visible('[data-testid=username-save]'))
+        check('create button is disabled until a valid free name is typed', await pg2.is_disabled('[data-testid=username-save]'))
+        await pg2.fill('[data-testid=username-input]','a b'); await pg2.wait_for_timeout(100)
+        check('invalid characters are rejected instantly (no request)', 'Only letters' in await pg2.inner_text('[data-testid=username-hint]') and not [r for r in st2['reqs'] if 'username_available' in r[1]])
+        await pg2.fill('[data-testid=username-input]','taken_name'); await pg2.wait_for_timeout(900)
+        check('a taken name is reported and cannot be saved', 'taken' in (await pg2.inner_text('[data-testid=username-hint]')).lower() and await pg2.is_disabled('[data-testid=username-save]'))
+        await pg2.fill('[data-testid=username-input]','Knight_Rider'); await pg2.wait_for_timeout(900)
+        check('a free name is reported available', 'Available' in await pg2.inner_text('[data-testid=username-hint]') and not await pg2.is_disabled('[data-testid=username-save]'))
+        await pg2.screenshot(path='/tmp/claude-0/username_step.png')
+        await pg2.click('[data-testid=username-save]'); await pg2.wait_for_selector('[data-testid=profile-name]')
+        ins=[r for r in st2['reqs'] if r[0]=='POST' and '/rest/v1/profiles' in r[1]]
+        check('profile row inserted with this user id and the chosen name', len(ins)==1 and json.loads(ins[0][3])=={'user_id':'user-1','username':'Knight_Rider'})
+        check('profile view shows the username, e-mail and stats', 'Knight_Rider' in await pg2.inner_text('[data-testid=profile-name]') and 'fabian@example.com' in await pg2.inner_text('[data-testid=account-status]') and await pg2.is_visible('[data-testid=profile-stats]'))
+        await pg2.screenshot(path='/tmp/claude-0/profile_view.png')
+        await pg2.keyboard.press('Escape'); await pg2.wait_for_timeout(200)
+        check('the side button now shows the username', 'Knight_Rider' in await pg2.inner_text('[data-testid=account-open]'))
+        # a duplicate that slipped past the live check (race) is reported
+        await pg2.click('[data-testid=account-open]'); await pg2.fill('[data-testid=username-input]','Raced'); await pg2.wait_for_timeout(900)
+        await pg2.click('[data-testid=username-save]'); await pg2.wait_for_selector('[data-testid=username-error]')
+        check('a name taken between the check and the save is reported, profile unchanged', 'just taken' in await pg2.inner_text('[data-testid=username-error]') and 'Knight_Rider' in await pg2.inner_text('[data-testid=profile-name]'))
+        check('no page errors in the profile flow', not errs2)
+        await ctx2.close()
         await b.close()
     raise SystemExit(0 if ok else 1)
 asyncio.run(main())
