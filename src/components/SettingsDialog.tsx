@@ -13,6 +13,7 @@ import { applyBackup, collectBackup, describeBackup, parseBackup } from '@/utils
 import { downloadText } from '@/utils/download';
 import { notify } from '@/stores/gameStore';
 import { Modal } from './Modal';
+import { AccountSection } from './AccountSection';
 
 function DataBackup() {
   const exportAll = () => {
@@ -81,6 +82,7 @@ export function SettingsDialog() {
   return (
     <Modal title="Settings" onClose={closeDialog} wide>
       <div className="settings-grid">
+        <AccountSection />
         <fieldset>
           <legend>Appearance</legend>
           <label className="field"><span>Theme</span>

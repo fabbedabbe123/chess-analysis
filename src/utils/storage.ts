@@ -11,11 +11,18 @@ export function storageGet(key: string): string | null {
   }
 }
 
+let writeListener: ((key: string) => void) | null = null;
+/** Lets the cloud sync notice which keys the app changed (one listener; null removes it). */
+export function setStorageWriteListener(fn: ((key: string) => void) | null): void {
+  writeListener = fn;
+}
+
 /** Returns false when the value could not be stored. */
 export function storageSet(key: string, value: string): boolean {
   try {
     if (typeof localStorage === 'undefined') return false;
     localStorage.setItem(key, value);
+    writeListener?.(key);
     return true;
   } catch {
     return false;

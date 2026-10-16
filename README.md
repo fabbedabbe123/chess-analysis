@@ -89,6 +89,29 @@ Opening the site with nothing to continue shows a calm start page (Analyse a gam
 - Import accepts PGN tags written on one line and refuses to "load" a game with no readable moves.
 - Sidebar: settings buttons stay visible on short screens. Fixed SVG NaN console errors on mobile.
 
+## Cloud sync (optional, sign in with an e-mail link)
+
+The app works fully without an account: everything stays in the browser. If the site is built with a Supabase project, **Settings -> Account** lets you sign in with an e-mail link (no password) and keeps your progress in the cloud for use on other devices.
+
+**Synced:** settings, play settings, analysed games and strength, games against Stockfish, saved games, puzzle progress, the Chess.com/Lichess *usernames*.
+**Not synced:** the game on the board, downloaded Chess.com/Lichess games (re-downloaded in a click), Lichess puzzles, layout toggles, and the Lichess token (a secret: never uploaded, never overwritten by a download).
+
+How it works (`src/sync/`): one row per (user, name) in `public.user_data`, protected by row level security so a user can only touch their own rows. Each sync compares both sides with a hash of the value at the last sync: unchanged -> nothing, changed on one side -> copied over, changed on both -> lists of records are merged by id, puzzle progress entry by entry, anything else the newer edit wins. Known limit: when both devices changed the same list, something deleted on one can come back. If a browser last synced for *another* account, its data is never uploaded to the new account; the cloud data replaces it.
+
+### Set up (once)
+
+1. Create a free project at supabase.com.
+2. SQL editor: run `supabase/schema.sql`.
+3. Authentication -> Providers: keep **Email** enabled (magic link). Authentication -> URL Configuration: set *Site URL* to `https://<user>.github.io/<repo>/` and add the same address (and `http://localhost:5173/`) to *Redirect URLs*.
+4. Project Settings -> API: copy the **Project URL** and the **anon public** key (both are public by design; the *service_role* key must never be put in the site).
+5. GitHub repo -> Settings -> Secrets and variables -> Actions: add `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The next push redeploys the site with sync on. Locally: put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`.
+
+Supabase's built-in mail sender is rate-limited (a few e-mails per hour); for heavier use add your own SMTP in the Supabase dashboard.
+
+### What is tested
+
+Unit tests cover the merge and sync rules, the secret handling and the config check (`tests/sync.test.ts`). `e2e/sync_cloud.py` drives the real app and the real Supabase client library against a **mock** server (requests, headers, what is uploaded and applied). It is **not** run against a real Supabase project; sign-in e-mails, row level security and real network behaviour must be checked once by hand after the setup.
+
 ## Layout round (fifth)
 
 - The centre column always fits the window (checked at 1440x900 and 1280x720): the board size reserves room for the move verdict and the move list; reasons scroll inside the verdict card; the move list and annotation tools scroll together.

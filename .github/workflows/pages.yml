@@ -25,7 +25,11 @@ jobs:
       - run: npm ci
       - run: npm test
       # relative base so the site works under https://<user>.github.io/<repo>/
+      # Optional cloud sync: set the repository secrets SUPABASE_URL and SUPABASE_ANON_KEY (both are public values). Without them the site is built with sync off.
       - run: npx vite build --base ./
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
