@@ -144,6 +144,33 @@ async function engineEval(fen: string): Promise<WhiteScore | null> {
   return snapshot.lines[0]?.scoreWhite ?? null;
 }
 
+export type FirstMoveCheck =
+  | { kind: 'best' }
+  | { kind: 'fine'; best: string }
+  | { kind: 'worse'; best: string }
+  | { kind: 'unavailable' };
+
+/**
+ * Real Stockfish check of the author's first move (depth 14): is it the engine's choice, close enough to it, or clearly
+ * worse? Used when someone makes their own puzzle.
+ */
+export async function checkFirstMove(fen: string, solutionUci: string): Promise<FirstMoveCheck> {
+  try {
+    const engine = await ensureEngine();
+    const snapshot = await engine.search({ fen, multiPv: 1, limits: { depth: 14 }, options: reviewOptions(engineOptionsFrom(settingsStore.get())) }).result;
+    const best = snapshot.lines[0]?.pv[0];
+    if (best === undefined) return { kind: 'unavailable' };
+    if (best === solutionUci) return { kind: 'best' };
+    const bestEval = await engineEval(afterMove(fen, best) ?? fen);
+    const mineEval = await engineEval(afterMove(fen, solutionUci) ?? fen);
+    if (bestEval === null || mineEval === null) return { kind: 'unavailable' };
+    const mover: Color = fen.split(' ')[1] === 'b' ? 'b' : 'w';
+    return alternativeIsAcceptable(bestEval, mineEval, mover) ? { kind: 'fine', best } : { kind: 'worse', best };
+  } catch {
+    return { kind: 'unavailable' };
+  }
+}
+
 /** Pure judgement used by the default checker (exported for tests). */
 export function alternativeIsAcceptable(best: WhiteScore, alt: WhiteScore, mover: Color): boolean {
   const bestMate = best.kind === 'mate' && (best.value === 0 ? best.winner === mover : (best.value > 0) === (mover === 'w'));
@@ -312,7 +339,7 @@ function onUserMove(nodeId: string): void {
   }
   // Lesson exercises that name one idea (exact) accept only the stored move; opening drills are plain book lines.
   if (puzzle.exact === true) {
-    rejectMove(nodeId, gen, puzzle.book === true ? 'Not the book move for this line. Try again.' : 'Not the idea this lesson teaches. Try again (use Hint if you are stuck).');
+    rejectMove(nodeId, gen, puzzle.book === true ? 'Not the book move for this line. Try again.' : puzzle.theme === 'custom' ? 'Not the move the author had in mind. Try again (use Hint if you are stuck).' : 'Not the idea this lesson teaches. Try again (use Hint if you are stuck).');
     return;
   }
   // Any checkmate is a valid answer to a mate puzzle.

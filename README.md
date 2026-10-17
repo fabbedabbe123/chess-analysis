@@ -185,3 +185,11 @@ The strength rating range (e.g. 900–1300) is shown only once 10 games are anal
 ## Checkmate markers
 
 On a checkmate position the mated king gets a red "#" badge and the piece that moved to give mate a gold star (`src/components/MateMarkers.tsx`). When the mate has just been played, and you were not the one mated in a Play game, confetti bursts around the mating piece (Settings → "Win / lose animations"). The badges stay while the position is shown and follow the board when it is flipped.
+
+## Own puzzles
+
+Train → Puzzles → **My puzzles**: stand on any position, press "Make a puzzle", play the solution on the board (solver, reply, solver …), name it, optionally let Stockfish check the first move (depth 14), save. Solvers get the same rules as other puzzles: other moves are checked with Stockfish unless "Only my move counts" is on, any checkmate counts in mate puzzles. They take part in progress and spaced repetition.
+
+- **Share:** "Share" copies a link (`…#p=cp1.<code>`); opening it adds the puzzle (once, the id comes from the content). A code can also be pasted into the field below the list.
+- **Storage:** this browser only (`chess-analysis:my-puzzles:v1`, up to 100, included in backups). Cloud sync of own puzzles is not built yet: it needs one extra allowed name in the `user_data` table.
+- Code: `src/puzzles/myPuzzles.ts`, `src/stores/myPuzzlesStore.ts`, `src/components/PuzzleBuilder.tsx`.

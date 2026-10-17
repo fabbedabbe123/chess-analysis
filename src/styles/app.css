@@ -693,9 +693,9 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
   /* the toast must not sit on top of the bottom tab bar */
   .toast { bottom: calc(68px + env(safe-area-inset-bottom)); }
   /* sections whose first screen is a list or a setup form: no board until a puzzle or game is open */
-  .app[data-live=''][data-section='games'] :is(.board-stack, .status-line, .verdict, .board-controls),
-  .app[data-live=''][data-section='train'] :is(.board-stack, .status-line, .verdict, .board-controls),
-  .app[data-live=''][data-section='play'] :is(.board-stack, .status-line, .verdict, .board-controls) { display: none; }
+  .app:not(.mobile-board)[data-live=''][data-section='games'] :is(.board-stack, .status-line, .verdict, .board-controls),
+  .app:not(.mobile-board)[data-live=''][data-section='train'] :is(.board-stack, .status-line, .verdict, .board-controls),
+  .app:not(.mobile-board)[data-live=''][data-section='play'] :is(.board-stack, .status-line, .verdict, .board-controls) { display: none; }
 }
 @media (max-width: 400px) { .strength-count > span { flex: 1 1 100%; } }
 @media (max-width: 900px) {
@@ -755,3 +755,10 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 @keyframes mate-pop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @keyframes mate-confetti { 0% { left: 50%; top: 50%; transform: rotate(0) scale(.6); opacity: 1; } 70% { opacity: 1; } 100% { left: calc(50% + var(--dx)); top: calc(50% + var(--dy)); transform: rotate(calc(var(--rot) + 360deg)) scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .mate-burst { display: none; } }
+
+/* ---------- own puzzles ---------- */
+.puzzle-builder { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 6px 0; background: var(--bg-3); }
+.mine-item { display: flex; gap: 4px; align-items: stretch; }
+.mine-item .moment { flex: 1; min-width: 0; }
+.bld-solver { font-weight: 700; color: var(--accent); }
+.bld-reply { color: var(--muted); }

@@ -33,6 +33,10 @@ async def main():
         await pg.tap('[data-testid=color-b]'); await pg.tap('[data-testid=from-fen]'); await pg.wait_for_timeout(200)
         check('tapping Black selects it', await pg.get_attribute('[data-testid=color-b]','aria-checked')=='true')
         check('tapping FEN selects it and shows the input', await pg.get_attribute('[data-testid=from-fen]','aria-checked')=='true' and await pg.locator('[data-testid=from-fen-input]').is_visible())
+        # the board must always be visible on the Board tab, whichever section was open before
+        for t in ['Train','My games','Play']:
+            await pg.click(f'.mobile-tabs >> text={t}'); await pg.click('.mobile-tabs >> text=Board'); await pg.wait_for_timeout(250)
+            check(f'board visible on the Board tab after {t}', await pg.locator('.board-stack').is_visible())
         check('no page errors', errs==[])
         await b.close()
 asyncio.run(main())

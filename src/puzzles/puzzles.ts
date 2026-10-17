@@ -4,7 +4,7 @@ import type { ReviewMove } from '@/analysis/review';
 import type { Color } from '@/types/game';
 
 export type PuzzleDifficulty = 'easy' | 'medium' | 'hard';
-export type PuzzleTheme = 'mate1' | 'mate2' | 'mate3' | 'tactic' | 'defence' | 'mistake' | 'lesson';
+export type PuzzleTheme = 'mate1' | 'mate2' | 'mate3' | 'tactic' | 'defence' | 'mistake' | 'lesson' | 'custom';
 
 export const THEME_LABEL: Record<PuzzleTheme, string> = {
   mate1: 'Mate in 1',
@@ -14,6 +14,7 @@ export const THEME_LABEL: Record<PuzzleTheme, string> = {
   defence: 'Only move (defence)',
   mistake: 'From your game',
   lesson: 'Lesson exercise',
+  custom: 'My puzzle',
 };
 
 export const DIFFICULTY_NOTE =
@@ -29,6 +30,8 @@ export interface Puzzle {
   difficulty: PuzzleDifficulty;
   sideToMove: Color;
   mateIn?: number;
+  /** Own puzzles: a short name chosen by the author. */
+  title?: string;
   /** Lesson exercises: why the solution works, shown once the exercise is over. */
   explanation?: string;
   /** Lesson exercises: only the stored first move counts (no engine check for alternatives). */
@@ -74,7 +77,8 @@ export function validatePuzzle(raw: unknown): { ok: true; puzzle: Puzzle } | { o
       difficulty,
       sideToMove,
       ...(typeof p['mateIn'] === 'number' ? { mateIn: p['mateIn'] } : {}),
-      ...(typeof p['explanation'] === 'string' ? { explanation: p['explanation'] } : {}),
+      ...(typeof p['title'] === 'string' && p['title'].trim() !== '' ? { title: p['title'].trim().slice(0, 60) } : {}),
+      ...(typeof p['explanation'] === 'string' ? { explanation: p['explanation'].slice(0, 400) } : {}),
       ...(p['exact'] === true ? { exact: true } : {}),
       ...(typeof p['skillId'] === 'string' ? { skillId: p['skillId'] } : {}),
       ...(p['book'] === true ? { book: true } : {}),

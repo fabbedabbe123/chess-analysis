@@ -11,11 +11,13 @@ import { initView } from './stores/viewStore';
 import { initSync } from './sync/syncStore';
 import { installPieceCss } from './utils/boardStyle';
 import { installAudioUnlock } from './utils/sound';
+import { importPuzzleFromLocation } from './stores/myPuzzlesStore';
 import { VersionBadge } from './components/VersionBadge';
 
 installPieceCss();
 startGamePersistence();
 initPuzzles();
+importPuzzleFromLocation();
 initPlay();
 initView();
 void initSync();
