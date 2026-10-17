@@ -43,6 +43,7 @@ jobs:
           nohup npx vite preview --port 4174 --strictPort --outDir "$RUNNER_TEMP/dist-sync" > preview-sync.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:4174/ > /dev/null && break; sleep 1; done
       # real Stockfish in a real browser; these scripts exit non-zero on failure
+      - run: mkdir -p /tmp/claude-0
       - run: python3 e2e/lessons.py
       - run: python3 e2e/features.py
       - run: python3 e2e/backup.py

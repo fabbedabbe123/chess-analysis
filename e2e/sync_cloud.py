@@ -1,4 +1,9 @@
 import asyncio, base64, json, os, time
+import os, tempfile, base64 as _b64
+_D = tempfile.mkdtemp()
+PIC_SVG = os.path.join(_D, 'pic.svg'); PIC_PNG = os.path.join(_D, 'pic.png')
+open(PIC_SVG, 'w').write('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>')
+open(PIC_PNG, 'wb').write(_b64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='))
 from playwright.async_api import async_playwright
 exec(open(os.path.join(os.path.dirname(__file__),'common.py')).read())
 # Needs a build WITH a Supabase project configured, served on :4174 (see README "Cloud sync"). The server is a MOCK:
@@ -225,9 +230,9 @@ async def main():
         check('shared numbers are only level / games / puzzles / streak', sp is not None and sp['user_id']=='user-1' and set(sp['stats'])=={'level','games','solved','bestStreak'} and sp['stats']['games']==1)
         # picture upload in Settings
         await pg3.keyboard.press('Escape'); await pg3.click('[data-testid=open-settings]'); await pg3.wait_for_selector('[data-testid=avatar-input]', state='attached')
-        await pg3.set_input_files('[data-testid=avatar-input]','/tmp/claude-0/pic.svg'); await pg3.wait_for_selector('[data-testid=avatar-error]')
+        await pg3.set_input_files('[data-testid=avatar-input]',PIC_SVG); await pg3.wait_for_selector('[data-testid=avatar-error]')
         check('an SVG is refused as profile picture', 'PNG, JPEG or WebP' in await pg3.inner_text('[data-testid=avatar-error]'))
-        await pg3.set_input_files('[data-testid=avatar-input]','/tmp/claude-0/pic.png'); await pg3.wait_for_selector('[data-testid=avatar-remove]')
+        await pg3.set_input_files('[data-testid=avatar-input]',PIC_PNG); await pg3.wait_for_selector('[data-testid=avatar-remove]')
         pa=[r for r in st3['reqs'] if r[0]=='PATCH' and '/rest/v1/profiles' in r[1] and 'avatar' in (r[3] or '')]
         av=json.loads(pa[-1][3])['avatar'] if pa else ''
         check('uploaded picture is stored as a small square JPEG data URL', av.startswith('data:image/jpeg;base64,') and len(av)<=60000)
