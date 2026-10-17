@@ -17,6 +17,13 @@ export function setStorageWriteListener(fn: ((key: string) => void) | null): voi
   writeListener = fn;
 }
 
+let failListener: ((key: string) => void) | null = null;
+let lastFailAt = 0;
+/** Called (at most once a minute) when a write fails, e.g. because the browser storage is full. */
+export function setStorageFailListener(fn: ((key: string) => void) | null): void {
+  failListener = fn;
+}
+
 /** Returns false when the value could not be stored. */
 export function storageSet(key: string, value: string): boolean {
   try {
@@ -25,6 +32,11 @@ export function storageSet(key: string, value: string): boolean {
     writeListener?.(key);
     return true;
   } catch {
+    const now = Date.now();
+    if (failListener !== null && now - lastFailAt > 60_000) {
+      lastFailAt = now;
+      failListener(key);
+    }
     return false;
   }
 }
