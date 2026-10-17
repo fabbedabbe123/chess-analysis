@@ -780,7 +780,7 @@ cg-board, .cg-wrap { touch-action: none; -webkit-user-select: none; user-select:
 :root, :root[data-theme='dark'] {
   --bg: #131211; --bg-2: #1a1917; --bg-3: #23211f; --line: rgba(255,255,255,.09);
   --text: #f4f1eb; --muted: #a39e94; --accent: #81b64c; --accent-text: #12200a;
-  --font-display: 'Bricolage Grotesque', 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'DM Sans', system-ui, sans-serif;
 }
 body { font: 15px/1.5 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
 h1, h2, .brand strong, .home-card strong { font-family: var(--font-display); letter-spacing: -0.02em; }
@@ -866,3 +866,39 @@ input, select, textarea { border-radius: 10px; padding: 8px 10px; background: #1
 .js-sa .hs-row[data-sa] { transform: translateX(calc((1 - var(--p, 0)) * 40px)); }
 @media (max-width: 800px) { .hs, .hs.flip { grid-template-columns: minmax(0, 1fr); gap: 24px; } .hs.flip .hs-text { order: 0; } }
 @media (prefers-reduced-motion: reduce) { .js-sa [data-sa] { opacity: 1 !important; transform: none !important; } }
+
+/* ---------- icon rail (default) / full tools menu ---------- */
+svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn:has(> svg.ic) { display: flex; align-items: center; gap: 10px; }
+.side-toggle { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 14px; font-size: 14px; }
+@media (min-width: 901px) {
+  .app.side-collapsed { grid-template-columns: 64px minmax(0, 1fr) 390px; gap: 24px; }
+  .app.side-collapsed .side-body { display: block; }
+  .app.side-collapsed .col-left { overflow: visible; }
+  .app.side-collapsed .sidebar { border-right: 0; padding: 0; align-items: center; gap: 10px; min-height: 0; }
+  .app.side-collapsed .side-more, .app.side-collapsed .lb, .app.side-collapsed .account-text { display: none !important; }
+  .app.side-collapsed .side-toggle, .app.side-collapsed .sidebar .btn, .app.side-collapsed .account-btn, .app.side-collapsed .brand-btn { width: 48px; height: 48px; padding: 0; margin: 0; justify-content: center; align-items: center; border-radius: 14px; border-color: transparent; background: transparent; color: var(--muted); }
+  .app.side-collapsed .side-toggle:hover, .app.side-collapsed .sidebar .btn:hover:not(:disabled), .app.side-collapsed .account-btn:hover, .app.side-collapsed .brand-btn:hover { background: var(--bg-3); color: var(--text); }
+  .app.side-collapsed .sidebar .btn.primary { background: rgba(129,182,76,.16); color: #c4e596; box-shadow: none; border-color: transparent; }
+  .app.side-collapsed .brand { margin-bottom: 18px; }
+  .app.side-collapsed .brand .logo { font-size: 30px; }
+  .app.side-collapsed .col-left { display: flex; flex-direction: column; align-items: center; }
+  .app.side-collapsed .side-toggle { order: 1; margin-bottom: 2px; }
+  .app.side-collapsed .side-body { order: 2; width: 100%; display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .app.side-collapsed .sidebar .stack { gap: 10px; align-items: center; }
+  .app.side-collapsed fieldset.plain { display: flex; flex-direction: column; align-items: center; }
+  .app.side-collapsed .sidebar > .spacer { flex: 1; }
+  .app:not(.side-collapsed) .col-left { overflow-y: auto; }
+}
+@media (min-width: 901px) {
+  .app { --verdict-h: clamp(110px, 17vh, 160px); --below: calc(312px + var(--verdict-h)); }
+}
+.hs-board { grid-template-columns: auto 1fr; align-items: center; gap: 24px; }
+.hs-boardwrap { position: relative; width: 300px; max-width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8); }
+.hs-boardwrap .mini-board { display: block; width: 100%; height: auto; }
+.hs-arrow { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: #81b64c; stroke-width: .28; stroke-linecap: round; stroke-linejoin: round; opacity: .9; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.js-sa .hs-arrow { stroke-dashoffset: calc(1 - var(--p, 0)); }
+.hs-rows { display: grid; gap: 10px; min-width: 0; }
+.hs-range b { transform-origin: left; }
+.js-sa .hs-range b[data-sa] { transform: scaleX(var(--p, 0)); opacity: 1; }
+@media (max-width: 800px) { .hs-board { grid-template-columns: minmax(0, 1fr); justify-items: center; } }

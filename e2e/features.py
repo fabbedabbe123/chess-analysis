@@ -20,14 +20,16 @@ async def main():
         await pg.goto(URL); await pg.wait_for_selector('cg-board'); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('cg-board')
         # 1. sidebar collapse
         w0=(await pg.locator('cg-board').bounding_box())['width']
+        check('icon rail is the default', await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"))
+        check('tools hidden in the rail', not await pg.get_by_text('Download PGN').is_visible())
         await pg.click('[data-testid=side-toggle]'); await pg.wait_for_timeout(200)
         w1=(await pg.locator('cg-board').bounding_box())['width']
-        check(f'collapsing the side menu grows the board ({w0:.0f}->{w1:.0f})', w1>w0)
-        check('side body hidden', not await pg.locator('.side-body').is_visible())
+        check(f'opening the tools menu keeps the board usable ({w0:.0f}->{w1:.0f})', w1>200)
+        check('tools visible when expanded', await pg.get_by_text('Download PGN').is_visible())
         await pg.reload(); await pg.wait_for_selector('cg-board')
-        check('collapse state persists across reload', await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"))
+        check('expanded state persists across reload', not await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"))
         await pg.click('[data-testid=side-toggle]'); await pg.wait_for_timeout(200)
-        check('expands again', await pg.locator('.side-body').is_visible())
+        check('back to the rail', await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"))
         # 2. play session resume
         await goto_tab(pg,'Play')
         check('no resume banner at first', await pg.locator('[data-testid=play-resume-banner]').count()==0)

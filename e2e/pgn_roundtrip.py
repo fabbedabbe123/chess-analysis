@@ -19,6 +19,7 @@ async def main():
             if await pg.get_by_role('button',name='Replace game').count(): await pg.get_by_role('button',name='Replace game').click()
             if await pg.locator('.modal').count(): await pg.get_by_text('Load selected game').click(); await pg.wait_for_timeout(300)
         await imp(PGN)
+        if await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"): await pg.click('[data-testid=side-toggle]')
         m1=await pg.locator('.move-list .mv').all_inner_texts(); v1=await pg.locator('.variation').count()
         # add NAG + comment through the UI on selected move
         await pg.locator('.mv',has_text='Nf6').first.click()
@@ -31,6 +32,7 @@ async def main():
         pg2=await ctx.new_page(); await pg2.goto(URL); await pg2.wait_for_selector('cg-board'); await pg2.evaluate("localStorage.clear()"); await pg2.reload(); await pg2.wait_for_selector('cg-board')
         pg=pg2
         await imp(text)
+        if await pg.evaluate("document.querySelector('.app').classList.contains('side-collapsed')"): await pg.click('[data-testid=side-toggle]')
         m2=await pg.locator('.move-list .mv').all_inner_texts(); v2=await pg.locator('.variation').count()
         m1b=[x.replace('!?','') for x in m1]
         print('moves equal (ignoring added NAG):', [x.replace('!?','') for x in m2]==m1b, 'variations', v1, v2)

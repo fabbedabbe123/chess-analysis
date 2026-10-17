@@ -24,6 +24,20 @@ import { copyText, downloadText } from '@/utils/download';
 import { formatDate } from '@/utils/format';
 import { AccountButton } from './AccountSection';
 
+const IC = {
+  plus: 'M12 5v14M5 12h14',
+  import: 'M12 3v12M7 8l5-5 5 5M5 21h14',
+  restore: 'M4 12a8 8 0 108-8M4 4v5h5',
+  fromPos: 'M12 4v12M7 11l5 5 5-5M5 21h14',
+  sun: 'M12 16a4 4 0 100-8 4 4 0 000 8zM12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.500 1.500M17.500 17.500L19 19M5 19l1.500-1.500M17.500 6.500L19 5',
+  moon: 'M20 14.500A8 8 0 019.500 4 8 8 0 1020 14.500z',
+  gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.100-1.200l2-1.500-2-3.400-2.300 1a7 7 0 00-2-1.200L14.300 3h-4l-.300 2.700a7 7 0 00-2 1.200l-2.300-1-2 3.400 2 1.500A7 7 0 005 12c0 .400 0 .800.100 1.200l-2 1.500 2 3.400 2.300-1a7 7 0 002 1.200l.300 2.700h4l.300-2.700a7 7 0 002-1.200l2.300 1 2-3.400-2-1.500c.100-.400.100-.800.100-1.200z',
+  help: 'M9.500 9a2.500 2.500 0 114 2c-.900.600-1.500 1-1.500 2.200M12 17h.010',
+} as const;
+function Ic({ d }: { d: keyof typeof IC }) {
+  return <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d={IC[d]} /></svg>;
+}
+
 const HEADER_FIELDS = ['White', 'Black', 'Event', 'Site', 'Date', 'Result'] as const;
 
 function Headers() {
@@ -69,30 +83,31 @@ export function Sidebar() {
       <button className="brand brand-btn" onClick={goHome} title="Back to the start page" data-testid="go-home">
         <span className="logo" aria-hidden>♞</span>
         <div>
-          <strong>Chess Analysis</strong>
-          <small>⌂ Start page</small>
+          <strong className="lb">Chess Analysis</strong>
+          <small className="lb">⌂ Start page</small>
         </div>
       </button>
 
       <AccountButton />
 
-      {puzzleOpen && <div className="callout info small">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
+      {puzzleOpen && <div className="callout info small side-more">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
       <fieldset className="plain" disabled={puzzleOpen}>
       <div className="stack">
-        <button className="btn primary" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
-          ＋ New game
+        <button className="btn primary" title="New game" aria-label="New game" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
+          <Ic d="plus" /><span className="lb">New game</span>
         </button>
-        <button className="btn" onClick={() => openDialog('import')} data-testid="open-import">⇪ Import PGN / FEN</button>
+        <button className="btn" title="Import PGN / FEN" aria-label="Import PGN or FEN" onClick={() => openDialog('import')} data-testid="open-import"><Ic d="import" /><span className="lb">Import PGN / FEN</span></button>
         {changed && (
-          <button className="btn" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
-            ↺ Restore imported game
+          <button className="btn side-more" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
+            <Ic d="restore" /><span className="lb">Restore imported game</span>
           </button>
         )}
-        <button className="btn" onClick={() => confirmThen(hasMoves, 'This replaces the game with a new one starting at the selected position.', 'Continue from here', continueFromHere)}>
-          ⤵ New game from this position
+        <button className="btn side-more" onClick={() => confirmThen(hasMoves, 'This replaces the game with a new one starting at the selected position.', 'Continue from here', continueFromHere)}>
+          <Ic d="fromPos" /><span className="lb">New game from this position</span>
         </button>
       </div>
 
+      <div className="side-more">
       <h3>Export</h3>
       <div className="export-grid">
         <button className="btn" onClick={() => void copy('FEN', currentFen())}>Copy FEN</button>
@@ -161,15 +176,16 @@ export function Sidebar() {
         </ul>
       )}
 
+      </div>
       </fieldset>
 
       <div className="spacer" />
       <div className="stack">
-        <button className="btn" onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}>
-          {theme === 'dark' ? '☀ Light theme' : '☾ Dark theme'}
+        <button className="btn" title={theme === 'dark' ? 'Light theme' : 'Dark theme'} aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'} onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}>
+          <Ic d={theme === 'dark' ? 'sun' : 'moon'} /><span className="lb">{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
         </button>
-        <button className="btn" onClick={() => openDialog('settings')} data-testid="open-settings">⚙ Settings</button>
-        <button className="btn" onClick={() => openDialog('help')}>? Help, tips & shortcuts</button>
+        <button className="btn" onClick={() => openDialog('settings')} title="Settings" aria-label="Settings" data-testid="open-settings"><Ic d="gear" /><span className="lb">Settings</span></button>
+        <button className="btn" title="Help, tips & shortcuts" aria-label="Help, tips and shortcuts" onClick={() => openDialog('help')}><Ic d="help" /><span className="lb">Help, tips & shortcuts</span></button>
       </div>
     </aside>
   );

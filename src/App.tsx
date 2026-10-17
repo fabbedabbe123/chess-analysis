@@ -113,8 +113,8 @@ export default function App() {
   return (
     <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
-        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Show side menu' : 'Hide side menu'} title={collapsed ? 'Show side menu' : 'Hide side menu'} onClick={toggleSidebar}>
-          {collapsed ? '»' : '« Hide menu'}
+        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} title={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} onClick={toggleSidebar}>
+          <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg><span className="lb">{collapsed ? '' : 'Hide tools'}</span>
         </button>
         <div className="side-body"><Sidebar /></div>
       </div>

@@ -25,9 +25,9 @@ export interface UiState {
 const COLLAPSE_KEY = 'chess-analysis:sidebar-collapsed:v1';
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSE_KEY) === '1';
+    return localStorage.getItem(COLLAPSE_KEY) !== '0'; // icon rail is the default
   } catch {
-    return false;
+    return true;
   }
 }
 export function toggleSidebar(): void {

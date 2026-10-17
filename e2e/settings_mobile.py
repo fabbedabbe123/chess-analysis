@@ -32,7 +32,7 @@ async def main():
         print()
         # tabs & dialogs
         for tab in ['Review','Openings','Tactics','Engine']: await goto_tab(pg,tab)
-        await pg.click('text=Help, tips & shortcuts'); print('help dialog:', await pg.locator('.modal').count()); await pg.keyboard.press('Escape')
+        await pg.click('[aria-label="Help, tips and shortcuts"]'); print('help dialog:', await pg.locator('.modal').count()); await pg.keyboard.press('Escape')
         # openings explorer error path (network blocked in sandbox)
         await goto_tab(pg,'Openings'); await pg.get_by_label('Load from explorer.lichess.ovh').check(); await pg.wait_for_timeout(3500)
         print('explorer:', await pg.locator('.openings-panel .callout.warn').all_inner_texts(), '| book moves still shown:', await pg.locator('.book-move').count())

@@ -8,6 +8,7 @@ import { usePuzzle } from '@/stores/puzzleStore';
 import { useStrength } from '@/stores/strengthStore';
 import { openDialog, setMobileTab, setRightTab, type RightTab } from '@/stores/uiStore';
 import { enterApp } from '@/stores/viewStore';
+import { MiniBoard } from './MiniBoard';
 import { AccountButton, SignInBanner } from './AccountSection';
 
 /** Scroll reveal: sets --p (0..1) on [data-sa] children as they scroll into view. No IntersectionObserver or reduced motion = everything visible. */
@@ -123,10 +124,16 @@ export function Home() {
 
         <section className="hs" aria-label="Analyse">
           <div className="hs-text" data-sa><span className="hs-kicker">Analyse</span><h2>See exactly where the game turned.</h2><p>Every move gets a grade, with the best alternative and a plain explanation of the mistake.</p></div>
-          <div className="hs-vis" data-sa aria-hidden="true">
-            <div className="hs-row" data-sa><i style={{ background: '#96bc4b' }} /><span>1. e4</span><span>Best</span></div>
-            <div className="hs-row" data-sa><i style={{ background: '#e6b83a' }} /><span>12. Bd3</span><span>Inaccuracy</span></div>
-            <div className="hs-row" data-sa><i style={{ background: '#d6453d' }} /><span>14... Qd7</span><span>Blunder</span></div>
+          <div className="hs-vis hs-board" data-sa aria-hidden="true">
+            <div className="hs-boardwrap">
+              <MiniBoard fen="r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR" size={300} flip={false} />
+              <svg className="hs-arrow" viewBox="0 0 8 8"><path d="M7.5 7.5 L7.5 4.5 L6.2 4.5" pathLength="1" /></svg>
+            </div>
+            <div className="hs-rows">
+              <div className="hs-row" data-sa><i style={{ background: '#96bc4b' }} /><span>1. e4</span><span>Best</span></div>
+              <div className="hs-row" data-sa><i style={{ background: '#e6b83a' }} /><span>12. Bd3</span><span>Inaccuracy</span></div>
+              <div className="hs-row" data-sa><i style={{ background: '#d6453d' }} /><span>14... Qd7</span><span>Blunder</span></div>
+            </div>
           </div>
         </section>
         <section className="hs flip" aria-label="Play">
@@ -147,7 +154,7 @@ export function Home() {
         </section>
         <section className="hs flip" aria-label="Your level">
           <div className="hs-text" data-sa><span className="hs-kicker">Your level</span><h2>An honest picture of your strength.</h2><p>A rough range from your analysed games. It is a guide, not an Elo, and it says so.</p></div>
-          <div className="hs-vis" data-sa aria-hidden="true"><div className="hs-big">850–1750</div><div className="hs-range"><b /></div><span className="muted small-print">Example. Roughly ±450 points.</span></div>
+          <div className="hs-vis" data-sa aria-hidden="true"><div className="hs-big">850–1750</div><div className="hs-range"><b data-sa /></div><span className="muted small-print">Example. Roughly ±450 points.</span></div>
         </section>
 
         <p className="home-foot">
