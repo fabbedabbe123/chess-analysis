@@ -74,6 +74,8 @@ const TAB_ICONS: Record<string, string> = {
   puzzles: 'M9 3h6v4a2 2 0 104 0h2v6h-4a2 2 0 100 4h4v4H3V3z',
   player: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.5-4 3.500-6 8-6s7.500 2 8 6',
   strength: 'M4 18a8 8 0 1116 0M12 18l4-6',
+  board: 'M4 4h16v16H4zM4 12h16M12 4v16M4 4h8v8H4zM12 12h8v8h-8z',
+  menu: 'M4 6h16M4 12h16M4 18h16',
 };
 function TabIcon({ id }: { id: string }) {
   return <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[id] ?? ''} /></svg>;
@@ -196,17 +198,17 @@ export default function App() {
       </div>
 
       <nav className="mobile-tabs" aria-label="Sections">
-        <button className={mobileTab === 'board' ? 'active' : ''} onClick={() => setMobileTab('board')}>Board</button>
+        <button className={mobileTab === 'board' ? 'active' : ''} onClick={() => setMobileTab('board')}><TabIcon id="board" /><span>Board</span></button>
         {SECTIONS.map((sec) => {
           const active = sec.tabs.some((t) => t.id === mobileTab);
           return (
             <button key={sec.id} className={active ? 'active' : ''} onClick={() => {
               const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id;
               setRightTab(t); setMobileTab(t);
-            }}>{sec.label}</button>
+            }}><TabIcon id={sec.id} /><span>{sec.label}</span></button>
           );
         })}
-        <button className={mobileTab === 'menu' ? 'active' : ''} onClick={() => setMobileTab('menu')}>Menu</button>
+        <button className={mobileTab === 'menu' ? 'active' : ''} onClick={() => setMobileTab('menu')}><TabIcon id="menu" /><span>Menu</span></button>
       </nav>
 
       {dialog === 'import' && <ImportDialog />}

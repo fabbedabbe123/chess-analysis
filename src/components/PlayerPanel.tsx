@@ -104,7 +104,7 @@ export function PlayerPanel() {
       <header className="panel-head"><h2>My games</h2></header>
       <div className="tabs small" role="tablist" aria-label="Site">
         {(['chesscom', 'lichess'] as const).map((s) => (
-          <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'active' : ''} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
+          <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'active' : ''} style={{ textTransform: 'none' }} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
         ))}
       </div>
       <form className="row wrap" onSubmit={(e) => { e.preventDefault(); void (lichess ? syncLichess(input) : syncPlayer(input)); }}>

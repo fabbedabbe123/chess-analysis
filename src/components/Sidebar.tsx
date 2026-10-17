@@ -93,10 +93,10 @@ export function Sidebar() {
       {puzzleOpen && <div className="callout info small side-more">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
       <fieldset className="plain" disabled={puzzleOpen}>
       <div className="stack">
-        <button className="btn primary" data-tip="New game" aria-label="New game" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
+        <button className="btn primary" data-tip={puzzleOpen ? 'Exit the puzzle or Play game first' : 'New game'} aria-label="New game" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
           <Ic d="plus" /><span className="lb">New game</span>
         </button>
-        <button className="btn" data-tip="Import PGN / FEN" aria-label="Import PGN or FEN" onClick={() => openDialog('import')} data-testid="open-import"><Ic d="import" /><span className="lb">Import PGN / FEN</span></button>
+        <button className="btn" data-tip={puzzleOpen ? 'Exit the puzzle or Play game first' : 'Import PGN / FEN'} aria-label="Import PGN or FEN" onClick={() => openDialog('import')} data-testid="open-import"><Ic d="import" /><span className="lb">Import PGN / FEN</span></button>
         {changed && (
           <button className="btn side-more" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
             <Ic d="restore" /><span className="lb">Restore imported game</span>
