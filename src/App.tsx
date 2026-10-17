@@ -29,7 +29,7 @@ import { useGame } from '@/stores/gameStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { useSetting } from '@/stores/settingsStore';
-import { openDialog, setMobileTab, setRightTab, toggleMoves, toggleSidebar, useUi, type RightTab } from '@/stores/uiStore';
+import { openDialog, setMobileTab, setRightTab, toggleMoves, useUi, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
 import { useView } from '@/stores/viewStore';
 
@@ -142,9 +142,6 @@ export default function App() {
   return (
     <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
-        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} data-tip={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} onClick={toggleSidebar}>
-          <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg><span className="lb">{collapsed ? '' : 'Hide tools'}</span>
-        </button>
         <div className="side-body"><Sidebar /></div>
       </div>
 

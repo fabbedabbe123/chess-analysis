@@ -16,7 +16,7 @@ import {
 import { deleteSavedGame, saveGameToLibrary, useLibrary } from '@/stores/libraryStore';
 import { updateSettings, useSetting } from '@/stores/settingsStore';
 import { goHome } from '@/stores/viewStore';
-import { confirmThen, openDialog } from '@/stores/uiStore';
+import { confirmThen, openDialog, toggleSidebar, useUi } from '@/stores/uiStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { parsePgn } from '@/pgn/pgn';
@@ -78,6 +78,8 @@ export function Sidebar() {
     notify(ok ? 'info' : 'error', ok ? `${what} copied to clipboard.` : 'The browser blocked clipboard access - use Download PGN instead.');
   };
 
+  const collapsed = useUi((s) => s.sidebarCollapsed);
+
   return (
     <aside className="sidebar" aria-label="Game menu">
       <button className="brand brand-btn" onClick={goHome} data-tip="Start page" data-testid="go-home">
@@ -87,6 +89,9 @@ export function Sidebar() {
           <small className="lb">⌂ Start page</small>
         </div>
       </button>
+        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} data-tip={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} onClick={toggleSidebar}>
+          <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg><span className="lb">{collapsed ? '' : 'Hide tools'}</span>
+        </button>
 
       <AccountButton />
 

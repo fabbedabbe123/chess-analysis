@@ -1479,3 +1479,10 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
   .app.side-collapsed .brand .logo { line-height: 1; display: block; }
   .app.side-collapsed .col-left > *, .app.side-collapsed .sidebar > *, .app.side-collapsed .sidebar .stack > * { margin-left: 0; margin-right: 0; }
 }
+@media (min-width: 901px) {
+  .app.side-collapsed .col-left { gap: 18px; }
+  .app.side-collapsed .brand-btn { margin-bottom: 0; }
+  .app.side-collapsed .side-toggle { margin-bottom: 14px; }
+  .app.side-collapsed .col-left > .account-btn, .app.side-collapsed .account-btn { margin-bottom: 0; }
+  .app:not(.side-collapsed) .sidebar .side-toggle { margin-bottom: 12px; }
+}
