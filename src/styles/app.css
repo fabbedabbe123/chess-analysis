@@ -1467,3 +1467,15 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
   .modal.settings-modal { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
   .set.narrow .set-pane, .set.narrow .set-nav { overflow-y: auto; min-height: 0; }
 }
+
+/* ---------- icon rail: logo on top, menu button below, everything on one centre line ---------- */
+@media (min-width: 901px) {
+  .app.side-collapsed .col-left { gap: 10px; padding-top: 0; }
+  .app.side-collapsed .side-body, .app.side-collapsed .sidebar, .app.side-collapsed fieldset.plain, .app.side-collapsed .sidebar .stack { display: contents; }
+  .app.side-collapsed .brand-btn { order: -3; margin: 0; gap: 0; }
+  .app.side-collapsed .brand-btn > div { display: none; }
+  .app.side-collapsed .side-toggle { order: -2; margin: 0 0 8px; }
+  .app.side-collapsed .sidebar > .spacer { flex: 1 1 auto; }
+  .app.side-collapsed .brand .logo { line-height: 1; display: block; }
+  .app.side-collapsed .col-left > *, .app.side-collapsed .sidebar > *, .app.side-collapsed .sidebar .stack > * { margin-left: 0; margin-right: 0; }
+}
