@@ -99,16 +99,12 @@ export function PuzzlePanel() {
   };
 
   return (
-    <section className="panel puzzle-panel" aria-label="Puzzles">
-      <header className="panel-head">
-        <h2>Puzzles</h2>
-        <div className="spacer" />
-        {phase !== 'off' && <button className="btn small" onClick={exitPuzzles}>Exit puzzles</button>}
-      </header>
+    <section className="panel puzzle-panel pz" aria-label="Puzzles">
+      {phase !== 'off' && <div className="pz-exit"><button className="btn small" onClick={exitPuzzles}>Exit puzzles</button></div>}
 
       {loadError && <div className="callout error">{loadError}</div>}
 
-      <div className="puzzle-stats">
+      <div className="puzzle-stats pz-tiles">
         <div><strong>{solvedCount}</strong><span> / {all.length} solved</span></div>
         <div><strong data-testid="puzzle-streak">{progress.streak}</strong><span> streak</span></div>
         <div><strong>{progress.bestStreak}</strong><span> best</span></div>
@@ -116,51 +112,49 @@ export function PuzzlePanel() {
 
       {phase === 'off' ? (
         <>
-          <p className="muted small-print">
-            Puzzles were generated and verified with Stockfish from weak-play positions. Live analysis is switched off while you solve, and your game is restored when you leave.
-          </p>
-          <div className="row wrap">
-            <label className="inline">Difficulty
-              <select value={filter.difficulty} onChange={(e) => setPuzzleFilter({ difficulty: e.target.value as PuzzleDifficulty | 'any' })} aria-label="Puzzle difficulty">
-                <option value="any">Any</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
-              </select>
-            </label>
-            <label className="inline">Type
-              <select value={filter.theme} onChange={(e) => setPuzzleFilter({ theme: e.target.value as PuzzleTheme | 'any' })} aria-label="Puzzle type">
-                <option value="any">Any</option>
-                {BUNDLED_THEMES.map((t) => <option key={t} value={t}>{THEME_LABEL[t]}</option>)}
-              </select>
-            </label>
-          </div>
-          <p className="muted small-print">{DIFFICULTY_NOTE}</p>
-          <div className="row wrap">
-            <button className="btn primary" disabled={matching.length === 0} onClick={() => nextPuzzle(all) && setMobileTab('board')} data-testid="puzzle-start">
+          <div className="pz-new">
+            <div className="rp-label">New puzzle</div>
+            <div className="pz-pills" role="radiogroup" aria-label="Puzzle difficulty">
+              {(['any', 'easy', 'medium', 'hard'] as const).map((d) => (
+                <button key={d} role="radio" aria-checked={filter.difficulty === d} className={filter.difficulty === d ? 'on' : ''} onClick={() => setPuzzleFilter({ difficulty: d as PuzzleDifficulty | 'any' })} data-testid={`pz-diff-${d}`}>{d === 'any' ? 'Any level' : d[0]!.toUpperCase() + d.slice(1)}</button>
+              ))}
+            </div>
+            <div className="pz-pills" role="radiogroup" aria-label="Puzzle type">
+              {(['any', ...BUNDLED_THEMES] as const).map((t) => (
+                <button key={t} role="radio" aria-checked={filter.theme === t} className={filter.theme === t ? 'on' : ''} onClick={() => setPuzzleFilter({ theme: t as PuzzleTheme | 'any' })} data-testid={`pz-theme-${t}`}>{t === 'any' ? 'Any type' : THEME_LABEL[t]}</button>
+              ))}
+            </div>
+            <button className="btn primary pz-start" disabled={matching.length === 0} onClick={() => nextPuzzle(all) && setMobileTab('board')} data-testid="puzzle-start">
               {matching.length === 0 ? 'No puzzles match' : 'Start puzzle'}
             </button>
-            <button className="btn small" onClick={resetPuzzleProgress}>Reset progress</button>
+            <p className="muted small-print">{DIFFICULTY_NOTE} Live analysis is paused while you solve, and your game comes back when you leave.</p>
           </div>
 
-          <h3>Review (spaced repetition)</h3>
-          <div className="row wrap">
-            <button className="btn" disabled={due.length === 0} onClick={() => { startPuzzleSession(due.slice(0, 10)); setMobileTab('board'); }} data-testid="puzzle-review">
-              {due.length === 0 ? 'Nothing due' : `Review ${Math.min(10, due.length)} due`}
-            </button>
-            <span className="muted small-print" data-testid="puzzle-due-note">
-              {nextDue === null ? 'Solve a puzzle and it comes back after 1, 3, 7, 16 and 35 days as you get it right. A miss sends it back to 1 day.' : due.length > 0 ? `${due.length} due now.` : `Next review ${new Date(nextDue).toLocaleDateString()}.`}
-            </span>
+          <div className="rp-card pz-rows">
+            <div className="pz-row">
+              <span className="pz-ic"><svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 108-8M4 4v5h5" /></svg></span>
+              <div className="rp-t"><b>{due.length === 0 ? 'Nothing due for review' : `${due.length} due for review`}</b>
+                <span className="muted small-print" data-testid="puzzle-due-note">{nextDue === null ? 'Solve a puzzle and it comes back after 1, 3, 7, 16 and 35 days as you get it right. A miss sends it back to 1 day.' : due.length > 0 ? `${due.length} due now.` : `Next review ${new Date(nextDue).toLocaleDateString()}.`}</span></div>
+              <button className="btn small" disabled={due.length === 0} onClick={() => { startPuzzleSession(due.slice(0, 10)); setMobileTab('board'); }} data-testid="puzzle-review">
+                {due.length === 0 ? 'Nothing due' : `Review ${Math.min(10, due.length)} due`}
+              </button>
+            </div>
+            <div className="pz-row">
+              <span className="pz-ic"><svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14" /></svg></span>
+              <div className="rp-t"><b>More from Lichess</b><span className="muted small-print">20 puzzles from the Lichess database (CC0). Needs internet. {online.length} saved in this browser.</span></div>
+              <button className="btn small" disabled={fetching} onClick={() => void getOnline()} data-testid="puzzle-online">{fetching ? 'Fetching…' : 'Get 20 Lichess puzzles'}</button>
+            </div>
+            {onlineNote && <p className="muted small-print" data-testid="puzzle-online-note">{onlineNote}</p>}
+            <div className="pz-row">
+              <span className="pz-ic"><svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0M12 8v8M8 12h8" /></svg></span>
+              <div className="rp-t"><b>Reset progress</b><span className="muted small-print">Start counting solved puzzles and streaks again.</span></div>
+              <button className="btn small" onClick={resetPuzzleProgress}>Reset progress</button>
+            </div>
           </div>
 
-          <h3>More puzzles from Lichess</h3>
-          <div className="row wrap">
-            <button className="btn" disabled={fetching} onClick={() => void getOnline()} data-testid="puzzle-online">{fetching ? 'Fetching…' : 'Get 20 Lichess puzzles'}</button>
-            <span className="muted small-print">{online.length} saved in this browser</span>
-          </div>
-          {onlineNote && <p className="muted small-print" data-testid="puzzle-online-note">{onlineNote}</p>}
-          <p className="muted small-print">Optional, needs internet. Puzzles come from the Lichess puzzle database (CC0). They are checked for legality here, but unlike the bundled set they were not generated by this app's engine.</p>
-
-          <h3>My puzzles</h3>
+          <div className="rp-sechead"><span className="rp-label">My puzzles</span><div className="spacer" />{!building && <button className="btn small" onClick={() => setBuilding(true)} data-testid="mine-new">＋ Make a puzzle</button>}</div>
           {mine.length === 0 ? (
-            <p className="muted small-print" data-testid="mine-empty">Nothing here yet. Make a puzzle from any position, or add one from a friend with a link or code.</p>
+            <p className="muted small-print rp-quiet" data-testid="mine-empty">Nothing here yet. Make a puzzle from any position, or add one from a friend with a link or code.</p>
           ) : (
             <ul className="moments" data-testid="mine-list">
               {mine.map((p) => (
@@ -177,18 +171,16 @@ export function PuzzlePanel() {
               ))}
             </ul>
           )}
-          {building
-            ? <PuzzleBuilder onSaved={() => setBuilding(false)} />
-            : <button className="btn" onClick={() => setBuilding(true)} data-testid="mine-new">＋ Make a puzzle</button>}
-          <div className="row wrap">
+          {building && <PuzzleBuilder onSaved={() => setBuilding(false)} />}
+          <div className="pz-import">
             <input value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste a puzzle link or code (cp1.…)" aria-label="Puzzle link or code" data-testid="mine-import-text" spellCheck={false} />
             <button className="btn" disabled={importText.trim() === ''} onClick={importCode} data-testid="mine-import">Add</button>
           </div>
           {mineNote && <p className="muted small-print" data-testid="mine-note" role="status">{mineNote}</p>}
 
-          <h3>Practice from your game</h3>
+          <div className="rp-sechead"><span className="rp-label">Practice from your game</span></div>
           {mistakes.length === 0 ? (
-            <p className="muted small-print">Run a game review first. Your mistakes then appear here as puzzles: find the move Stockfish preferred.</p>
+            <p className="muted small-print rp-quiet">Run a game review first. Your mistakes then appear here as puzzles: find the move Stockfish preferred.</p>
           ) : (
             <ul className="moments">
               {mistakes.slice(0, 8).map(({ move, puzzle: p }) => (
@@ -205,7 +197,7 @@ export function PuzzlePanel() {
         </>
       ) : (
         puzzle && (
-          <div className="puzzle-active" data-testid="puzzle-active">
+          <div className="puzzle-active pz-active" data-testid="puzzle-active">
             <div className="row wrap">
               <span className="pill">{THEME_LABEL[puzzle.theme]}</span>
               <span className={`pill diff-${puzzle.difficulty}`}>{puzzle.difficulty}</span>

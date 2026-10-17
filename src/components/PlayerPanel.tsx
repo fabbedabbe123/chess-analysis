@@ -99,27 +99,30 @@ export function PlayerPanel() {
   const name = lichess ? 'Lichess' : 'Chess.com';
   const pick = (s: Source) => { setSource(s); setInput((s === 'lichess' ? li.username : cc.username) ?? ''); setCls('all'); setShowAll(false); };
 
+  const latest = (pts: { rating: number }[] | undefined) => (pts && pts.length > 0 ? pts[pts.length - 1]!.rating : null);
+  const ratingLine = CLASSES.map((c) => [c, latest(stats.ratings[c])] as const).filter(([, r]) => r !== null).map(([c, r]) => `${c[0]!.toUpperCase()}${c.slice(1)} ${r}`).join(' · ');
+  const tot = Math.max(1, stats.total.win + stats.total.draw + stats.total.loss);
+
   return (
-    <section className="panel player-panel" aria-label="Player tracking">
-      <header className="panel-head"><h2>My games</h2></header>
-      <div className="tabs small" role="tablist" aria-label="Site">
+    <section className="panel player-panel pp" aria-label="Player tracking">
+      <div className="seg" role="tablist" aria-label="Site">
         {(['chesscom', 'lichess'] as const).map((s) => (
-          <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'active' : ''} style={{ textTransform: 'none' }} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
+          <button key={s} role="tab" aria-selected={source === s} className={source === s ? 'on active' : ''} onClick={() => pick(s)} data-testid={`source-${s}`}>{s === 'lichess' ? 'Lichess' : 'Chess.com'}</button>
         ))}
       </div>
-      <form className="row wrap" onSubmit={(e) => { e.preventDefault(); void (lichess ? syncLichess(input) : syncPlayer(input)); }}>
+      <form className="pp-form" onSubmit={(e) => { e.preventDefault(); void (lichess ? syncLichess(input) : syncPlayer(input)); }}>
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`${name} username`} aria-label={`${name} username`} data-testid="player-input" autoCapitalize="off" spellCheck={false} />
         <button className="btn primary" type="submit" disabled={syncing || input.trim() === ''} data-testid="player-track">{syncing ? 'Syncing…' : t.username?.toLowerCase() === input.trim().toLowerCase() ? 'Refresh' : 'Track'}</button>
-        {t.username && <button type="button" className="btn small danger" onClick={() => { if (lichess) clearLichess(); else clearTracker(); setInput(''); }}>Stop tracking</button>}
+        {t.username && t.games.length === 0 && <button type="button" className="btn small danger" onClick={() => { if (lichess) clearLichess(); else clearTracker(); setInput(''); }}>Stop tracking</button>}
       </form>
       {t.username === null && (
-        <ol className="plain-list steps" data-testid="player-steps">
-          <li>Choose {lichess ? 'Chess.com' : 'Lichess'} or {name} above and type your username, then press <strong>Track</strong>.</li>
-          <li>Your latest games load with results, openings and rating over time. Click a game to open it on the board.</li>
-          <li>Open <strong>Strength</strong> to let Stockfish analyse them: you get a level estimate, weak areas and practice puzzles from your own mistakes.</li>
+        <ol className="pp-steps" data-testid="player-steps">
+          <li><b>Type your username</b><span>Choose {lichess ? 'Chess.com' : 'Lichess'} or {name} above and type your username, then press <strong>Track</strong>.</span></li>
+          <li><b>See results and openings</b><span>Your latest games load with results, openings and rating over time. Click a game to open it on the board.</span></li>
+          <li><b>Find your level</b><span>Open <strong>Strength</strong> to let Stockfish analyse them: you get a level estimate, weak areas and practice puzzles from your own mistakes.</span></li>
         </ol>
       )}
-      <p className="muted small-print">Reads public games from {name}'s open API (no login, no token, nothing is sent anywhere else). Data stays in this browser.</p>
+      <p className="ep-note">Reads public games from {name}'s open API (no login, no token, nothing is sent anywhere else). Data stays in this browser.</p>
       {t.error && <div className="callout error" role="alert" data-testid="player-error">{t.error}</div>}
       {t.note && <div className="callout warn small">{t.note}</div>}
 
@@ -127,32 +130,38 @@ export function PlayerPanel() {
 
       {t.games.length > 0 && (
         <div data-testid="player-stats">
-          <div className="row wrap">
-            <strong>{t.username}</strong>
-            <span className="muted small-print">{t.games.length} games loaded{t.lastSync ? ` · synced ${new Date(t.lastSync).toLocaleString()}` : ''}</span>
+          <div className="rp-card pp-prof">
+            <div className="pp-top">
+              <span className="pp-av" aria-hidden>{(t.username ?? '?')[0]!.toUpperCase()}</span>
+              <div className="pp-who"><strong>{t.username}</strong><span className="muted small-print">{t.games.length} games loaded{t.lastSync ? ` · synced ${new Date(t.lastSync).toLocaleString()}` : ''}</span>{ratingLine && <span className="muted small-print">{ratingLine}</span>}</div>
+              {t.username && <button type="button" className="btn small ghost" onClick={() => { if (lichess) clearLichess(); else clearTracker(); setInput(''); }}>Stop tracking</button>}
+            </div>
+            {games.length > 0 && (
+              <>
+                <div className="pp-rec" aria-hidden><i style={{ width: `${(stats.total.win / tot) * 100}%` }} className="w" /><i style={{ width: `${(stats.total.draw / tot) * 100}%` }} className="d" /><i style={{ width: `${(stats.total.loss / tot) * 100}%` }} className="l" /></div>
+                <div className="pp-recnums"><span><b className="w">{stats.total.win}</b> wins</span><span><b>{stats.total.draw}</b> draws</span><span><b className="l">{stats.total.loss}</b> losses</span><span className="pp-score">{scorePct(stats.total).toFixed(0)}% score</span></div>
+              </>
+            )}
           </div>
-          <div className="tabs small">
+          <div className="pz-pills pp-cls">
             {(['all', ...CLASSES] as const).map((c) => (
-              <button key={c} className={cls === c ? 'active' : ''} onClick={() => setCls(c)}>{c}</button>
+              <button key={c} className={cls === c ? 'on active' : ''} onClick={() => setCls(c)}>{c === 'all' ? 'All' : c[0]!.toUpperCase() + c.slice(1)}</button>
             ))}
           </div>
           {games.length === 0 ? <p className="muted">No {cls} games loaded.</p> : (
             <>
-              <table className="counts">
-                <tbody>
-                  <tr><td>Overall</td><td><Wdl r={stats.total} /></td></tr>
-                  <tr><td>As White</td><td><Wdl r={stats.asWhite} /></td></tr>
-                  <tr><td>As Black</td><td><Wdl r={stats.asBlack} /></td></tr>
-                </tbody>
-              </table>
+              <div className="pp-split">
+                <div className="rp-card"><span className="rp-label">As White</span><Wdl r={stats.asWhite} /></div>
+                <div className="rp-card"><span className="rp-label">As Black</span><Wdl r={stats.asBlack} /></div>
+              </div>
               {ratingClass && (
                 <>
-                  <h3>Rating · {ratingClass}</h3>
+                  <div className="rp-sechead"><span className="rp-label">Rating · {ratingClass}</span></div>
                   <RatingChart points={stats.ratings[ratingClass] ?? []} />
                 </>
               )}
-              <h3>Openings you play</h3>
-              <table className="counts" data-testid="player-openings">
+              <div className="rp-sechead"><span className="rp-label">Openings you play</span></div>
+              <table className="counts pp-table" data-testid="player-openings">
                 <thead><tr><th></th><th>Games</th><th>Score</th></tr></thead>
                 <tbody>
                   {stats.openings.slice(0, 8).map((o) => (
@@ -164,14 +173,14 @@ export function PlayerPanel() {
                 <p className="callout small">Weakest openings with at least 5 games: {weak.map((o) => `${o.name} as ${o.color === 'w' ? 'White' : 'Black'} (${scorePct(o).toFixed(0)}% in ${o.games})`).join('; ')}.</p>
               )}
               <RepertoireView games={games} />
-              <h3>Games</h3>
-              <ul className="moments">
+              <div className="rp-sechead"><span className="rp-label">Games</span></div>
+              <ul className="moments pp-games">
                 {(showAll ? games : games.slice(0, 10)).map((g) => (
                   <li key={g.url}>
                     <button className="moment" onClick={() => openGame(g)} title="Load on the board">
-                      <span className={`pill res-${g.outcome}`}>{g.outcome}</span>
-                      <span className="moment-move">{g.color === 'w' ? '⚪' : '⚫'} vs {g.opponent}</span>
-                      <span className="muted">{g.timeClass} · {reasonText(g)}{g.rated === false ? ' · unrated' : ''}{g.opening ? ` · ${g.opening}` : ''}</span>
+                      <span className={`pp-res res-${g.outcome}`} aria-label={g.outcome}>{g.outcome === 'win' ? 'W' : g.outcome === 'loss' ? 'L' : 'D'}</span>
+                      <span className="pp-gt"><span className="moment-move">{g.color === 'w' ? '⚪' : '⚫'} vs {g.opponent}</span>
+                        <span className="muted">{g.timeClass} · {reasonText(g)}{g.rated === false ? ' · unrated' : ''}{g.opening ? ` · ${g.opening}` : ''}</span></span>
                     </button>
                   </li>
                 ))}

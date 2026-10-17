@@ -16,7 +16,7 @@ async def main():
         # settings persistence
         await pg.click('[data-testid=open-settings]')
         M=pg.locator('.modal'); sel=M.locator('select')
-        await M.locator('label.field',has_text='Theme').locator('select').select_option('light'); await M.locator('label.field',has_text='Board').locator('select').select_option('brown'); await M.locator('label.field',has_text='Pieces').locator('select').select_option('merida'); await M.locator('label.field',has_text='Evaluation format').locator('select').select_option('centipawns')
+        await M.get_by_role('radio',name='Light',exact=True).click(); await M.get_by_role('button',name='Walnut board').click(); await M.get_by_role('button',name='Merida pieces').click(); await M.get_by_role('radio',name='+35',exact=True).click()
         await pg.screenshot(path='shot_settings.png'); await pg.keyboard.press('Escape')
         await pg.reload(); await pg.wait_for_selector('cg-board')
         print('persisted:', await pg.evaluate("[document.documentElement.dataset.theme, document.querySelector('.board-wrap').className]"))

@@ -22,9 +22,10 @@ async def main():
             check(f'{w}x{h}: help button is a small round icon, not a tab', hw<=32)
             lab=await pg.evaluate("[...document.querySelectorAll('.tab-row.primary button[role=tab]')].map(b=>b.scrollWidth<=b.clientWidth+1)")
             check(f'{w}x{h}: section tab labels are not truncated', all(lab))
-            # foldable review sections
-            opened=await pg.evaluate("[...document.querySelectorAll('.review-panel details.fold')].map(d=>d.open)")
-            check(f'{w}x{h}: critical moments open, swings/study closed', opened==[True,False,False])
+            # review sections: key moments always shown, rare grades and the grade legend folded away
+            heads=await pg.evaluate("[...document.querySelectorAll('.review-panel .rp-sechead .rp-label')].map(e=>e.textContent)")
+            folded=await pg.evaluate("[...document.querySelectorAll('.review-panel details.rp-more')].every(d=>!d.open)")
+            check(f'{w}x{h}: key moments shown, extra grades folded', 'Key moments' in heads and folded)
             await goto_tab(pg,'Play')
             check(f'{w}x{h}: stale verdict is hidden on the Play tab', not await pg.locator('[data-testid=move-verdict]').is_visible())
             box=await pg.locator('[data-testid=play-start]').bounding_box()

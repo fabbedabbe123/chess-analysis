@@ -1,9 +1,15 @@
 import { closeDialog } from '@/stores/uiStore';
+import { startTour } from '@/stores/tourStore';
+import { enterApp } from '@/stores/viewStore';
 import { Modal } from './Modal';
 
 export function HelpDialog() {
   return (
     <Modal title="Help & tips" onClose={closeDialog}>
+      <div className="help-tour">
+        <div><strong>New here?</strong><span>A one-minute guided tour of the screen.</span></div>
+        <button className="btn primary" onClick={() => { closeDialog(); enterApp(); startTour(); }} data-testid="help-tour">Show the tour</button>
+      </div>
       <h3>What can I do here?</h3>
       <dl className="howto" data-testid="help-howto">
         <dt>Check a game I played</dt>

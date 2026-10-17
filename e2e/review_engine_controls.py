@@ -53,14 +53,14 @@ async def main():
         print('stopped: analysed fen == board?', await pg.evaluate("document.querySelector('.engine-panel').dataset.analysedFen===document.querySelector('.board-wrap').dataset.fen"))
         await pg.get_by_role('button',name='Start',exact=True).click()
         await pg.wait_for_function("document.querySelector('.engine-panel').dataset.analysedFen===document.querySelector('.board-wrap').dataset.fen",timeout=60000); print('start OK')
-        await pg.get_by_role('button',name='Restart',exact=True).click()
+        await pg.click('[data-testid=engine-options]'); await pg.get_by_role('button',name='Restart',exact=True).click()
         await pg.wait_for_function("document.querySelector('.engine-panel').dataset.analysedFen===document.querySelector('.board-wrap').dataset.fen && parseInt(document.querySelector('[data-testid=engine-depth]').textContent)>=6",timeout=60000); print('restart OK', await pg.inner_text('[data-testid=engine-status]'))
         # MultiPV / mode changes
-        await pg.get_by_label('Number of lines (MultiPV)').select_option('5'); await pg.wait_for_function("document.querySelectorAll('[data-testid=pv-line]').length===5",timeout=60000); print('multipv 5 OK')
+        await pg.get_by_role('radiogroup',name='Number of lines (MultiPV)').get_by_role('radio',name='5',exact=True).click(); await pg.wait_for_function("document.querySelectorAll('[data-testid=pv-line]').length===5",timeout=60000); print('multipv 5 OK')
         await pg.get_by_label('Analysis mode').select_option('time'); await pg.wait_for_timeout(2500); print('time mode status:', await pg.inner_text('[data-testid=engine-status]'))
         await pg.get_by_label('Analysis mode').select_option('infinite'); await pg.wait_for_timeout(2500); print('infinite status:', await pg.inner_text('[data-testid=engine-status]'), 'depth', await pg.inner_text('[data-testid=engine-depth]'))
         # strength limit
-        await pg.click('[data-testid=open-settings]'); await pg.get_by_text('Limit playing strength').click(); await pg.keyboard.press('Escape'); await pg.get_by_label('Analysis mode').select_option('depth'); await pg.wait_for_timeout(3000)
+        await pg.click('[data-testid=open-settings]'); await pg.click('[data-testid=settings-advanced]'); await pg.get_by_text('Limit playing strength').click(); await pg.keyboard.press('Escape'); await pg.get_by_label('Analysis mode').select_option('depth'); await pg.wait_for_timeout(3000)
         print('limited strength line:', await pg.locator('[data-testid=pv-line]').count(), await pg.inner_text('[data-testid=engine-status]'))
         print('LOGS',logs); await b.close()
 asyncio.run(main())

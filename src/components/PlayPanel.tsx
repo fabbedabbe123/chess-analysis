@@ -7,7 +7,7 @@ import { LEVELS, MAX_MOVETIME, MIN_MOVETIME, STRENGTH_DISCLAIMER, specFor, type 
 import { recommendPuzzles } from '@/play/training';
 import { GRADE_LABEL } from '@/analysis/gradeInfo';
 import { explainBadMove } from '@/analysis/whyBad';
-import { TIME_CONTROLS, TIME_CONTROL_IDS, type TimeControlId } from '@/play/clock';
+import { TIME_CONTROLS, TIME_CONTROL_IDS } from '@/play/clock';
 import { loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { parsePgn } from '@/pgn/pgn';
 import { getNode, mainLine } from '@/chess/gameTree';
@@ -45,18 +45,20 @@ function useAllPuzzles(): Puzzle[] {
 function CoachingSettings() {
   const s = usePlay((p) => p.settings);
   return (
-    <fieldset className="coach-settings">
-      <legend>Coaching</legend>
-      <label className="field check"><input type="checkbox" checked={s.hints} onChange={(e) => updatePlaySettings({ hints: e.target.checked })} data-testid="opt-hints" /><span>Allow hints</span></label>
-      <label className="field"><span>Move feedback</span>
-        <select value={s.feedback} onChange={(e) => updatePlaySettings({ feedback: e.target.value as FeedbackMode })} data-testid="opt-feedback">
-          {(Object.keys(FEEDBACK_LABEL) as FeedbackMode[]).map((k) => <option key={k} value={k}>{FEEDBACK_LABEL[k]}</option>)}
-        </select>
-      </label>
-      <label className="field check"><input type="checkbox" checked={s.showEval} onChange={(e) => updatePlaySettings({ showEval: e.target.checked })} data-testid="opt-eval" /><span>Show evaluation bar</span></label>
-    </fieldset>
+    <div className="coach-settings pl-card">
+      <div className="rp-label">Coaching</div>
+      <label className="pl-row"><span className="rp-t"><b>Allow hints</b></span><input type="checkbox" className="switch" checked={s.hints} onChange={(e) => updatePlaySettings({ hints: e.target.checked })} data-testid="opt-hints" /></label>
+      <label className="pl-row"><span className="rp-t"><b>Show evaluation bar</b></span><input type="checkbox" className="switch" checked={s.showEval} onChange={(e) => updatePlaySettings({ showEval: e.target.checked })} data-testid="opt-eval" /></label>
+      <div className="pl-row col"><span className="rp-t"><b>Move feedback</b></span>
+        <div className="seg small pl-wrap" role="radiogroup" aria-label="Move feedback" data-testid="opt-feedback">
+          {(Object.keys(FEEDBACK_LABEL) as FeedbackMode[]).map((k) => <button key={k} type="button" role="radio" aria-checked={s.feedback === k} className={s.feedback === k ? 'on' : ''} onClick={() => updatePlaySettings({ feedback: k })} title={FEEDBACK_LABEL[k]}>{FEEDBACK_SHORT[k]}</button>)}
+        </div>
+      </div>
+    </div>
   );
 }
+
+const FEEDBACK_SHORT: Record<FeedbackMode, string> = { none: 'Off', every: 'Every move', significant: 'Big mistakes', after: 'At the end' };
 
 function Dashboard() {
   const records = useHistory((h) => h.records);
@@ -137,44 +139,20 @@ function Setup() {
   };
   return (
     <>
-      <p className="muted small-print">Play a full game against Stockfish. Your current game is kept and restored when you leave.</p>
-      <h3>Colour</h3>
-      <div className="tabs small" role="radiogroup" aria-label="Colour">
-        {(['w', 'b', 'random'] as const).map((c) => (
-          <button key={c} role="radio" aria-checked={s.color === c} className={s.color === c ? 'active' : ''} onClick={() => updatePlaySettings({ color: c })} data-testid={`color-${c}`}>
-            {c === 'w' ? 'White' : c === 'b' ? 'Black' : 'Random'}
-          </button>
-        ))}
-      </div>
-      <h3>Start from</h3>
-      <div className="tabs small" role="radiogroup" aria-label="Start position">
-        {([['start', 'Standard start'], ['board', 'Board position'], ['fen', 'FEN']] as const).map(([k, label]) => (
-          <button key={k} role="radio" aria-checked={startFrom === k} className={startFrom === k ? 'active' : ''} onClick={() => { setStartFrom(k); setStartError(null); }} data-testid={`from-${k}`}>{label}</button>
-        ))}
-      </div>
-      {startFrom === 'board' && <p className="muted small-print">Plays on from the position currently shown on the board (your game is kept and restored when you leave).</p>}
-      {startFrom === 'fen' && (
-        <input value={fenText} onChange={(e) => { setFenText(e.target.value); setStartError(null); }} placeholder="Paste a FEN, e.g. a position you want to practise" aria-label="Start FEN" data-testid="from-fen-input" spellCheck={false} />
-      )}
-      {startError && <div className="callout error small" role="alert" data-testid="from-error">{startError}</div>}
-      <h3>Time control</h3>
-      <label className="field"><span>Clock</span>
-        <select value={s.timeControl} onChange={(e) => updatePlaySettings({ timeControl: e.target.value as TimeControlId })} data-testid="opt-tc">
-          {TIME_CONTROL_IDS.map((id) => <option key={id} value={id}>{TIME_CONTROLS[id].label}</option>)}
-        </select>
-      </label>
-      {s.timeControl !== 'none' && <p className="muted small-print">Clocks start after both sides have moved once. If your time runs out you lose; if Stockfish's does, you win (a draw if the other side could not mate anyway). Stockfish also shortens its thinking when it is low on time.</p>}
-      <h3>Difficulty (approximate)</h3>
-      <div className="level-list compact" role="radiogroup" aria-label="Difficulty">
+      <div className="pl-title">Play Stockfish</div>
+      <p className="muted small-print pl-sub">Play a full game against Stockfish. Your current game is kept and restored when you leave.</p>
+      <ResumeBanner />
+      <div className="rp-label pl-lab">Strength (approximate)</div>
+      <div className="pz-pills" role="radiogroup" aria-label="Difficulty">
         {[...LEVELS, { id: 'custom' as LevelId, label: 'Custom', blurb: 'Choose Skill Level or Elo and thinking time.' }].map((l) => (
-          <button key={l.id} role="radio" aria-checked={s.level === l.id} className={`level ${s.level === l.id ? 'active' : ''}`} onClick={() => updatePlaySettings({ level: l.id })} data-testid={`level-${l.id}`} title={l.blurb}>
-            <strong>{l.label}</strong><span className="muted small-print">{l.blurb}</span>
+          <button key={l.id} role="radio" aria-checked={s.level === l.id} className={`level ${s.level === l.id ? 'on active' : ''}`} onClick={() => updatePlaySettings({ level: l.id })} data-testid={`level-${l.id}`} title={l.blurb}>
+            {l.label}
           </button>
         ))}
       </div>
       {s.level === 'custom' && (
-        <fieldset>
-          <legend>Custom level</legend>
+        <div className="pl-card">
+          <div className="rp-label">Custom level</div>
           <label className="field"><span>Strength control</span>
             <select value={s.custom.mode} onChange={(e) => updatePlaySettings({ custom: { ...s.custom, mode: e.target.value as 'skill' | 'elo' } })} data-testid="custom-mode">
               <option value="skill">Skill Level (0–20)</option><option value="elo">UCI_Elo (1320–3190)</option>
@@ -184,13 +162,42 @@ function Setup() {
             ? <label className="field"><span>Skill Level: {s.custom.skill}</span><input type="range" min={0} max={20} value={s.custom.skill} onChange={(e) => updatePlaySettings({ custom: { ...s.custom, skill: Number(e.target.value) } })} data-testid="custom-skill" /></label>
             : <label className="field"><span>UCI_Elo: {s.custom.elo}</span><input type="range" min={1320} max={3190} step={10} value={s.custom.elo} onChange={(e) => updatePlaySettings({ custom: { ...s.custom, elo: Number(e.target.value) } })} /></label>}
           <label className="field"><span>Time per move: {s.custom.movetimeMs} ms</span><input type="range" min={MIN_MOVETIME} max={MAX_MOVETIME} step={10} value={s.custom.movetimeMs} onChange={(e) => updatePlaySettings({ custom: { ...s.custom, movetimeMs: Number(e.target.value) } })} /></label>
-        </fieldset>
+        </div>
       )}
-      <p className="muted small-print">{spec.blurb} {STRENGTH_DISCLAIMER}</p>
-      <label className="field check"><input type="checkbox" checked={s.practice} onChange={(e) => updatePlaySettings({ practice: e.target.checked })} data-testid="opt-practice" /><span>Practice mode (allow taking moves back)</span></label>
+      <p className="ep-note">{spec.blurb} {STRENGTH_DISCLAIMER}</p>
+
+      <div className="rp-label pl-lab">Colour</div>
+      <div className="seg" role="radiogroup" aria-label="Colour">
+        {(['w', 'random', 'b'] as const).map((c) => (
+          <button key={c} role="radio" aria-checked={s.color === c} className={s.color === c ? 'on active' : ''} onClick={() => updatePlaySettings({ color: c })} data-testid={`color-${c}`}>
+            {c === 'w' ? 'White' : c === 'b' ? 'Black' : 'Random'}
+          </button>
+        ))}
+      </div>
+
+      <div className="rp-label pl-lab">Clock</div>
+      <div className="pz-pills" role="radiogroup" aria-label="Clock" data-testid="opt-tc">
+        {TIME_CONTROL_IDS.map((id) => <button key={id} role="radio" aria-checked={s.timeControl === id} className={s.timeControl === id ? 'on' : ''} onClick={() => updatePlaySettings({ timeControl: id })} title={TIME_CONTROLS[id].label} data-testid={`tc-${id}`}>{id === 'none' ? 'No clock' : id}</button>)}
+      </div>
+      {s.timeControl !== 'none' && <p className="ep-note">{TIME_CONTROLS[s.timeControl].label}. Clocks start after both sides have moved once. If your time runs out you lose; if Stockfish's does, you win (a draw if the other side could not mate anyway). Stockfish also shortens its thinking when it is low on time.</p>}
+
+      <div className="rp-label pl-lab">Start from</div>
+      <div className="seg small" role="radiogroup" aria-label="Start position">
+        {([['start', 'Standard start'], ['board', 'Board position'], ['fen', 'FEN']] as const).map(([k, label]) => (
+          <button key={k} role="radio" aria-checked={startFrom === k} className={startFrom === k ? 'on active' : ''} onClick={() => { setStartFrom(k); setStartError(null); }} data-testid={`from-${k}`}>{label}</button>
+        ))}
+      </div>
+      {startFrom === 'board' && <p className="ep-note">Plays on from the position currently shown on the board (your game is kept and restored when you leave).</p>}
+      {startFrom === 'fen' && (
+        <input className="pl-fen" value={fenText} onChange={(e) => { setFenText(e.target.value); setStartError(null); }} placeholder="Paste a FEN, e.g. a position you want to practise" aria-label="Start FEN" data-testid="from-fen-input" spellCheck={false} />
+      )}
+      {startError && <div className="callout error small" role="alert" data-testid="from-error">{startError}</div>}
+
+      <div className="pl-card">
+        <label className="pl-row"><span className="rp-t"><b>Practice mode</b><span className="muted small-print">Allow taking moves back.</span></span><input type="checkbox" className="switch" checked={s.practice} onChange={(e) => updatePlaySettings({ practice: e.target.checked })} data-testid="opt-practice" /></label>
+      </div>
       <CoachingSettings />
-      <ResumeBanner />
-      <div className="sticky-start"><button className="btn primary" onClick={begin} data-testid="play-start">Start game</button></div>
+      <div className="sticky-start"><button className="btn primary pl-start" onClick={begin} data-testid="play-start">Start game</button></div>
       <Dashboard />
     </>
   );
@@ -414,8 +421,7 @@ function Finished() {
 export function PlayPanel() {
   const phase = usePlay((p) => p.phase);
   return (
-    <section className="panel play-panel" aria-label="Play against Stockfish">
-      <header className="panel-head"><h2>Play vs Stockfish</h2></header>
+    <section className="panel play-panel pl" aria-label="Play against Stockfish">
       {phase === 'off' ? <Setup /> : phase === 'playing' ? <Playing /> : <Finished />}
     </section>
   );

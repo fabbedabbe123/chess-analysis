@@ -54,22 +54,29 @@ function MomentRow({ m, label }: { m: ReviewMove; label?: string }) {
   }, [m]);
   const cls = m.classification.grade ?? m.classification.moveClass;
   const forced = m.classification.isEngineBest && cls !== null && !['inaccuracy', 'mistake', 'miss', 'blunder'].includes(cls);
+  const grade = cls === null ? null : GRADE_BADGE[cls] ?? null;
   return (
     <li>
-      <button className="moment" onClick={() => goTo(m.nodeId)}>
-        <span className="moment-move">{m.moveNumber}{m.color === 'w' ? '.' : '...'} {m.san}</span>
-        {cls && <span className={`pill cls-${cls}`} title={GRADE_HELP[cls]}>{GRADE_LABEL[cls]}</span>}
-        {forced && <span className="pill tag forced" title={FORCED_HELP} data-testid="forced-tag">Forced sequence</span>}
-        {m.classification.tags.filter((t) => !(forced && t === 'allowed-mate')).map((t) => <span key={t} className="pill tag">{TAG_LABEL[t] ?? t}</span>)}
-        <span className="muted">
-          {formatScore(m.before.score)} → {formatScore(m.after.score)}
-          {best ? ` · engine preferred ${best}` : ''}
-          {label ? ` · ${forced ? 'no better move existed' : label}` : ''}
+      <button className={`moment rv-moment ${cls ? `cls-${cls}` : ''}`} onClick={() => goTo(m.nodeId)}>
+        <span className={`rv-badge cls-${cls ?? 'none'}`} aria-hidden>{grade ?? '•'}</span>
+        <span className="rv-mtext">
+          <span className="moment-move">{m.moveNumber}{m.color === 'w' ? '.' : '...'} {m.san}</span>
+          {cls && <span className={`pill cls-${cls}`} title={GRADE_HELP[cls]}>{GRADE_LABEL[cls]}</span>}
+          {forced && <span className="pill tag forced" title={FORCED_HELP} data-testid="forced-tag">Forced sequence</span>}
+          {m.classification.tags.filter((t) => !(forced && t === 'allowed-mate')).map((t) => <span key={t} className="pill tag">{TAG_LABEL[t] ?? t}</span>)}
+          <span className="muted rv-mdetail">
+            {formatScore(m.before.score)} → {formatScore(m.after.score)}
+            {best ? ` · engine preferred ${best}` : ''}
+            {label ? ` · ${forced ? 'no better move existed' : label}` : ''}
+          </span>
         </span>
       </button>
     </li>
   );
 }
+
+const GRADE_BADGE: Partial<Record<string, string>> = { brilliant: '!!', great: '!', best: '★', excellent: '✓', good: '✓', book: '📖', inaccuracy: '?!', mistake: '?', miss: '✗', blunder: '??' };
+const COMMON_GRADES: MoveGrade[] = ['best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'blunder'];
 
 const ERR_GRADES = ['blunder', 'miss', 'mistake', 'inaccuracy'] as const;
 const ERR_WORD: Record<(typeof ERR_GRADES)[number], [string, string]> = { blunder: ['blunder', 'blunders'], miss: ['miss', 'misses'], mistake: ['mistake', 'mistakes'], inaccuracy: ['inaccuracy', 'inaccuracies'] };
@@ -102,10 +109,12 @@ function CountForStrength({ result, stale }: { result: ReviewResult; stale: bool
     setFailed(!addFromReview(result, color, { id, source: 'import', endedAt: Date.now(), label }));
   };
   return (
-    <div className="row wrap strength-count" data-testid="count-strength">
-      <span className="muted small-print">{existing ? `Counted for your strength (as ${existing.userColor === 'w' ? 'White' : 'Black'}).` : failed ? 'Not counted: that side has no moves outside the opening book.' : 'Add this game to my strength estimate. I played as:'}</span>
-      <button className="btn small" disabled={stale} onClick={() => count('w')} data-testid="count-white">White</button>
-      <button className="btn small" disabled={stale} onClick={() => count('b')} data-testid="count-black">Black</button>
+    <div className="rp-card rp-row strength-count" data-testid="count-strength">
+      <div className="rp-t"><b>Count for my strength</b><span className="muted small-print">{existing ? `Counted for your strength (as ${existing.userColor === 'w' ? 'White' : 'Black'}).` : failed ? 'Not counted: that side has no moves outside the opening book.' : 'Add this game to my strength estimate. I played as:'}</span></div>
+      <div className="seg small">
+        <button className={existing?.userColor === 'w' ? 'on' : ''} disabled={stale} onClick={() => count('w')} data-testid="count-white">White</button>
+        <button className={existing?.userColor === 'b' ? 'on' : ''} disabled={stale} onClick={() => count('b')} data-testid="count-black">Black</button>
+      </div>
     </div>
   );
 }
@@ -130,12 +139,16 @@ export function ReviewPanel() {
   const currentPly = Math.max(0, line.indexOf(currentId));
   const summary = result?.summary;
 
+  const firstError = summary?.criticalMoments[0] ?? summary?.studyPositions[0] ?? null;
+  const rare = GRADE_ORDER.filter((g) => !COMMON_GRADES.includes(g));
+  const name = (c: 'w' | 'b') => (c === 'w' ? tree.headers['White'] ?? 'White' : tree.headers['Black'] ?? 'Black');
+
   return (
-    <section className="panel review-panel" aria-label="Game review">
-      <header className="panel-head">
-        <h2>Game review</h2>
+    <section className="panel review-panel rp" aria-label="Game review">
+      <header className="rp-head">
+        <span className="rp-label">Game review{result ? ` · depth ${result.depth}` : ''}</span>
         <div className="spacer" />
-        <label className="inline">
+        <label className="inline rp-depth" title="Review depth (also in Settings)">
           Depth
           <input type="number" min={6} max={30} value={settings.reviewDepth} disabled={status === 'running'}
             onChange={(e) => updateSettings({ reviewDepth: Number(e.target.value) })} aria-label="Review depth" />
@@ -143,13 +156,18 @@ export function ReviewPanel() {
         {status === 'running' ? (
           <button className="btn small" onClick={cancelReview}>Cancel</button>
         ) : (
-          <button className="btn small primary" onClick={() => void startReview()} disabled={plies < 1 || puzzleOpen} title={puzzleOpen ? 'Exit puzzles first' : undefined} data-testid="run-review">
+          <button className={`btn small ${result ? '' : 'primary'}`} onClick={() => void startReview()} disabled={plies < 1 || puzzleOpen} title={puzzleOpen ? 'Exit puzzles first' : undefined} data-testid="run-review">
             {result ? 'Re-run' : 'Review game'}
           </button>
         )}
       </header>
 
-      {plies < 1 && <p className="muted pad">Play or import some moves first. The review analyses the main line.</p>}
+      {plies < 1 && (
+        <div className="rp-empty"><b>Nothing to review yet</b><span>Play or import some moves first. The review analyses the main line.</span></div>
+      )}
+      {plies >= 1 && !result && status !== 'running' && (
+        <div className="rp-cta"><div><strong>Review this game</strong><span>Every move gets a grade, and the mistakes are explained.</span></div><button className="btn primary" onClick={() => void startReview()} disabled={puzzleOpen}>Start</button></div>
+      )}
 
       {status === 'running' && (
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.done}>
@@ -163,34 +181,47 @@ export function ReviewPanel() {
 
       {result && summary && (
         <>
-          <div className="accuracy-row">
+          <div className="rp-acc">
             {(['w', 'b'] as const).map((c) => (
-              <div key={c} className="accuracy">
-                <span className="label">{c === 'w' ? tree.headers['White'] ?? 'White' : tree.headers['Black'] ?? 'Black'} · accuracy (estimate)</span>
+              <div key={c} className="rp-card accuracy">
+                <span className="rp-who"><i className={c} />{name(c)}</span>
                 <strong data-testid={`accuracy-${c}`}>{formatPercent(summary.accuracy[c])}</strong>
+                <span className="label">accuracy (estimate)</span>
               </div>
             ))}
           </div>
-          <p className="review-headline" data-testid="review-headline">{headline(summary, tree.headers['White'] ?? 'White', tree.headers['Black'] ?? 'Black')}</p>
-          <CountForStrength result={result} stale={stale} />
           <EvalGraph values={result.whiteWinGraph} ids={line} currentPly={currentPly} />
-          <table className="counts">
-            <thead><tr><th></th><th>White</th><th>Black</th></tr></thead>
-            <tbody>
-              {GRADE_ORDER.map((g: MoveGrade) => (
-                <tr key={g} className={`cls-${g}`}>
-                  <td><span className={`pill cls-${g}`} title={GRADE_HELP[g]}>{GRADE_LABEL[g]}</span></td>
-                  <td data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</td>
-                  <td data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</td>
-                </tr>
-              ))}
-              <tr><td>Missed mates</td><td>{summary.missedMates.w}</td><td>{summary.missedMates.b}</td></tr>
-              <tr><td>Missed wins</td><td>{summary.missedWins.w}</td><td>{summary.missedWins.b}</td></tr>
-              {summary.unclassified > 0 && <tr><td>Unclassified</td><td colSpan={2}>{summary.unclassified}</td></tr>}
-            </tbody>
-          </table>
+          <div className="rp-sum">
+            <p className="review-headline" data-testid="review-headline">{headline(summary, name('w'), name('b'))}</p>
+            {firstError !== null && <button className="btn small primary" onClick={() => goTo(firstError.nodeId)}>Go to the first one</button>}
+          </div>
 
-          <details className="grade-legend">
+          <div className="rp-sechead"><span className="rp-label">Moves</span><div className="spacer" /><span className="rp-legend">{name('w')} · {name('b')}</span></div>
+          <div className="rp-grades counts">
+            {COMMON_GRADES.map((g) => (
+              <div key={g} className={`rp-grade cls-${g} ${summary.grades.w[g] + summary.grades.b[g] === 0 ? 'zero' : ''}`} title={GRADE_HELP[g]}>
+                <span className={`rv-badge cls-${g}`} aria-hidden>{GRADE_BADGE[g]}</span>
+                <span className="rp-gname">{GRADE_LABEL[g]}</span>
+                <span className="rp-gc"><b data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</b><em>·</em><b data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</b></span>
+              </div>
+            ))}
+          </div>
+          <details className="rp-more">
+            <summary>All grades: {rare.map((g) => GRADE_LABEL[g]).join(', ')}, missed mates and wins</summary>
+            <div className="rp-grades">
+              {rare.map((g) => (
+                <div key={g} className={`rp-grade cls-${g} ${summary.grades.w[g] + summary.grades.b[g] === 0 ? 'zero' : ''}`} title={GRADE_HELP[g]}>
+                  <span className={`rv-badge cls-${g}`} aria-hidden>{GRADE_BADGE[g]}</span>
+                  <span className="rp-gname">{GRADE_LABEL[g]}</span>
+                  <span className="rp-gc"><b data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</b><em>·</em><b data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</b></span>
+                </div>
+              ))}
+              <div className="rp-grade"><span className="rp-gname">Missed mates</span><span className="rp-gc"><b>{summary.missedMates.w}</b><em>·</em><b>{summary.missedMates.b}</b></span></div>
+              <div className="rp-grade"><span className="rp-gname">Missed wins</span><span className="rp-gc"><b>{summary.missedWins.w}</b><em>·</em><b>{summary.missedWins.b}</b></span></div>
+              {summary.unclassified > 0 && <div className="rp-grade"><span className="rp-gname">Unclassified</span><span className="rp-gc"><b>{summary.unclassified}</b></span></div>}
+            </div>
+          </details>
+          <details className="grade-legend rp-more">
             <summary>How accuracy and the grades are decided</summary>
             <p className="muted small-print">
               Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
@@ -200,22 +231,22 @@ export function ReviewPanel() {
               {GRADE_ORDER.map((g) => <li key={g}><span className={`pill cls-${g}`}>{GRADE_LABEL[g]}</span> {GRADE_HELP[g]}</li>)}
             </ul>
           </details>
-          <details className="fold" open>
-          <summary>Critical moments</summary>
-          {summary.criticalMoments.length === 0 ? <p className="muted pad">None found – a clean game.</p> : (
+
+          <div className="rp-sechead"><span className="rp-label">Key moments</span></div>
+          {summary.criticalMoments.length === 0 ? <p className="muted rp-quiet">None found – a clean game.</p> : (
             <ul className="moments">{summary.criticalMoments.map((m) => <MomentRow key={m.nodeId} m={m} />)}</ul>
           )}
-          </details>
-          <details className="fold">
-          <summary>Biggest swings</summary>
-          <ul className="moments">
-            {summary.biggestSwings.filter((m) => Math.abs(m.swing) >= 1).map((m) => <MomentRow key={m.nodeId} m={m} label={`White's win chance ${m.swing > 0 ? '+' : ''}${m.swing.toFixed(0)}%`} />)}
-          </ul>
-          </details>
-          <details className="fold">
-          <summary>Study positions</summary>
-          <p className="muted small-print">Positions from your own mistakes: the position <em>before</em> the move, where the engine knows a better one.</p>
-          {summary.studyPositions.length === 0 ? <p className="muted pad">No mistakes to study.</p> : (
+          {summary.biggestSwings.some((m) => Math.abs(m.swing) >= 1) && (
+            <>
+              <div className="rp-sechead"><span className="rp-label">Biggest swings</span></div>
+              <ul className="moments">
+                {summary.biggestSwings.filter((m) => Math.abs(m.swing) >= 1).map((m) => <MomentRow key={m.nodeId} m={m} label={`White's win chance ${m.swing > 0 ? '+' : ''}${m.swing.toFixed(0)}%`} />)}
+              </ul>
+            </>
+          )}
+          <div className="rp-sechead"><span className="rp-label">Study positions</span></div>
+          <p className="muted small-print rp-quiet">Positions from your own mistakes: the position <em>before</em> the move, where the engine knows a better one.</p>
+          {summary.studyPositions.length === 0 ? <p className="muted rp-quiet">No mistakes to study.</p> : (
             <ul className="moments">
               {summary.studyPositions.slice(0, 8).map((m) => {
                 const parent = hasNode(tree, m.nodeId) ? getNode(tree, m.nodeId).parentId : null;
@@ -230,10 +261,15 @@ export function ReviewPanel() {
               })}
             </ul>
           )}
-          </details>
-          <button className="btn small" disabled={puzzleOpen || playOpen} onClick={continueFromHere} title="Start a new analysis game from the selected position">
-            Start new game from selected position
-          </button>
+
+          <div className="rp-sechead"><span className="rp-label">Use this game</span></div>
+          <CountForStrength result={result} stale={stale} />
+          <div className="rp-card rp-row">
+            <div className="rp-t"><b>Study position</b><span className="muted small-print">Start a new analysis game from the selected move.</span></div>
+            <button className="btn small" disabled={puzzleOpen || playOpen} onClick={continueFromHere} title="Start a new analysis game from the selected position">
+              Start new game from selected position
+            </button>
+          </div>
         </>
       )}
     </section>

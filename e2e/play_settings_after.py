@@ -18,7 +18,7 @@ async def main():
         await pg.click('[data-testid=play-settings]')
         await pg.wait_for_selector('[data-testid=finished-setup] [data-testid=level-intermediate]')
         await pg.click('[data-testid=level-intermediate]'); await pg.click('[data-testid=color-b]')
-        await pg.select_option('[data-testid=opt-tc]', index=1)
+        await pg.click('[data-testid="tc-3+2"]')
         await pg.click('[data-testid=finished-setup] [data-testid=play-start]')
         await pg.wait_for_selector('[data-testid=play-status]')
         pills=await pg.locator('.play-panel .pill').all_inner_texts(); print(pills)

@@ -4,7 +4,7 @@ import { pvToSan } from '@/analysis/pv';
 import { currentFen, playLine, useGame } from '@/stores/gameStore';
 import { engineStore, restartEngine, stopAnalysis, useEngine } from '@/stores/engineStore';
 import { updateSettings, useSettings } from '@/stores/settingsStore';
-import { requestReanalysis, openDialog } from '@/stores/uiStore';
+import { requestReanalysis, openDialog, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import type { EngineLine } from '@/types/engine';
@@ -84,27 +84,46 @@ export function EnginePanel() {
     }
   };
 
+  const [opts, setOpts] = useState(false);
+  const plies = useGame((g) => Object.keys(g.tree.nodes).length - 1);
+  const statusText = puzzleOpen ? 'paused (puzzle / play mode)' : status === 'error' ? 'error' : status === 'loading' ? 'loading…' : analyzing ? 'analysing…' : settings.autoAnalyze ? (fromCache ? 'cached' : 'idle') : 'stopped';
+  const lineCounts = [1, 2, 3, 5, 8].filter((n) => n <= Math.min(caps?.maxMultiPv ?? 8, 8));
+
   return (
-    <section className="panel engine-panel" aria-label="Engine analysis" data-analysed-fen={current?.fen ?? ''}>
-      <header className="panel-head">
-        <h2>Engine</h2>
-        <span className={`status status-${analyzing ? 'searching' : status}`} data-testid="engine-status">
-          {puzzleOpen ? 'paused (puzzle / play mode)' : status === 'error' ? 'error' : status === 'loading' ? 'loading…' : analyzing ? 'analysing…' : settings.autoAnalyze ? (fromCache ? 'cached' : 'idle') : 'stopped'}
-        </span>
+    <section className="panel engine-panel ep" aria-label="Engine analysis" data-analysed-fen={current?.fen ?? ''}>
+      <header className="ep-head">
+        <span className={`ep-chip status status-${analyzing ? 'searching' : status} ${analyzing ? 'live' : ''}`} data-testid="engine-status">{statusText}</span>
+        <span className="ep-depth">Depth <b data-testid="engine-depth">{current ? `${current.depth}${current.seldepth ? `/${current.seldepth}` : ''}` : '–'}</b></span>
         <div className="spacer" />
-        <button className="btn small primary" onClick={toggle}>{settings.autoAnalyze ? 'Stop' : 'Start'}</button>
-        <button
-          className="btn small"
-          onClick={() => {
-            restartEngine();
-            requestReanalysis();
-          }}
-          title="Restart the engine worker (clears its state)"
-        >
-          Restart
+        <button className={`btn small ${settings.autoAnalyze ? '' : 'primary'}`} onClick={toggle}>{settings.autoAnalyze ? 'Stop' : 'Start'}</button>
+        <button className={`btn small icon ${opts ? 'active' : ''}`} onClick={() => setOpts(!opts)} aria-expanded={opts} aria-label="Engine options" data-tip="Engine options" data-testid="engine-options">
+          <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" /></svg>
         </button>
-        <button className="btn small" onClick={() => openDialog('settings')} title="Engine & analysis settings">⚙</button>
       </header>
+
+      {opts && (
+        <div className="ep-opts" data-testid="engine-options-panel">
+          <label>Mode
+            <select value={settings.analysisMode} onChange={(e) => updateSettings({ analysisMode: e.target.value as typeof settings.analysisMode })} aria-label="Analysis mode">
+              <option value="depth">Depth</option>
+              <option value="time">Time</option>
+              <option value="infinite">Infinite</option>
+            </select>
+          </label>
+          {settings.analysisMode === 'depth' && (
+            <label>Depth
+              <input type="number" min={1} max={40} value={settings.analysisDepth} onChange={(e) => updateSettings({ analysisDepth: Number(e.target.value) })} aria-label="Analysis depth" />
+            </label>
+          )}
+          {settings.analysisMode === 'time' && (
+            <label>ms
+              <input type="number" min={100} max={600000} step={100} value={settings.analysisTimeMs} onChange={(e) => updateSettings({ analysisTimeMs: Number(e.target.value) })} aria-label="Analysis time in milliseconds" />
+            </label>
+          )}
+          <button className="btn small" onClick={() => { restartEngine(); requestReanalysis(); }} title="Restart the engine worker (clears its state)">Restart</button>
+          <button className="btn small ghost" onClick={() => openDialog('settings')}>More in Settings…</button>
+        </div>
+      )}
 
       {error !== null && status === 'error' && (
         <div className="callout error" role="alert">
@@ -113,49 +132,24 @@ export function EnginePanel() {
         </div>
       )}
 
-      <div className="engine-top">
+      <div className="ep-hero">
         <div className="big-score" data-testid="engine-score" title={describeScore(headline)}>{formatScore(headline, settings.evalDisplay)}</div>
-        <dl className="stats">
-          <div><dt>Depth</dt><dd data-testid="engine-depth">{current ? `${current.depth}${current.seldepth ? `/${current.seldepth}` : ''}` : '–'}</dd></div>
-          <div><dt>Nodes</dt><dd>{formatCount(current?.nodes)}</dd></div>
-          <div><dt>NPS</dt><dd>{formatCount(current?.nps)}</dd></div>
-          <div><dt>Time</dt><dd>{formatDuration(current?.timeMs)}</dd></div>
-        </dl>
+        <div className={`ep-verdict ${headline === null ? '' : (headline.kind === 'mate' ? headline.value >= 0 : headline.value >= 0) ? 'w' : 'b'}`}>{verdict(headline)}</div>
       </div>
-      <div className="engine-meta muted">
-        {caps ? `${caps.name} · ${caps.flavor === 'multi' ? 'multi-threaded' : 'single-threaded'} WASM` : 'Stockfish WASM'}
-        {current?.hashfull !== undefined ? ` · hash ${(current.hashfull / 10).toFixed(0)}%` : ''}
+      <div className="ep-stats" title={caps ? `${caps.name} · ${caps.flavor === 'multi' ? 'multi-threaded' : 'single-threaded'} WASM` : 'Stockfish WASM'}>
+        <span>Nodes <b>{formatCount(current?.nodes)}</b></span>
+        <span>Speed <b>{formatCount(current?.nps)}/s</b></span>
+        <span>Time <b>{formatDuration(current?.timeMs)}</b></span>
+        {current?.hashfull !== undefined && <span>Memory <b>{(current.hashfull / 10).toFixed(0)}%</b></span>}
       </div>
 
-      <div className="engine-quick">
-        <label>
-          Lines
-          <select value={settings.multiPv} onChange={(e) => updateSettings({ multiPv: Number(e.target.value) })} aria-label="Number of lines (MultiPV)">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
-        <label>
-          Mode
-          <select value={settings.analysisMode} onChange={(e) => updateSettings({ analysisMode: e.target.value as typeof settings.analysisMode })} aria-label="Analysis mode">
-            <option value="depth">Depth</option>
-            <option value="time">Time</option>
-            <option value="infinite">Infinite</option>
-          </select>
-        </label>
-        {settings.analysisMode === 'depth' && (
-          <label>
-            Depth
-            <input type="number" min={1} max={40} value={settings.analysisDepth} onChange={(e) => updateSettings({ analysisDepth: Number(e.target.value) })} aria-label="Analysis depth" />
-          </label>
-        )}
-        {settings.analysisMode === 'time' && (
-          <label>
-            ms
-            <input type="number" min={100} max={600000} step={100} value={settings.analysisTimeMs} onChange={(e) => updateSettings({ analysisTimeMs: Number(e.target.value) })} aria-label="Analysis time in milliseconds" />
-          </label>
-        )}
+      <div className="ep-sechead">
+        <span className="ep-label">Best lines</span>
+        <div className="spacer" />
+        <div className="seg small" role="radiogroup" aria-label="Number of lines (MultiPV)">
+          {lineCounts.map((n) => <button key={n} type="button" role="radio" aria-checked={settings.multiPv === n} className={settings.multiPv === n ? 'on' : ''} onClick={() => updateSettings({ multiPv: n })}>{n}</button>)}
+        </div>
       </div>
-
       {terminal !== null && requestedFen === fen ? (
         <p className="muted pad">Game is over in this position – nothing to search.</p>
       ) : current && current.lines.length > 0 ? (
@@ -167,6 +161,13 @@ export function EnginePanel() {
       ) : (
         <p className="muted pad">{settings.autoAnalyze ? (status === 'error' ? '' : 'Waiting for the engine…') : 'Analysis is stopped. Press Start.'}</p>
       )}
+      <p className="ep-note">Click a move in a line to play it on the board. Hover to preview.</p>
+      {plies >= 6 && !puzzleOpen && (
+        <div className="ep-cta">
+          <div><strong>Review this game</strong><span>Every move gets a grade.</span></div>
+          <button className="btn primary" onClick={() => { setRightTab('review'); setMobileTab('review'); }}>Open review</button>
+        </div>
+      )}
       {hover && (
         <div className="hover-preview" style={{ left: Math.min(hover.x, window.innerWidth - 190), top: hover.y + 6 }}>
           <MiniBoard fen={hover.fen} highlight={hover.last} />
@@ -174,6 +175,18 @@ export function EnginePanel() {
       )}
     </section>
   );
+}
+
+/** Plain-words verdict next to the big number. */
+function verdict(score: ReturnType<typeof engineStore.get>['terminal'] | EngineLine['scoreWhite'] | null): string {
+  if (score === null) return 'No evaluation yet';
+  if (score.kind === 'mate') return describeScore(score);
+  const v = Math.abs(score.value);
+  const who = score.value > 0 ? 'White' : 'Black';
+  if (v < 30) return 'About equal';
+  if (v < 90) return `${who} is slightly better`;
+  if (v < 250) return `${who} is better`;
+  return `${who} is winning`;
 }
 
 export const engineSnapshot = () => engineStore.get().snapshot;

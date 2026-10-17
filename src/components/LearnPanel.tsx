@@ -114,26 +114,28 @@ export function LearnPanel() {
   }, [skills, progress]);
 
   return (
-    <section className="panel learn-panel" aria-label="Learn" ref={rootRef}>
-      <header className="panel-head">
-        <h2>Learn</h2>
-        <div className="spacer" />
-        {open && <button className="btn small" onClick={() => setOpenId(null)} data-testid="learn-back">All skills</button>}
-      </header>
+    <section className="panel learn-panel lp" aria-label="Learn" ref={rootRef}>
+      {open && <button className="btn small ghost lp-back" onClick={() => setOpenId(null)} data-testid="learn-back">← All skills</button>}
       {error && <div className="callout error">{error}</div>}
       {blocked && <div className="callout small">{puzzleOpen ? 'An exercise is open. Finish or exit it in the Puzzles tab before starting another.' : 'Finish or leave your Play game before starting a lesson.'}</div>}
 
       {open === null ? (
         <>
-          <p className="muted small-print" data-testid="learn-summary">
-            {totals.solved} of {totals.all} exercises solved · {totals.mastered} of {skills.length} skills mastered. Mastery is counted only from your own results: all exercises solved on the first try without hints.
-          </p>
-          <div className="learn-cats" role="group" aria-label="Skill category">
+          <div className="rp-card lp-sum">
+            <svg width="72" height="72" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="48" fill="none" stroke="#34312d" strokeWidth="14" /><circle cx="60" cy="60" r="48" fill="none" stroke="#81b64c" strokeWidth="14" strokeLinecap="round" pathLength={1} strokeDasharray="1" strokeDashoffset={1 - (totals.all ? totals.solved / totals.all : 0)} transform="rotate(-90 60 60)" /></svg>
+            <div>
+              <div className="lp-big">{totals.solved} / {totals.all}</div>
+              <p className="muted small-print" data-testid="learn-summary">
+                {totals.solved} of {totals.all} exercises solved · {totals.mastered} of {skills.length} skills mastered. Mastery is counted only from your own results: all exercises solved on the first try without hints.
+              </p>
+            </div>
+          </div>
+          <div className="learn-cats lp-cats" role="group" aria-label="Skill category">
             {(['all', ...CATEGORY_ORDER] as const).map((c) => (
               <button key={c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>{c === 'all' ? 'All' : CATEGORY_LABEL[c]}</button>
             ))}
           </div>
-          <ul className="skill-list">
+          <ul className="skill-list lp-grid">
             {skills.filter((s) => category === 'all' || s.category === category).map((s) => {
               const p = skillProgress(s, progress);
               return (
@@ -141,6 +143,7 @@ export function LearnPanel() {
                   <button className="skill-card" onClick={() => setOpenId(s.id)} data-testid={`skill-${s.id}`}>
                     <span className="skill-title">{s.title}</span>
                     <span className="skill-blurb">{s.blurb}</span>
+                    <span className="lp-bar"><i style={{ width: `${p.total ? (p.solved / p.total) * 100 : 0}%` }} /></span>
                     <span className="skill-meta">
                       <span className="pill">{CATEGORY_LABEL[s.category]}</span>
                       <span className={`mastery-${p.mastery}`}>{MASTERY_LABEL[p.mastery]}</span>
@@ -154,7 +157,7 @@ export function LearnPanel() {
         </>
       ) : (
         <div data-testid="skill-detail">
-          <h3>{open.title}</h3>
+          <h3 className="lp-title">{open.title}</h3>
           {open.color !== undefined && <p className="muted small-print">You play {open.color === 'w' ? 'White' : 'Black'} in this opening.</p>}
           {open.intro.map((t, i) => <p key={i}>{t}</p>)}
           {open.ideas.length > 0 && (

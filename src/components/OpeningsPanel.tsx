@@ -77,40 +77,47 @@ export function OpeningsPanel() {
 
   const shown = explorer !== null && explorer.fen === fen ? explorer.result : null;
 
+  const [family, variation] = opening ? splitName(opening.name) : ['', ''];
+
   return (
-    <section className="panel openings-panel" aria-label="Opening explorer">
-      <header className="panel-head"><h2>Openings</h2></header>
+    <section className="panel openings-panel op" aria-label="Opening explorer">
       {bookError && <div className="callout error">{bookError}</div>}
-      <div className="opening-name" data-testid="opening-name">
-        {opening ? <><span className="eco">{opening.eco}</span> {opening.name}</> : <span className="muted">{book ? 'No named opening for this position.' : 'Loading opening book…'}</span>}
+      <div className="opening-name op-hero" data-testid="opening-name">
+        {opening ? (
+          <>
+            <span className="eco">{opening.eco}</span>
+            <div><div className="op-name">{variation || family}</div>{variation && <div className="op-sub">{family}</div>}</div>
+          </>
+        ) : <span className="muted">{book ? 'No named opening for this position.' : 'Loading opening book…'}</span>}
       </div>
 
-      <h3>Book moves <span className="muted small-print">(names only – bundled Lichess openings dataset, no statistics)</span></h3>
-      {moves.length === 0 ? <p className="muted pad">No book continuations.</p> : (
-        <ul className="book-moves">
+      <div className="rp-sechead"><span className="rp-label">Book moves from here</span></div>
+      {moves.length === 0 ? (
+        <div className="rp-empty"><b>{opening ? 'You have left the book' : 'No book continuations'}</b><span>Names come from the bundled Lichess openings list (no statistics).</span></div>
+      ) : (
+        <ul className="book-moves op-book">
           {moves.slice(0, 14).map((m) => (
             <li key={m.uci}>
               <button className="book-move" onClick={() => playMove(m.uci)}>
                 <strong>{m.san}</strong>
-                <span className="eco">{m.opening.eco}</span>
                 <span className="muted">{m.opening.name}</span>
+                <span className="eco">{m.opening.eco}</span>
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <h3>Game statistics <span className="muted small-print">(Lichess opening explorer, online)</span></h3>
-      <div className="row wrap">
-        <label className="inline">
-          <input type="checkbox" checked={explorerOn} onChange={(e) => setExplorerOn(e.target.checked)} /> Load from explorer.lichess.ovh
-        </label>
-        <select value={settings.explorerSource} onChange={(e) => updateSettings({ explorerSource: e.target.value as 'masters' | 'lichess' })} aria-label="Explorer database">
-          <option value="masters">Masters games</option>
-          <option value="lichess">Lichess games</option>
-        </select>
+      <div className="rp-sechead"><span className="rp-label">How others played it</span><div className="spacer" />
+        <div className="seg small" role="radiogroup" aria-label="Explorer database">
+          <button role="radio" aria-checked={settings.explorerSource === 'masters'} className={settings.explorerSource === 'masters' ? 'on' : ''} onClick={() => updateSettings({ explorerSource: 'masters' })}>Masters</button>
+          <button role="radio" aria-checked={settings.explorerSource === 'lichess'} className={settings.explorerSource === 'lichess' ? 'on' : ''} onClick={() => updateSettings({ explorerSource: 'lichess' })}>Lichess</button>
+        </div>
       </div>
-      {!explorerOn && <p className="muted small-print">Off by default: turning it on sends the current position to lichess.org. An API token (Settings) may be required.</p>}
+      <label className="rp-card rp-row op-switch">
+        <span className="rp-t"><b>Load from explorer.lichess.ovh</b><span className="muted small-print">{explorerOn ? 'On: the current position is sent to lichess.org.' : 'Off by default: turning it on sends the current position to lichess.org. An API token (Settings) may be required.'}</span></span>
+        <input type="checkbox" className="switch" checked={explorerOn} onChange={(e) => setExplorerOn(e.target.checked)} />
+      </label>
       {explorerOn && loading && <p className="muted pad">Loading…</p>}
       {explorerOn && explorerError && (
         <div className="callout warn" role="status">
@@ -122,7 +129,7 @@ export function OpeningsPanel() {
         <>
           <p className="muted small-print">{(shown.white + shown.draws + shown.black).toLocaleString()} games in this position ({shown.source}).</p>
           {shown.moves.length === 0 ? <p className="muted pad">No games found.</p> : (
-            <table className="explorer">
+            <table className="explorer rp-card">
               <tbody>
                 {shown.moves.map((m) => {
                   const total = m.white + m.draws + m.black;
@@ -141,4 +148,13 @@ export function OpeningsPanel() {
       )}
     </section>
   );
+}
+
+/** "Italian Game: Two Knights Defense, Fried Liver Attack" -> ["Italian Game: Two Knights Defense", "Fried Liver Attack"]. */
+function splitName(name: string): [string, string] {
+  const i = name.lastIndexOf(', ');
+  if (i > 0) return [name.slice(0, i).replace(':', ' ·'), name.slice(i + 2)];
+  const j = name.indexOf(': ');
+  if (j > 0) return [name.slice(0, j), name.slice(j + 2)];
+  return [name, ''];
 }

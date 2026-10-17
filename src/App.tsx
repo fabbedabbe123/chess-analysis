@@ -20,6 +20,8 @@ import { SettingsDialog } from '@/components/SettingsDialog';
 import { Home } from '@/components/Home';
 import { Sidebar } from '@/components/Sidebar';
 import { TacticsPanel } from '@/components/TacticsPanel';
+import { Tour } from '@/components/Tour';
+import { offerTourOnce } from '@/stores/tourStore';
 import { describeStatus, lineEnd, statusAt } from '@/chess/gameTree';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { useKeyboard } from '@/hooks/useKeyboard';
@@ -116,6 +118,14 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme;
   }, [theme]);
+
+  useEffect(() => {
+    if (view !== 'app') return;
+    const forced = /[?&]tour\b/.test(window.location.search);
+    // never pop up for automated browsers (tests) unless asked for with ?tour
+    if (forced || !navigator.webdriver) { const t = setTimeout(offerTourOnce, 700); return () => clearTimeout(t); }
+    return undefined;
+  }, [view]);
 
   if (view === 'home') {
     return (
@@ -215,6 +225,7 @@ export default function App() {
       {dialog === 'settings' && <SettingsDialog />}
       {dialog === 'help' && <HelpDialog />}
       {dialog === 'account' && <AccountDialog />}
+      <Tour />
       <Notices />
     </div>
   );

@@ -40,7 +40,7 @@ async def main():
         # custom FEN + clock
         await goto_tab(pg,'Play')
         await pg.click('[data-testid=from-fen]'); await pg.fill('[data-testid=from-fen-input]',FEN)
-        await pg.select_option('[data-testid=opt-tc]','3+2'); await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]')
+        await pg.click('[data-testid="tc-3+2"]'); await pg.click('[data-testid=color-w]'); await pg.click('[data-testid=level-beginner]')
         await pg.click('[data-testid=play-start]'); await pg.wait_for_selector('[data-testid=play-status]')
         fen=await pg.evaluate("document.querySelector('.board-wrap').dataset.fen")
         check('custom FEN is on the board', fen.split()[0]==FEN.split()[0])

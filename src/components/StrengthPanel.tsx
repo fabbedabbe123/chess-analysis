@@ -28,13 +28,14 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
   }
   if (est === null) {
     return (
-      <div className="card" data-testid="strength-empty">
-        <p>No analysed games yet. There are three ways to add some:</p>
-        <ul className="plain-list">
-          <li>Finish a game in <button className="linklike" onClick={() => setRightTab('play')}>Play</button> and press “Analyse game”.</li>
-          <li>Run a review on any game (Review tab) and press “Count this game for my strength”.</li>
-          <li>Track your Chess.com or Lichess account in <button className="linklike" onClick={() => setRightTab('player')}>Player</button> and analyse your recent games below.</li>
-        </ul>
+      <div className="card sp-empty" data-testid="strength-empty">
+        <div className="sp-ei" aria-hidden><svg className="ic" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1116 0M12 18l4-6" /></svg></div>
+        <p><b>No analysed games yet.</b> Your level shows after {MIN_GAMES_RATING} games. There are three ways to add some:</p>
+        <ol className="pp-steps">
+          <li><b>Play Stockfish</b><span>Finish a game in <button className="linklike" onClick={() => setRightTab('play')}>Play</button> and press “Analyse game”.</span></li>
+          <li><b>Review any game</b><span>Run a review on any game (Review tab) and press “Count this game for my strength”.</span></li>
+          <li><b>Track your account</b><span>Track your Chess.com or Lichess account in <button className="linklike" onClick={() => setRightTab('player')}>Player</button> and analyse your recent games below.</span></li>
+        </ol>
       </div>
     );
   }
@@ -57,7 +58,13 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
   const gap = actual === null ? null : est.rating - actual.rating;
   return (
     <div className="card strength-card" data-testid="strength-estimate">
+      <div className="rp-label">Estimated level</div>
       <div className="strength-range" data-testid="strength-range">{est.low}–{est.high}</div>
+      <div className="sp-track" aria-hidden>
+        <b style={{ left: `${pos(est.low)}%`, width: `${pos(est.high) - pos(est.low)}%` }} />
+        <i style={{ left: `${pos(est.rating)}%` }} />
+      </div>
+      <div className="sp-ticks" aria-hidden><span>400</span><span>1200</span><span>2000</span><span>2800</span></div>
       <div className="row wrap">
         <span className="pill tag" data-testid="strength-confidence">{est.confidence} estimate</span>
         <span className="muted small-print">centre ≈ {est.rating} · {est.games} game{est.games === 1 ? '' : 's'} · {est.moves} moves · avg loss {est.acpl.toFixed(0)} cp</span>
@@ -81,6 +88,9 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
     </div>
   );
 }
+
+/** Position on a 400-2800 scale, in percent. */
+const pos = (r: number) => Math.max(0, Math.min(100, ((r - 400) / 2400) * 100));
 
 function Focus({ games }: { games: AnalysedGame[] }) {
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -289,8 +299,7 @@ export function StrengthPanel() {
   const games = useStrength((s) => s.games);
   const saveFailed = useStrength((s) => s.saveFailed);
   return (
-    <section className="panel strength-panel" aria-label="Strength estimate and training plan">
-      <header className="panel-head"><h2>Strength</h2></header>
+    <section className="panel strength-panel sp" aria-label="Strength estimate and training plan">
       {saveFailed && <div className="callout warn">These results could not be saved in this browser (storage full or blocked). They stay until you reload.</div>}
       <Estimate games={games} />
       <ProgressChart games={games} />
