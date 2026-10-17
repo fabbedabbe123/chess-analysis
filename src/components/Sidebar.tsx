@@ -80,7 +80,7 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar" aria-label="Game menu">
-      <button className="brand brand-btn" onClick={goHome} title="Back to the start page" data-testid="go-home">
+      <button className="brand brand-btn" onClick={goHome} data-tip="Start page" data-testid="go-home">
         <span className="logo" aria-hidden>♞</span>
         <div>
           <strong className="lb">Chess Analysis</strong>
@@ -93,10 +93,10 @@ export function Sidebar() {
       {puzzleOpen && <div className="callout info small side-more">A puzzle or play game is open. Exit it (Puzzles / Play tab) to change the game.</div>}
       <fieldset className="plain" disabled={puzzleOpen}>
       <div className="stack">
-        <button className="btn primary" title="New game" aria-label="New game" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
+        <button className="btn primary" data-tip="New game" aria-label="New game" onClick={() => confirmThen(hasMoves, 'Start a new game? The current game is only kept if you exported or saved it.', 'New game', newGame)}>
           <Ic d="plus" /><span className="lb">New game</span>
         </button>
-        <button className="btn" title="Import PGN / FEN" aria-label="Import PGN or FEN" onClick={() => openDialog('import')} data-testid="open-import"><Ic d="import" /><span className="lb">Import PGN / FEN</span></button>
+        <button className="btn" data-tip="Import PGN / FEN" aria-label="Import PGN or FEN" onClick={() => openDialog('import')} data-testid="open-import"><Ic d="import" /><span className="lb">Import PGN / FEN</span></button>
         {changed && (
           <button className="btn side-more" onClick={() => { restoreOriginal(); notify('info', 'Original game restored.'); }} title="Discard all your variations and edits">
             <Ic d="restore" /><span className="lb">Restore imported game</span>
@@ -181,11 +181,11 @@ export function Sidebar() {
 
       <div className="spacer" />
       <div className="stack">
-        <button className="btn" title={theme === 'dark' ? 'Light theme' : 'Dark theme'} aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'} onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}>
+        <button className="btn" data-tip={theme === 'dark' ? 'Light theme' : 'Dark theme'} aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'} onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}>
           <Ic d={theme === 'dark' ? 'sun' : 'moon'} /><span className="lb">{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
         </button>
-        <button className="btn" onClick={() => openDialog('settings')} title="Settings" aria-label="Settings" data-testid="open-settings"><Ic d="gear" /><span className="lb">Settings</span></button>
-        <button className="btn" title="Help, tips & shortcuts" aria-label="Help, tips and shortcuts" onClick={() => openDialog('help')}><Ic d="help" /><span className="lb">Help, tips & shortcuts</span></button>
+        <button className="btn" onClick={() => openDialog('settings')} data-tip="Settings" aria-label="Settings" data-testid="open-settings"><Ic d="gear" /><span className="lb">Settings</span></button>
+        <button className="btn" data-tip="Help, tips & shortcuts" aria-label="Help, tips and shortcuts" onClick={() => openDialog('help')}><Ic d="help" /><span className="lb">Help, tips & shortcuts</span></button>
       </div>
     </aside>
   );

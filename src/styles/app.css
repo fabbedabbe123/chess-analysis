@@ -902,3 +902,21 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .hs-range b { transform-origin: left; }
 .js-sa .hs-range b[data-sa] { transform: scaleX(var(--p, 0)); opacity: 1; }
 @media (max-width: 800px) { .hs-board { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+
+/* ---------- right side: icon tabs + instant tooltips ---------- */
+[data-tip] { position: relative; }
+@media (hover: hover) {
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; z-index: 50; white-space: nowrap; pointer-events: none; padding: 6px 10px; border-radius: 8px; background: #2b2926; color: var(--text); border: 1px solid rgba(255,255,255,.14); font-size: 12.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.5); top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+  .col-left [data-tip]:hover::after { top: 50%; left: calc(100% + 10px); transform: translateY(-50%); }
+  .col-right .tab-row button:last-child[data-tip]:hover::after, .col-right .help-btn[data-tip]:hover::after { left: auto; right: 0; transform: none; }
+}
+@media (min-width: 901px) {
+  .col-right > .tabs .tab-row { gap: 6px; padding-bottom: 0; }
+  .col-right > .tabs .tab-row button, .col-right > .tabs .tab-row.primary button:not(.help-btn) { overflow: visible; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 48px; padding: 0; flex: 0 0 auto; }
+  .col-right > .tabs .tab-row.sub button { height: 44px; width: 48px; }
+  .col-right > .tabs .tab-row button .lbl-full, .col-right > .tabs .tab-row button .lbl-short, .col-right > .tabs .tab-row button .tl { display: none; }
+  .col-right > .tabs .tab-row .help-btn { width: 40px; margin-left: auto; font-size: 16px; }
+  .col-right > .tabs .tab-row button.active { color: var(--accent); }
+  .col-right > .tabs .tab-row button:hover:not(.active) { color: var(--text); }
+}
+@media (max-width: 900px) { .col-right .tab-row button svg.ic { display: none; } }

@@ -31,7 +31,7 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
   if (!s.configured) return null;
   if (s.userId === null) {
     return (
-      <button className={`account-btn signin ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" title="Sign in to keep your progress on all your devices">
+      <button className={`account-btn signin ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" data-tip="Sign in to sync your progress">
         <span className="account-icon" aria-hidden>☁</span>
         <span className="account-text"><strong>Sign in</strong><small>Sync across devices</small></span>
       </button>
@@ -42,7 +42,7 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
   const onlineNow = (s.friends ?? []).filter((f) => f.status === 'accepted' && presenceOf(f).online).length;
   const label = s.profileLoaded && s.profile === null ? 'Choose a username' : requests > 0 ? `${requests} friend request${requests === 1 ? '' : 's'}` : onlineNow > 0 ? `${onlineNow} friend${onlineNow === 1 ? '' : 's'} online` : s.error !== null ? 'Sync problem' : s.busy === 'syncing' ? 'Syncing…' : s.lastSync !== null ? `Synced ${ago(s.lastSync)}` : 'Signed in';
   return (
-    <button className={`account-btn signed ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" title={`${shownName(s)} · ${label}`}>
+    <button className={`account-btn signed ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" data-tip={`${shownName(s)} · ${label}`}>
       <span className="avatar-wrap"><Avatar name={s.profile?.username ?? null} src={s.profile?.avatar} size={30} /><i className={`dot ${state}`} />{requests > 0 && <b className="badge-count" aria-hidden>{requests}</b>}</span>
       <span className="account-text"><strong>{shownName(s)}</strong><small>{label}</small></span>
     </button>

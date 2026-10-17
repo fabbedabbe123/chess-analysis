@@ -61,6 +61,23 @@ const SECTIONS: { id: string; label: string; short?: string; hint: string; tabs:
   },
   { id: 'play', label: 'Play', hint: 'Play Stockfish', tabs: [{ id: 'play', label: 'Play' }] },
 ];
+const TAB_ICONS: Record<string, string> = {
+  analyse: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  train: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 8a4 4 0 100 8 4 4 0 000-8z',
+  games: 'M4 6h16M4 12h16M4 18h10',
+  play: 'M7 4l13 8-13 8z',
+  engine: 'M13 2L4 14h7l-1 8 9-12h-7z',
+  review: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6',
+  openings: 'M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19a2 2 0 012-2h13',
+  tactics: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 100 8 4 4 0 000-8z',
+  learn: 'M2 9l10-5 10 5-10 5zM6 11.500V16c0 1 2.500 3 6 3s6-2 6-3v-4.500',
+  puzzles: 'M9 3h6v4a2 2 0 104 0h2v6h-4a2 2 0 100 4h4v4H3V3z',
+  player: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.5-4 3.500-6 8-6s7.500 2 8 6',
+  strength: 'M4 18a8 8 0 1116 0M12 18l4-6',
+};
+function TabIcon({ id }: { id: string }) {
+  return <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[id] ?? ''} /></svg>;
+}
 const lastInSection = new Map<string, RightTab>();
 
 
@@ -113,7 +130,7 @@ export default function App() {
   return (
     <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
       <div className="col-left">
-        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} title={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} onClick={toggleSidebar}>
+        <button className="side-toggle" data-testid="side-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} data-tip={collapsed ? 'Tools: export, FEN, saved games' : 'Hide side menu'} onClick={toggleSidebar}>
           <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg><span className="lb">{collapsed ? '' : 'Hide tools'}</span>
         </button>
         <div className="side-body"><Sidebar /></div>
@@ -146,20 +163,20 @@ export default function App() {
             {SECTIONS.map((sec) => {
               const active = sec.tabs.some((t) => t.id === rightTab);
               return (
-                <button key={sec.id} role="tab" aria-selected={active} aria-label={sec.label} className={active ? 'active' : ''} title={sec.hint}
+                <button key={sec.id} role="tab" aria-selected={active} aria-label={sec.label} className={active ? 'active' : ''} data-tip={sec.label}
                   onClick={() => { const t = sec.tabs.some((x) => x.id === lastInSection.get(sec.id)) ? lastInSection.get(sec.id)! : sec.tabs[0]!.id; setRightTab(t); setMobileTab(t); }}>
-                  <span className="lbl-full" aria-hidden="true">{sec.label}</span>
+                  <TabIcon id={sec.id} /><span className="lbl-full" aria-hidden="true">{sec.label}</span>
                   {sec.short !== undefined && <span className="lbl-short" aria-hidden="true">{sec.short}</span>}
                 </button>
               );
             })}
-            <button className="help-btn" onClick={() => openDialog('help')} aria-label="Help and tips" title="Help and tips" data-testid="open-help">?</button>
+            <button className="help-btn" onClick={() => openDialog('help')} aria-label="Help and tips" data-tip="Help and tips" data-testid="open-help">?</button>
           </div>
           {section && section.tabs.length > 1 && (
             <div className="tab-row sub" role="presentation">
               {section.tabs.map((t) => (
-                <button key={t.id} role="tab" aria-selected={rightTab === t.id} className={rightTab === t.id ? 'active' : ''} onClick={() => { setRightTab(t.id); setMobileTab(t.id); }}>
-                  {t.label}
+                <button key={t.id} role="tab" aria-selected={rightTab === t.id} aria-label={t.label} data-tip={t.label} className={rightTab === t.id ? 'active' : ''} onClick={() => { setRightTab(t.id); setMobileTab(t.id); }}>
+                  <TabIcon id={t.id} /><span className="tl">{t.label}</span>
                 </button>
               ))}
             </div>

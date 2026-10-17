@@ -22,7 +22,7 @@ async def main():
         check('moves panel sits under the board', lay['movesTop']>=lay['boardBottom']-1 and not lay['movesInRight'])
         check('moves panel fits on the screen', lay['movesBottom']<=lay['vh']+1)
         # sections
-        tabs=await pg.locator('nav[aria-label=Sections] .tab-row.primary button[role=tab]').all_inner_texts()
+        tabs=await pg.locator('nav[aria-label=Sections] .tab-row.primary button[role=tab]').evaluate_all("els=>els.map(e=>e.getAttribute('aria-label'))")
         check('four sections', tabs==['Analyse','Train','My games','Play'])
         await pg.get_by_role('tab',name='My games',exact=True).click()
         check('sub-tabs for my games', await pg.get_by_role('tab',name='Strength',exact=True).is_visible() and await pg.get_by_role('tab',name='Player',exact=True).is_visible())
