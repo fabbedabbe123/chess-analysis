@@ -113,16 +113,15 @@ export function Sidebar() {
       </div>
 
       <div className="side-more">
-      <h3>Export</h3>
-      <div className="export-grid">
+      <div className="export-grid" role="group" aria-label="Export">
         <button className="btn" onClick={() => void copy('FEN', currentFen())}>Copy FEN</button>
         <button className="btn" onClick={() => void copy('PGN', currentPgn())}>Copy PGN</button>
         <button className="btn wide" onClick={() => downloadText('game.pgn', currentPgn(), 'application/x-chess-pgn')}>Download PGN</button>
       </div>
 
-      <h3>Load position (FEN)</h3>
       <form
         className="row"
+        aria-label="Load position (FEN)"
         onSubmit={(e) => {
           e.preventDefault();
           const apply = () => {

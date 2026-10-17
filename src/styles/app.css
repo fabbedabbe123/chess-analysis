@@ -1486,3 +1486,5 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
   .app.side-collapsed .col-left > .account-btn, .app.side-collapsed .account-btn { margin-bottom: 0; }
   .app:not(.side-collapsed) .sidebar .side-toggle { margin-bottom: 12px; }
 }
+.side-more .export-grid { margin-top: 14px; }
+.side-more form[aria-label="Load position (FEN)"] { margin-top: 12px; }
