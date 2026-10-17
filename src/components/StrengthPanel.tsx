@@ -68,6 +68,13 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
           {Math.abs(gap) <= 150 ? 'The estimate is in the same range.' : gap > 0 ? 'The analysis suggests you play better than your rating in these games.' : 'The analysis suggests you play below your rating in these games.'}
         </p>
       )}
+      <p className="small-print" data-testid="strength-bias-note">
+        {est.rating < 1000
+          ? 'Heads up: in this range the estimate tends to run too high (by up to about 300 points in our tests), so your real level may be lower.'
+          : est.rating > 1600
+            ? 'Heads up: in this range the estimate tends to run too low (by roughly 150-300 points in our tests), so your real level may be higher.'
+            : 'In this range the estimate is typically within about 200-300 points.'}
+      </p>
       <p className="muted small-print">
         This is an estimate of playing strength, not an Elo. It maps the average centipawn loss of your moves (Stockfish, book moves skipped) to a rating with a formula fitted on public Chess.com games (analysis depth 14). It is a coarse guide, best at about 1000-1600, and it depends on the analysis depth and the kind of games. The range narrows only slowly as you add games; it uses your {RECENT_GAMES} most recent.
       </p>
