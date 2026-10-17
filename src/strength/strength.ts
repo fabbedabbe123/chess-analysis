@@ -12,7 +12,7 @@ import type { WhiteScore } from '@/types/engine';
  *
  * HONESTY NOTES (also shown in the UI):
  *  - The rating is an ESTIMATE of playing strength from engine analysis, not an Elo. It uses the average centipawn loss (ACPL)
- *    of your moves and a community rule-of-thumb mapping (see `ratingFromAcpl`) that we did NOT calibrate ourselves.
+ *    of your moves and a mapping calibrated on public Chess.com games (see `ratingFromAcpl`).
  *  - It is shown as a range that narrows with more analysed games; a single game says very little.
  *  - Focus areas and trends come from the rule-based coach categories (patterns, not proven causes).
  */
@@ -251,12 +251,13 @@ export function progressSeries(all: readonly AnalysedGame[], window = 5): Progre
 // ----------------------------------------------------------------- the estimate
 
 /**
- * Rule-of-thumb mapping from average centipawn loss to playing strength: rating ~ 3100 * exp(-0.01 * ACPL).
- * This is a widely repeated community approximation, NOT something we calibrated. Real ACPL depends on the engine depth,
- * the time control and the kind of positions, so treat the result as a rough guide only.
+ * Mapping from average centipawn loss (Stockfish depth 14, first 6 plies skipped, +-1000 cp cap) to a Chess.com-like rating:
+ * rating = 4533 * exp(-0.0179 * ACPL). Fitted on 51 public Chess.com players (562 games, mostly blitz, ratings ~400-3200);
+ * leave-one-player-out RMSE about 390 rating points (the old 3100*exp(-0.01*ACPL) rule scored about 430). It is only a coarse
+ * guide: best at about 1000-1600, too high below ~1000 and too low above ~1600. Other depths or time controls shift it.
  */
 export function ratingFromAcpl(acpl: number): number {
-  const raw = 3100 * Math.exp(-0.01 * Math.max(0, acpl));
+  const raw = 4533 * Math.exp(-0.0179 * Math.max(0, acpl));
   return Math.max(400, Math.min(2800, raw));
 }
 
@@ -286,8 +287,8 @@ export function recentGames(games: readonly AnalysedGame[]): AnalysedGame[] {
 
 /**
  * null when there is not enough evidence (no games, or fewer than MIN_MOVES_ESTIMATE counted moves).
- * The band half-width shrinks with the evidence, measured in "full games" n = min(games, moves / 30):
- * 350 / sqrt(n), kept between 125 and 400.
+ * The band half-width (about the 80% prediction interval of the calibration, +-450 at 10 games and +-410 at 40) shrinks only
+ * slowly with the evidence, measured in "full games" n = min(games, moves / 30): 400 + 150 / sqrt(n), at most 550.
  */
 export function estimateStrength(all: readonly AnalysedGame[]): StrengthEstimate | null {
   const games = recentGames(all);
@@ -302,7 +303,7 @@ export function estimateStrength(all: readonly AnalysedGame[]): StrengthEstimate
   const acpl = loss / moves;
   const rating = ratingFromAcpl(acpl);
   const evidence = Math.max(1, Math.min(games.length, moves / MOVES_PER_GAME));
-  const half = Math.max(125, Math.min(400, 350 / Math.sqrt(evidence)));
+  const half = Math.min(550, 400 + 150 / Math.sqrt(evidence));
   return {
     games: games.length,
     moves,

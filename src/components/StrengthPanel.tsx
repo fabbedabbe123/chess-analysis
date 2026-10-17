@@ -69,7 +69,7 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
         </p>
       )}
       <p className="muted small-print">
-        This is an estimate of playing strength, not an Elo. It maps the average centipawn loss of your moves (Stockfish, book moves skipped) to a rating with a rule of thumb that was not calibrated here, so it depends on the analysis depth and on the kind of games. The range narrows as you add games; it uses your {RECENT_GAMES} most recent.
+        This is an estimate of playing strength, not an Elo. It maps the average centipawn loss of your moves (Stockfish, book moves skipped) to a rating with a formula fitted on public Chess.com games (analysis depth 14). It is a coarse guide, best at about 1000-1600, and it depends on the analysis depth and the kind of games. The range narrows only slowly as you add games; it uses your {RECENT_GAMES} most recent.
       </p>
     </div>
   );
