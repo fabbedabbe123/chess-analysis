@@ -18,8 +18,6 @@ async def main():
             print(w,h,m)
             check(f'{w}x{h}: centre column does not overflow (board top and moves panel fully visible)', m['over']<=0 and m['top']>=0 and m['bottom']<=m['vh'])
             check(f'{w}x{h}: move verdict shown in Analyse', await pg.locator('[data-testid=move-verdict]').is_visible())
-            hw=await pg.evaluate("document.querySelector('[data-testid=open-help]').getBoundingClientRect().width")
-            check(f'{w}x{h}: help button is a small round icon, not a tab', hw<=32)
             lab=await pg.evaluate("[...document.querySelectorAll('.tab-row.primary button[role=tab]')].map(b=>b.scrollWidth<=b.clientWidth+1)")
             check(f'{w}x{h}: section tab labels are not truncated', all(lab))
             # review sections: key moments always shown, rare grades and the grade legend folded away

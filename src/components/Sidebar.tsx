@@ -189,7 +189,7 @@ export function Sidebar() {
           <Ic d={theme === 'dark' ? 'sun' : 'moon'} /><span className="lb">{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
         </button>
         <button className="btn" onClick={() => openDialog('settings')} data-tip="Settings" aria-label="Settings" data-testid="open-settings"><Ic d="gear" /><span className="lb">Settings</span></button>
-        <button className="btn" data-tip="Help, tips & shortcuts" aria-label="Help, tips and shortcuts" onClick={() => openDialog('help')}><Ic d="help" /><span className="lb">Help, tips & shortcuts</span></button>
+        <button className="btn" data-tip="Help, tips & shortcuts" aria-label="Help, tips and shortcuts" data-testid="open-help" onClick={() => openDialog('help')}><Ic d="help" /><span className="lb">Help, tips & shortcuts</span></button>
       </div>
     </aside>
   );

@@ -29,7 +29,7 @@ import { useGame } from '@/stores/gameStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { useSetting } from '@/stores/settingsStore';
-import { openDialog, setMobileTab, setRightTab, toggleMoves, useUi, type RightTab } from '@/stores/uiStore';
+import { setMobileTab, setRightTab, toggleMoves, useUi, type RightTab } from '@/stores/uiStore';
 import { useEffect, useMemo } from 'react';
 import { useView } from '@/stores/viewStore';
 
@@ -179,7 +179,6 @@ export default function App() {
                 </button>
               );
             })}
-            <button className="help-btn" onClick={() => openDialog('help')} aria-label="Help and tips" data-tip="Help and tips" data-testid="open-help">?</button>
           </div>
           {section && section.tabs.length > 1 && (
             <div className="tab-row sub" role="presentation">

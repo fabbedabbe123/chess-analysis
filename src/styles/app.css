@@ -1488,3 +1488,5 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 }
 .side-more .export-grid { margin-top: 14px; }
 .side-more form[aria-label="Load position (FEN)"] { margin-top: 12px; }
+/* expanded side menu: the buttons already carry their names, so no hover tooltip */
+.app:not(.side-collapsed) .col-left [data-tip]::after { display: none !important; }
