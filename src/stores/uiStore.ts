@@ -22,7 +22,7 @@ export interface UiState {
   confirm: { message: string; confirmLabel: string; onConfirm: () => void } | null;
 }
 
-const COLLAPSE_KEY = 'chess-analysis:sidebar-collapsed:v1';
+const COLLAPSE_KEY = 'chess-analysis:sidebar-collapsed:v2';
 function readCollapsed(): boolean {
   try {
     return localStorage.getItem(COLLAPSE_KEY) !== '0'; // icon rail is the default
