@@ -12,6 +12,7 @@ import { localStorageData } from './local';
 import { usernameProblem, type Profile } from './profile';
 import { buildStats, parseOverview, type Activity, type Friend, type FoundUser } from './social';
 import { strengthStore } from '@/stores/strengthStore';
+import { reviewStore } from '@/stores/reviewStore';
 import { isAvatarDataUrl } from '@/utils/avatar';
 import { deleteCloudData, supabaseRemote } from './remote';
 
@@ -73,6 +74,8 @@ const saveMeta = () => { try { localStorage.setItem(META_KEY, JSON.stringify(met
 let client: SupabaseClient | null = null;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
+/** A local change arrived while a round was running: run another round when it ends. */
+let rerun = false;
 /** The page was opened from the e-mail sign-in link (the link puts the session in the URL). */
 let arrivedByLink = typeof window !== 'undefined' && /access_token=|error_description=/.test(window.location.hash);
 
@@ -83,18 +86,28 @@ function describe(e: unknown): string {
 
 /** A play game or puzzle is open: do not reload the page under the user. */
 function sessionActive(): boolean {
-  return playStore.get().phase !== 'off' || puzzleStore.get().phase !== 'off';
+  return (
+    playStore.get().phase !== 'off' ||
+    puzzleStore.get().phase !== 'off' ||
+    reviewStore.get().status === 'running' ||
+    strengthStore.get().batch.status === 'running' ||
+    uiStore.get().dialog !== null
+  );
 }
 
 /** Runs one synchronisation round now (also called after local edits, on focus and by the "Sync now" button). */
 export async function syncNow(manual = false): Promise<void> {
   const { userId } = syncStore.get();
-  if (client === null || userId === null || running) return;
+  if (client === null || userId === null) return;
+  if (running) { rerun = true; return; }
   running = true;
   syncStore.set({ busy: 'syncing', error: null });
   try {
     const out = await runSync(supabaseRemote(client, userId), localStorageData(), meta, userId);
-    meta = out.meta;
+    // Keep "last changed here" stamps written while this round was running (out.meta was built from the older object).
+    const touched = { ...out.meta.touched };
+    for (const [k, v] of Object.entries(meta.touched)) if (v > (touched[k] ?? 0)) touched[k] = v;
+    meta = { ...out.meta, touched };
     saveMeta();
     syncStore.set({ lastSync: Date.now(), last: out.result });
     const changedHere = out.result.pulled.length + out.result.merged.length > 0;
@@ -112,6 +125,7 @@ export async function syncNow(manual = false): Promise<void> {
   } finally {
     running = false;
     syncStore.set({ busy: 'idle' });
+    if (rerun) { rerun = false; schedulePush(); }
   }
 }
 
