@@ -762,3 +762,13 @@ details.fold:not([open]) > summary { margin-bottom: 0; }
 .mine-item .moment { flex: 1; min-width: 0; }
 .bld-solver { font-weight: 700; color: var(--accent); }
 .bld-reply { color: var(--muted); }
+
+/* ---- touch polish: no tap flash / double-tap zoom on controls, no text selection or callout on the board ---- */
+html { -webkit-tap-highlight-color: transparent; }
+button, a, [role=button], input[type=checkbox], input[type=range], select, label, nav.tabs, .tab-row { touch-action: manipulation; }
+cg-board, .cg-wrap { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* iOS: 100vh includes the collapsing address bar; prefer the dynamic viewport height where supported */
+@supports (height: 100dvh) {
+  .modal { max-height: calc(100dvh - 24px); }
+  @media (max-width: 900px) { .app { min-height: 100dvh; } }
+}
