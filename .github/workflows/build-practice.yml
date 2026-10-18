@@ -1,0 +1,35 @@
+name: Build practice sets
+# Manual: downloads the Lichess open puzzle database (CC0), builds public/data/practice/*.json with
+# scripts/build-practice.mjs and pushes the result to the branch `data/practice` (never straight to main).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or commit that holds scripts/build-practice.mjs and data-src/path.src.mjs'
+        default: main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: sudo apt-get install -y zstd
+      - name: Build from the Lichess puzzle database
+        run: curl -fsSL https://database.lichess.org/lichess_db_puzzle.csv.zst | zstd -dc | node scripts/build-practice.mjs
+      - name: Push to data/practice
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout -B data/practice
+          git add -f public/data/practice
+          git commit -m "Practice sets from the Lichess puzzle database (CC0)"
+          git push -f origin data/practice
