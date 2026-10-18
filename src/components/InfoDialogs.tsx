@@ -1,5 +1,5 @@
 import { closeDialog } from '@/stores/uiStore';
-import { APP_NAME, REPO_URL } from '@/brand';
+import { APP_NAME, FEEDBACK_URL, REPO_URL } from '@/brand';
 import { Modal } from './Modal';
 
 export function AboutDialog() {
@@ -52,7 +52,13 @@ export function SupportDialog() {
       <dl className="howto">
         <dt>How do I use it?</dt>
         <dd>Open <strong>Help &amp; tips</strong> in the menu for a short guide and a guided tour.</dd>
-        <dt>Something is wrong or missing</dt>
+        {FEEDBACK_URL !== '' && (
+          <>
+            <dt>Questions, ideas or problems</dt>
+            <dd><a className="btn primary" href={FEEDBACK_URL} target="_blank" rel="noreferrer" data-testid="support-form">Open the support form</a></dd>
+          </>
+        )}
+        <dt>{FEEDBACK_URL !== '' ? 'Prefer GitHub?' : 'Something is wrong or missing'}</dt>
         <dd>Report it on <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">GitHub</a> (a free GitHub account is needed). Say what you did, what you expected and what happened, and which browser you use.</dd>
         <dt>My data</dt>
         <dd>Everything is stored in your browser. Settings → Your data makes a backup file you can restore, and signing in syncs between devices.</dd>

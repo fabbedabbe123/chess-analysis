@@ -2,3 +2,5 @@
 export const APP_NAME = 'Chess Analysis';
 export const REPO_URL = 'https://github.com/fabbedabbe123/chess-analysis';
 export const YEAR = new Date().getFullYear();
+/** Public feedback form (e.g. a Google Form). Leave empty to show only the GitHub link in Support. */
+export const FEEDBACK_URL = '';
