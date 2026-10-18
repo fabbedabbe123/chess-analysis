@@ -4,7 +4,7 @@ import { EnginePanel } from '@/components/EnginePanel';
 import { EvalBar } from '@/components/EvalBar';
 import { AccountDialog } from '@/components/AccountSection';
 import { HelpDialog } from '@/components/HelpDialog';
-import { AboutDialog, CreditsDialog, PrivacyDialog } from '@/components/InfoDialogs';
+import { AboutDialog, CreditsDialog, PrivacyDialog, SupportDialog } from '@/components/InfoDialogs';
 import { ImportDialog } from '@/components/ImportDialog';
 import { MoveList, MoveTools } from '@/components/MoveList';
 import { Notices } from '@/components/Notices';
@@ -135,6 +135,8 @@ export default function App() {
         {dialog === 'about' && <AboutDialog />}
         {dialog === 'privacy' && <PrivacyDialog />}
         {dialog === 'credits' && <CreditsDialog />}
+      {dialog === 'support' && <SupportDialog />}
+        {dialog === 'support' && <SupportDialog />}
         {dialog === 'about' && <AboutDialog />}
       {dialog === 'privacy' && <PrivacyDialog />}
       {dialog === 'credits' && <CreditsDialog />}

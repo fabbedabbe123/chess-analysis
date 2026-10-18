@@ -1,4 +1,4 @@
-import { APP_NAME, REPO_URL, YEAR } from '@/brand';
+import { APP_NAME, YEAR } from '@/brand';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { duePuzzles, loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { averageAccuracy, estimateStrength, focusAreas, MIN_GAMES_RATING, ratingEstimate } from '@/strength/strength';
@@ -369,13 +369,13 @@ export function Home() {
       <footer className="hp-footer" data-testid="site-footer">
         <nav aria-label="Footer">
           <button className="linklike" onClick={() => openDialog('about')}>About</button>
+          <button className="linklike" onClick={() => openDialog('support')}>Support</button>
           <button className="linklike" onClick={() => { enterApp(); openDialog('help'); }}>Help &amp; tips</button>
           <button className="linklike" onClick={() => openDialog('privacy')}>Privacy</button>
           <button className="linklike" onClick={() => openDialog('credits')}>Credits &amp; licences</button>
-          <a href={REPO_URL} target="_blank" rel="noreferrer">Source code</a>
           <button className="linklike" onClick={jump('hp-top')}>Back to top</button>
         </nav>
-        <p>© {YEAR} {APP_NAME} · Not affiliated with Chess.com or Lichess · Free and open source (GPL-3.0)</p>
+        <p>© {YEAR} {APP_NAME}</p>
       </footer>
     </main>
   );

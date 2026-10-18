@@ -45,3 +45,18 @@ export function CreditsDialog() {
     </Modal>
   );
 }
+
+export function SupportDialog() {
+  return (
+    <Modal title="Support" onClose={closeDialog}>
+      <dl className="howto">
+        <dt>How do I use it?</dt>
+        <dd>Open <strong>Help &amp; tips</strong> in the menu for a short guide and a guided tour.</dd>
+        <dt>Something is wrong or missing</dt>
+        <dd>Report it on <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">GitHub</a> (a free GitHub account is needed). Say what you did, what you expected and what happened, and which browser you use.</dd>
+        <dt>My data</dt>
+        <dd>Everything is stored in your browser. Settings → Your data makes a backup file you can restore, and signing in syncs between devices.</dd>
+      </dl>
+    </Modal>
+  );
+}
