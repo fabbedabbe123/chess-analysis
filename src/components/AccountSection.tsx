@@ -30,6 +30,8 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
   const s = useSync((x) => x);
   if (!s.configured) return null;
   if (s.userId === null) {
+    // Not on the start page: sign-in is offered after the first report ("Save this report"), not above the headline.
+    if (variant === 'top') return null;
     return (
       <button className={`account-btn signin ${variant}`} onClick={() => openDialog('account')} data-testid="account-open" data-tip="Sign in to sync your progress">
         <span className="account-icon" aria-hidden>☁</span>
@@ -50,7 +52,7 @@ export function AccountButton({ variant = 'side' }: { variant?: 'side' | 'top' }
 }
 
 /** Start-page card for visitors who are not signed in. */
-export function SignInBanner() {
+export function SignInBanner({ report = false }: { report?: boolean } = {}) {
   const configured = useSync((x) => x.configured);
   const signedIn = useSync((x) => x.userId !== null);
   if (!configured || signedIn) return null;
@@ -58,8 +60,8 @@ export function SignInBanner() {
     <section className="signin-banner" aria-label="Sign in" data-testid="signin-banner">
       <span className="account-icon" aria-hidden>☁</span>
       <div>
-        <strong>Take your progress with you</strong>
-        <p>Sign in with just your e-mail (no password) and your games, puzzle progress and settings follow you to every device. It is optional.</p>
+        <strong>{report ? 'Save this report' : 'Take your progress with you'}</strong>
+        <p>{report ? 'Your report already stays in this browser. Sign in with just your e-mail (no password) to keep it, your games and your puzzle progress on every device. It is optional.' : 'Sign in with just your e-mail (no password) and your games, puzzle progress and settings follow you to every device. It is optional.'}</p>
       </div>
       <button className="btn primary" onClick={() => openDialog('account')} data-testid="banner-signin">Sign in</button>
     </section>

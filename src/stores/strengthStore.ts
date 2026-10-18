@@ -97,7 +97,9 @@ export function unanalysedTracked(): ReturnType<typeof trackerStore.get>['games'
  * Analyse the newest `count` not-yet-analysed tracked Chess.com games with a dedicated engine (real Stockfish, same review
  * as the Review tab), one game at a time. Each finished game is saved immediately, so cancelling keeps what is done.
  */
-export async function analyseTrackedGames(count: number): Promise<void> {
+/** The first `fastFirst` games use FAST_DEPTH so a first result arrives quickly; the rest use the calibrated depth. */
+export const FAST_DEPTH = 12;
+export async function analyseTrackedGames(count: number, opts: { fastFirst?: number } = {}): Promise<void> {
   if (strengthStore.get().batch.status === 'running') return;
   const todo = unanalysedTracked().slice(0, Math.max(1, count));
   if (todo.length === 0) {
@@ -114,19 +116,20 @@ export async function analyseTrackedGames(count: number): Promise<void> {
   try {
     engine ??= await createBrowserEngine();
     const book = await loadOpeningBook().catch(() => null);
-    for (const tg of todo) {
+    for (const [index, tg] of todo.entries()) {
       if (signal.aborted) throw new ReviewAbortedError();
+      const gameDepth = index < (opts.fastFirst ?? 0) ? Math.min(depth, FAST_DEPTH) : depth;
       const parsed = parsePgn(stripClockTags(tg.pgn)).games[0];
       if (parsed === undefined) { skipped += 1; continue; }
       const result = await runReview({
         tree: parsed.tree,
         engine,
-        depth,
+        depth: gameDepth,
         options: engineOptionsFrom(settings),
         thresholds: settings.thresholds,
         cache,
         isBookMove: book === null ? undefined : (fen, uci) => bookContinuations(book, fen).some((m) => m.uci === uci),
-        settingsKey: `strength|mpv2|${engine.getCapabilities().flavor}|d${depth}|h${settings.hashMb}`,
+        settingsKey: `strength|mpv2|${engine.getCapabilities().flavor}|d${gameDepth}|h${settings.hashMb}`,
         signal,
         onProgress: (d, t) => strengthStore.set((s) => ({ batch: { ...s.batch, currentPly: d, currentPlies: t } })),
       });

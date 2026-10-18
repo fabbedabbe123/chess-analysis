@@ -1,3 +1,4 @@
+import { VersionLine } from './VersionBadge';
 import { closeDialog } from '@/stores/uiStore';
 import { startTour } from '@/stores/tourStore';
 import { enterApp } from '@/stores/viewStore';
@@ -44,6 +45,7 @@ export function HelpDialog() {
         Playing a move that is not in the game creates a <em>variation</em>; the main line is only changed when you ask (Promote / Make main line).
         Evaluations are always shown from White's point of view.
       </p>
+      <VersionLine />
       <p className="muted small-print">
         The app is distributed under GPL-3.0 because it bundles Stockfish and Chessground. Piece sets: cburnett & merida (GPLv2+), chessnut (Apache-2.0), rhosgfx (CC0). Opening names: Lichess chess-openings dataset (CC0).
         Move classification and accuracy are this app's own estimates, not Chess.com's or Lichess's.

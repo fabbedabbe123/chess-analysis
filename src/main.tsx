@@ -17,7 +17,6 @@ import { installPieceCss } from './utils/boardStyle';
 import { installAudioUnlock } from './utils/sound';
 import { setStorageFailListener } from './utils/storage';
 import { importPuzzleFromLocation } from './stores/myPuzzlesStore';
-import { VersionBadge } from './components/VersionBadge';
 
 installPieceCss();
 startGamePersistence();
@@ -35,7 +34,6 @@ createRoot(rootEl).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
-      <VersionBadge />
     </ErrorBoundary>
   </StrictMode>,
 );

@@ -11,6 +11,7 @@ import { clearLichess, useLichess } from '@/stores/lichessStore';
 import { clearTracker, useTracker } from '@/stores/trackerStore';
 import { confirmThen, openLesson, setMobileTab, setRightTab } from '@/stores/uiStore';
 import { formatDate } from '@/utils/format';
+import { SignInBanner } from './AccountSection';
 
 const TREND_TEXT: Record<Trend, string> = { improving: '↘ improving', steady: '→ steady', worse: '↗ getting worse', unknown: '' };
 const SOURCE_TEXT = { play: 'Play', chesscom: 'Chess.com', lichess: 'Lichess', import: 'Imported' } as const;
@@ -226,7 +227,7 @@ function Batch() {
           <button className="btn small primary" onClick={() => void analyseTrackedGames(count)} disabled={waiting === 0} data-testid="batch-start">Analyse</button>
         )}
       </div>
-      <p className="muted small-print">{waiting} tracked game{waiting === 1 ? '' : 's'} not analysed yet. A game takes about a minute (real Stockfish in your browser, depth ≤ 14). Each finished game is saved, so stopping keeps the results.</p>
+      <p className="muted small-print">{waiting} tracked game{waiting === 1 ? '' : 's'} not analysed yet. A game takes roughly 15 to 60 seconds, depending on your device (real Stockfish in your browser, depth ≤ 14). Each finished game is saved, so stopping keeps the results.</p>
       {running && (
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={batch.total} aria-valuenow={batch.done}>
           <div style={{ width: `${batch.total ? ((batch.done + (batch.currentPlies ? batch.currentPly / batch.currentPlies : 0)) / batch.total) * 100 : 0}%` }} />
@@ -304,6 +305,7 @@ export function StrengthPanel() {
       <Estimate games={games} />
       <ProgressChart games={games} />
       <Focus games={games} />
+      {games.length >= MIN_GAMES_FOCUS && <SignInBanner report />}
       <TrainMistakes games={games} />
       <h3>Add games</h3>
       <Batch />

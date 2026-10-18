@@ -12,7 +12,7 @@ import { syncPlayer } from '@/stores/trackerStore';
 import { openDialog, setMobileTab, setRightTab, type RightTab } from '@/stores/uiStore';
 import { enterApp } from '@/stores/viewStore';
 import { BOARD_COLORS } from '@/utils/boardStyle';
-import { AccountButton, SignInBanner } from './AccountSection';
+import { AccountButton } from './AccountSection';
 
 const go = (tab: RightTab) => { setRightTab(tab); setMobileTab(tab); enterApp(); };
 const analyse = () => { enterApp(); openDialog('import'); };
@@ -26,7 +26,7 @@ function FindForm({ idSuffix = '' }: { idSuffix?: string }) {
     const user = name.trim();
     if (user === '') return;
     go('strength');
-    void (site === 'chesscom' ? syncPlayer(user) : syncLichess(user)).then(() => analyseTrackedGames(20));
+    void (site === 'chesscom' ? syncPlayer(user) : syncLichess(user)).then(() => analyseTrackedGames(20, { fastFirst: 3 }));
   };
   return (
     <form className="hp-find" onSubmit={submit} data-testid={`find-form${idSuffix}`}>
@@ -174,7 +174,7 @@ export function Home() {
           <ul className="hp-trust">
             <li>Your data stays in your browser</li>
             <li>Analyses your latest 20 games</li>
-            <li>First result in about a minute</li>
+            <li>First result in 1 to 2 minutes</li>
           </ul>
           <div className="hp-alt">
             <button className="hp-link" onClick={analyse} data-testid="home-analyse">Paste a game instead</button>
@@ -224,8 +224,6 @@ export function Home() {
         </section>
       )}
 
-      <div className="hp-banner"><SignInBanner /></div>
-
       {/* REPORT */}
       <section className="hp-sec hp-wide-sec" id="hp-report">
         <div className="hp-wide">
@@ -233,7 +231,7 @@ export function Home() {
           <h2 data-sa className="hp-h2 rv-up">Your 3 biggest recurring mistakes, with proof.</h2>
           <p data-sa className="hp-lead rv-up">Not a list of every error. The three patterns that cost you the most, how often they happen, an example from your own game and one thing to do about each.</p>
           <div className="hp-cards3">
-            {[['7 of 20', 'Pieces left hanging', 'Moves that left a piece undefended, most often in the middlegame.'], ['5 of 20', 'Missed knight forks', 'A fork was there for you or against you and the move list shows it.'], ['4 of 20', 'Rushed endgames', 'Accuracy drops after move 35 when the clock is low.']].map(([n, t, d]) => (
+            {[['7 of 20', 'Missed tactics', 'Forks, pins and loose pieces that the engine shows were there for you, or against you.'], ['5 of 20', 'King safety', 'Games where the king was left exposed before the position was lost.'], ['4 of 20', 'Endgame technique', 'Games that slipped in the endgame after a fair middlegame.']].map(([n, t, d]) => (
               <div key={t} data-sa className="hp-card rv-up">
                 <div className="hp-disp hp-big-n">{n}</div>
                 <strong>{t}</strong>
@@ -248,11 +246,11 @@ export function Home() {
       {/* WEEKLY PLAN */}
       <section className="hp-sec hp-wide-sec" id="hp-plan">
         <div className="hp-wide">
-          <div data-sa className="hp-eyebrow rv-up">02 · Your weekly plan</div>
-          <h2 data-sa className="hp-h2 rv-up">Three tasks, about 20 minutes.</h2>
-          <p data-sa className="hp-lead rv-up">Each task uses puzzles built from your own mistakes. Ten games later we check whether the weaknesses shrank.</p>
+          <div data-sa className="hp-eyebrow rv-up">02 · Your training plan</div>
+          <h2 data-sa className="hp-h2 rv-up">A short plan built from your own mistakes.</h2>
+          <p data-sa className="hp-lead rv-up">Puzzles from your own games and the lessons that match your weak spots. As you analyse more games, each weakness shows whether it is improving.</p>
           <div className="hp-cards3">
-            {[['Monday · 8 min', 'Find the free piece', '9 puzzles from your own games'], ['Wednesday · 7 min', 'Lesson: knight forks', '5 exercises, then 3 forks from your games'], ['Friday · 5 min', 'Replay one of your endgames', 'Find the better move yourself']].map(([d, t, sub]) => (
+            {[['Step 1', 'Puzzles from your own mistakes', 'Up to 10 positions where you went wrong, ready to solve'], ['Step 2', 'The lesson for your top weakness', 'For example Forks, with worked examples and exercises'], ['Step 3', 'Track whether it is working', 'Each focus area shows if it is improving, steady or getting worse']].map(([d, t, sub]) => (
               <div key={t} data-sa className="hp-card rv-up">
                 <div className="hp-muted hp-small">{d}</div>
                 <strong style={{ display: 'block', marginTop: 4 }}>{t}</strong>
@@ -335,7 +333,7 @@ export function Home() {
         <div className="hp-t">
           <div data-sa className="hp-eyebrow rv-up">06 · Your level</div>
           <h2 data-sa className="hp-h2 rv-up">See how you are improving.</h2>
-          <p data-sa className="hp-lead rv-up">After {MIN_GAMES_RATING} analysed games you get an honest range, plus your accuracy, your weakest themes and a training plan built from your own mistakes.</p>
+          <p data-sa className="hp-lead rv-up">Your accuracy and weakest themes show from your first games. After {MIN_GAMES_RATING} analysed games you also get a rough level estimate.</p>
           <div data-sa className="hp-btns rv-up"><button className="hp-btn" onClick={() => go('strength')}>See my level</button></div>
         </div>
         <div className="hp-v hp-col" aria-hidden>
@@ -351,7 +349,7 @@ export function Home() {
             <div className="hp-disp" style={{ fontSize: 24, margin: '4px 0 24px' }}>Shown after {MIN_GAMES_RATING} analysed games</div>
             <div className="hp-track"><div className="hp-range" /><div className="hp-centre" /></div>
             <div className="hp-ticks"><span>400</span><span>1200</span><span>2000</span><span>2800</span></div>
-            <div className="hp-muted hp-small" style={{ marginTop: 16 }}>A rough guide: about ±450 points. It tends to run high below 1000 and low above 1600.</div>
+            <div className="hp-muted hp-small" style={{ marginTop: 16 }}>A rough guide, not an Elo. It gets more useful the more games you analyse.</div>
           </div>
         </div>
       </section>
