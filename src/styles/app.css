@@ -1563,3 +1563,4 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 .hp-footer p { margin: 0; font-size: 12px; }
 :root[data-theme='light'] .hp-footer { border-top-color: rgba(0,0,0,.1); }
 :root[data-theme='light'] .hp-footer nav a, :root[data-theme='light'] .hp-footer nav .linklike { color: var(--text); }
+.howto dd .btn { display: inline-flex; align-items: center; margin: 8px 0 6px; text-decoration: none; }
