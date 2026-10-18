@@ -3,6 +3,13 @@ from playwright.async_api import async_playwright
 exec(open(os.path.join(os.path.dirname(__file__),'common.py')).read())
 LES=json.load(open(os.path.join(os.path.dirname(__file__),'..','public','data','lessons.json')))
 SK={s['id']:s for s in LES}
+IDX=json.load(open(os.path.join(os.path.dirname(__file__),'..','public','data','practice','index.json')))
+NSK=len(IDX['skills'])
+CATS={}
+for sk in IDX['skills']:
+    c=SK[sk['id']]['category'] if sk['id'] in SK else sk.get('category'); CATS[c]=CATS.get(c,0)+1
+async def view_all(pg):
+    await pg.click('[data-testid=view-all]')
 
 async def sq_xy(pg, sq):
     box=await pg.locator('cg-board').bounding_box(); s=box['width']/8
@@ -47,11 +54,15 @@ async def main():
         game_fen=await fen(pg)
         await goto_tab(pg,'Learn')
         await pg.wait_for_selector('[data-testid=learn-summary]')
+        ok(await pg.locator('[data-testid=learn-path] .path-node').count()==NSK, f'path view lists all {NSK} skills')
+        ok(await pg.locator('.lp-level').count()==len(IDX['levels']), 'path is split into levels')
+        ok(await pg.locator('[data-testid=daily-start]').count()==1 and await pg.locator('[data-testid=placement-start]').count()==1, 'daily practice and placement cards are shown')
+        await view_all(pg)
         n=await pg.locator('.skill-card').count()
-        ok(n==len(LES), f'Learn lists all {len(LES)} skills (saw {n})')
+        ok(n==NSK, f'All skills lists all {NSK} skills (saw {n})')
         for cat,label in [('openings','Openings'),('endgames','Endgames'),('tactics','Tactics')]:
             await pg.get_by_role('button',name=label,exact=True).click()
-            exp=sum(1 for s in LES if s['category']==cat)
+            exp=CATS.get(cat,0)
             ok(await pg.locator('.skill-card').count()==exp, f'{label} filter shows {exp} skills')
         await pg.get_by_role('button',name='All',exact=True).click()
         # --- Forks lesson
@@ -76,8 +87,8 @@ async def main():
         await pg.click('[data-testid=learn-back]'); await pg.wait_for_selector('[data-testid=learn-summary]')
         ok((await fen(pg))==game_fen, 'the real game is restored after the lesson')
         summ=await pg.inner_text('[data-testid=learn-summary]'); print('   ', summ)
-        ok(f"{len(SK['forks']['exercises'])} of" in summ, 'summary counts the solved exercises')
-        card=await pg.inner_text('[data-testid=skill-forks]'); ok('Practised' in card, f'forks is Practised (first exercise needed a retry): {card.splitlines()[-1] if card else ""}')
+        ok(f"{len(SK['forks']['exercises'])} exercises and positions solved" in summ, 'summary counts the solved exercises')
+        card=await pg.inner_text('[data-testid=skill-forks]'); ok('Mastered' not in card and 'Practised' not in card, f'forks lesson done but practice still open: {card.splitlines()[-2] if card else ""}')
         # --- Najdorf (black) opening drill
         await pg.click('[data-testid=skill-najdorf]'); await pg.click('[data-testid=lesson-start]'); await pg.wait_for_selector('[data-testid=puzzle-active]')
         ex=SK['najdorf']['exercises'][0]
@@ -97,14 +108,14 @@ async def main():
         ok(await pg.get_by_role('tab',name='Learn').get_attribute('aria-selected')=='true', 'Leave returns to the Learn tab')
         ok((await fen(pg))==game_fen, 'game restored again')
         # persistence
-        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Learn'); await pg.wait_for_selector('[data-testid=learn-summary]')
-        card=await pg.inner_text('[data-testid=skill-najdorf]'); ok('Mastered' not in card and '1/1 solved' in card, f'Najdorf progress persisted ({card.splitlines()[-1]})')
+        await pg.reload(); await pg.wait_for_selector('cg-board'); await goto_tab(pg,'Learn'); await pg.wait_for_selector('[data-testid=learn-summary]'); await view_all(pg)
+        card=await pg.inner_text('[data-testid=skill-najdorf]'); ok('Mastered' not in card and '1 solved' in card, f'Najdorf progress persisted ({card.splitlines()[-1]})')
         await pg.screenshot(path='/tmp/claude-0/learn_list.png')
         # --- mobile
         m=await (await b.new_context(viewport={'width':390,'height':800})).new_page(); mlogs=[]
         m.on('pageerror',lambda e: mlogs.append(str(e)))
         await m.goto(URL); await m.wait_for_selector('cg-board'); await m.locator('.mobile-tabs button',has_text='Train').click(); await m.get_by_role('tab',name='Learn',exact=True).click()
-        await m.wait_for_selector('[data-testid=learn-summary]'); ok(await m.locator('.skill-card').count()==len(LES), 'mobile: Learn tab lists the skills')
+        await m.wait_for_selector('[data-testid=learn-summary]'); ok(await m.locator('.path-node').count()==NSK, 'mobile: Learn tab lists the path')
         ow=await m.evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"); ok(ow, 'mobile: no horizontal overflow')
         await m.screenshot(path='/tmp/claude-0/learn_mobile.png')
         ok(not logs and not mlogs, f'no console/page errors {logs[:3]} {mlogs[:3]}')

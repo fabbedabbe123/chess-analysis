@@ -40,6 +40,9 @@ export interface Puzzle {
   skillId?: string;
   /** Lesson exercises: an opening line to memorise rather than a position with an engine-best answer. */
   book?: boolean;
+  /** Practice-set puzzles (Lichess database): Lichess rating, and they take part in spaced repetition. */
+  rating?: number;
+  practice?: boolean;
 }
 
 const UCI = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
@@ -82,6 +85,8 @@ export function validatePuzzle(raw: unknown): { ok: true; puzzle: Puzzle } | { o
       ...(p['exact'] === true ? { exact: true } : {}),
       ...(typeof p['skillId'] === 'string' ? { skillId: p['skillId'] } : {}),
       ...(p['book'] === true ? { book: true } : {}),
+      ...(typeof p['rating'] === 'number' ? { rating: p['rating'] } : {}),
+      ...(p['practice'] === true ? { practice: true } : {}),
     },
   };
 }
