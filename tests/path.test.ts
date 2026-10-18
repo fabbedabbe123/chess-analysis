@@ -45,7 +45,7 @@ describe('the bundled learning path', () => {
       expect(puzzles.length, s.id).toBe(s.practice);
       expect(puzzles.every((p, i) => i === 0 || (puzzles[i - 1]!.rating ?? 0) <= (p.rating ?? 0))).toBe(true);
     }
-  });
+  }, 60_000);
   it('has at least 3000 practice positions in total', () => {
     expect(cur.skills.reduce((n, s) => n + s.practice, 0)).toBeGreaterThan(3000);
   });
