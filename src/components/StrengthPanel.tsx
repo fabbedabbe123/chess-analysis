@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { loadLessons, MASTERY_LABEL, type Skill } from '@/lessons/lessons';
+import { MASTERY_LABEL } from '@/lessons/lessons';
+import { loadCurriculum, type PathSkill } from '@/lessons/path';
 import { CATEGORY_LABEL } from '@/play/coach';
 import {
   averageAccuracy, buildPlan, estimateStrength, MIN_GAMES_RATING, ratingEstimate, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
@@ -94,11 +95,11 @@ function Estimate({ games }: { games: AnalysedGame[] }) {
 const pos = (r: number) => Math.max(0, Math.min(100, ((r - 400) / 2400) * 100));
 
 function Focus({ games }: { games: AnalysedGame[] }) {
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skills, setSkills] = useState<PathSkill[]>([]);
   const progress = usePuzzle((s) => s.progress);
   useEffect(() => {
     let alive = true;
-    loadLessons().then((s) => alive && setSkills(s)).catch(() => undefined);
+    loadCurriculum().then((c) => alive && setSkills(c.skills)).catch(() => undefined);
     return () => { alive = false; };
   }, []);
   const focus = useMemo(() => focusAreas(games), [games]);

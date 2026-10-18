@@ -260,7 +260,7 @@ function solutionSanOf(puzzle: Puzzle): string {
 
 /** Only bundled/online puzzles are scheduled: lesson exercises and one-off mistake puzzles cannot be rebuilt from an id. */
 function withSrs(progress: PuzzleProgress, puzzle: Puzzle, success: boolean): { srs?: Record<string, SrsEntry> } {
-  if (puzzle.skillId !== undefined || puzzle.theme === 'mistake' || puzzle.theme === 'lesson') return progress.srs ? { srs: progress.srs } : {};
+  if ((puzzle.skillId !== undefined && puzzle.practice !== true) || puzzle.theme === 'mistake' || (puzzle.theme === 'lesson' && puzzle.practice !== true)) return progress.srs ? { srs: progress.srs } : {};
   return { srs: { ...(progress.srs ?? {}), [puzzle.id]: nextSrs(progress.srs?.[puzzle.id], success, Date.now()) } };
 }
 

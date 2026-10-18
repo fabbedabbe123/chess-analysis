@@ -1,8 +1,8 @@
 import { CATEGORY_LABEL, CATEGORY_ORDER, RELATED_LESSONS, type CoachCategory } from '@/play/coach';
 import { buildCoachReport } from '@/play/coach';
 import type { ReviewResult } from '@/analysis/review';
-import type { Skill } from '@/lessons/lessons';
-import { skillProgress, type Mastery } from '@/lessons/lessons';
+import type { Mastery, Skill } from '@/lessons/lessons';
+import { MASTERED_AT, pathProgress, practiceCounts, type PathSkill } from '@/lessons/path';
 import { validatePuzzle, type Puzzle, type PuzzleProgress } from '@/puzzles/puzzles';
 import type { Color } from '@/types/game';
 import type { WhiteScore } from '@/types/engine';
@@ -397,16 +397,17 @@ export interface PlanItem {
 }
 
 /** For each focus area: up to two related lessons that are not mastered yet (new / learning first). */
-export function buildPlan(areas: readonly FocusArea[], skills: readonly Skill[], progress: PuzzleProgress): PlanItem[] {
+export function buildPlan(areas: readonly FocusArea[], skills: readonly (Skill & { practice?: number })[], progress: PuzzleProgress): PlanItem[] {
+  const counts = practiceCounts(progress);
   const order: Record<Mastery, number> = { new: 0, learning: 1, practised: 2, mastered: 3 };
   return areas.map((area) => {
     const lessons: PlanLesson[] = [];
     for (const id of RELATED_LESSONS[area.category]) {
       const skill = skills.find((s) => s.id === id);
       if (skill === undefined) continue;
-      const p = skillProgress(skill, progress);
+      const p = pathProgress({ level: '', requires: [], practice: 0, ...skill } as PathSkill, progress, counts);
       if (p.mastery === 'mastered') continue;
-      lessons.push({ skillId: id, title: skill.title, mastery: p.mastery, solved: p.solved, total: p.total });
+      lessons.push({ skillId: id, title: skill.title, mastery: p.mastery, solved: p.lessonSolved + p.practiceSolved, total: p.lessonTotal + Math.min(MASTERED_AT, skill.practice ?? 0) });
     }
     lessons.sort((a, b) => order[a.mastery] - order[b.mastery]);
     return { area, lessons: lessons.slice(0, 2) };

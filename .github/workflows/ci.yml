@@ -50,6 +50,7 @@ jobs:
       - run: python3 e2e/move_verdict.py
       - run: python3 e2e/strength.py
       - run: python3 e2e/front_door.py
+      - run: python3 e2e/path.py
       - run: python3 e2e/lichess.py
       - run: python3 e2e/puzzles_srs.py
       - run: python3 e2e/play_position_clock.py
