@@ -132,15 +132,11 @@ export default function App() {
     return (
       <>
         <Home />
+        {dialog === 'help' && <HelpDialog />}
         {dialog === 'about' && <AboutDialog />}
+        {dialog === 'support' && <SupportDialog />}
         {dialog === 'privacy' && <PrivacyDialog />}
         {dialog === 'credits' && <CreditsDialog />}
-      {dialog === 'support' && <SupportDialog />}
-        {dialog === 'support' && <SupportDialog />}
-        {dialog === 'about' && <AboutDialog />}
-      {dialog === 'privacy' && <PrivacyDialog />}
-      {dialog === 'credits' && <CreditsDialog />}
-      {dialog === 'help' && <HelpDialog />}
         {dialog === 'import' && <ImportDialog />}
         {dialog === 'account' && <AccountDialog />}
         <Notices />
@@ -229,6 +225,10 @@ export default function App() {
       {dialog === 'import' && <ImportDialog />}
       {dialog === 'settings' && <SettingsDialog />}
       {dialog === 'help' && <HelpDialog />}
+      {dialog === 'about' && <AboutDialog />}
+      {dialog === 'support' && <SupportDialog />}
+      {dialog === 'privacy' && <PrivacyDialog />}
+      {dialog === 'credits' && <CreditsDialog />}
       {dialog === 'account' && <AccountDialog />}
       <Tour />
       <Notices />
