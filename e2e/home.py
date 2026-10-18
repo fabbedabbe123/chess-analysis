@@ -12,7 +12,8 @@ async def main():
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.goto(BASE_URL); await pg.evaluate("localStorage.clear()"); await pg.reload(); await pg.wait_for_selector('[data-testid=home]')
         check('fresh visit shows the start page, not the workspace', await pg.locator('cg-board').count()==0)
-        check('three ways in', await pg.locator('.home-card').count()==3)
+        check('username front door and three other ways in', await pg.locator('[data-testid=find-form]').count()==1 and await pg.locator('.hp-alt [data-testid=home-analyse], .hp-alt [data-testid=home-play], .hp-alt [data-testid=home-games]').count()==3)
+        check('no Friends section on the start page', await pg.locator('#hp-friends').count()==0)
         check('nothing to pick up on a fresh visit', await pg.locator('.home-continue').count()==0)
         await pg.screenshot(path='/tmp/claude-0/home_fresh.png')
         # Analyse -> workspace with import dialog
