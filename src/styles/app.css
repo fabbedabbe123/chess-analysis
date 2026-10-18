@@ -1490,3 +1490,38 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 .side-more form[aria-label="Load position (FEN)"] { margin-top: 12px; }
 /* expanded side menu: the buttons already carry their names, so no hover tooltip */
 .app:not(.side-collapsed) .col-left [data-tip]::after { display: none !important; }
+
+/* ---------- start page: username as the front door ---------- */
+.hp-find { display: flex; gap: 10px; align-items: stretch; margin-top: 26px; max-width: 640px; background: var(--bg-2, #1b1a18); border: 1px solid rgba(255,255,255,.13); border-radius: 20px; padding: 8px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); }
+.hp-seg { display: inline-flex; padding: 4px; background: #171615; border-radius: 13px; gap: 2px; align-self: center; flex: none; }
+.hp-seg button { height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 600; font-size: 14px; cursor: pointer; }
+.hp-seg button.on { background: #2b2926; color: var(--text); }
+.hp-find input { flex: 1; min-width: 0; border: 0; background: transparent; outline: 0; font-size: 17px; padding: 0 8px; color: var(--text); }
+.hp-find input::placeholder { color: #7c776e; }
+.hp-find .hp-btn { flex: none; white-space: nowrap; }
+.hp-trust { list-style: none; margin: 16px 0 0; padding: 0; display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+.hp-trust li::before { content: '✓'; color: var(--accent); margin-right: 6px; font-weight: 700; }
+.hp-alt { margin-top: 14px; color: var(--muted); font-size: 14px; }
+.hp-link { background: none; border: 0; padding: 0; color: #a5d46a; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.hp-cta .hp-find { margin-left: auto; margin-right: auto; text-align: left; }
+.hp-cta .hp-alt { text-align: center; }
+.hp-wide-sec .hp-wide { max-width: 1100px; margin: 0 auto; width: 100%; }
+.hp-cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
+.hp-big-n { font-size: 38px; color: #a5d46a; line-height: 1.1; margin-bottom: 6px; }
+@media (max-width: 760px) {
+  .hp-find { flex-direction: column; }
+  .hp-find input { height: 48px; }
+  .hp-seg { align-self: stretch; } .hp-seg button { flex: 1; }
+  .hp-find .hp-btn { height: 50px; }
+  .hp-cards3 { grid-template-columns: 1fr; }
+}
+.hp-hero .hp-h1 { font-size: clamp(34px, 4.2vw, 58px); }
+.hp-find { flex-wrap: wrap; }
+.hp-find input { flex: 1 1 160px; height: 44px; }
+.hp-find .hp-btn { flex: 1 1 100%; height: 50px; }
+@media (max-width: 760px) {
+  .hp-find input { flex: none; height: 48px; }
+  .hp-find .hp-btn { flex: none; }
+  .hp-links { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .hp-links a { flex: none; }
+}

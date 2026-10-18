@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { duePuzzles, loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { averageAccuracy, estimateStrength, focusAreas, MIN_GAMES_RATING, ratingEstimate } from '@/strength/strength';
 import { mainLine } from '@/chess/gameTree';
@@ -6,8 +6,9 @@ import { useGame } from '@/stores/gameStore';
 import { usePlay, useSavedSession } from '@/stores/playStore';
 import { usePuzzle } from '@/stores/puzzleStore';
 import { useSettings } from '@/stores/settingsStore';
-import { useStrength } from '@/stores/strengthStore';
-import { useSync } from '@/sync/syncStore';
+import { analyseTrackedGames, useStrength } from '@/stores/strengthStore';
+import { syncLichess } from '@/stores/lichessStore';
+import { syncPlayer } from '@/stores/trackerStore';
 import { openDialog, setMobileTab, setRightTab, type RightTab } from '@/stores/uiStore';
 import { enterApp } from '@/stores/viewStore';
 import { BOARD_COLORS } from '@/utils/boardStyle';
@@ -15,6 +16,29 @@ import { AccountButton, SignInBanner } from './AccountSection';
 
 const go = (tab: RightTab) => { setRightTab(tab); setMobileTab(tab); enterApp(); };
 const analyse = () => { enterApp(); openDialog('import'); };
+
+/** One field is the front door: track the account, then analyse its latest games and show the report. */
+function FindForm({ idSuffix = '' }: { idSuffix?: string }) {
+  const [site, setSite] = useState<'chesscom' | 'lichess'>('chesscom');
+  const [name, setName] = useState('');
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const user = name.trim();
+    if (user === '') return;
+    go('strength');
+    void (site === 'chesscom' ? syncPlayer(user) : syncLichess(user)).then(() => analyseTrackedGames(20));
+  };
+  return (
+    <form className="hp-find" onSubmit={submit} data-testid={`find-form${idSuffix}`}>
+      <div className="hp-seg" role="group" aria-label="Where do you play?">
+        <button type="button" className={site === 'chesscom' ? 'on' : ''} onClick={() => setSite('chesscom')}>Chess.com</button>
+        <button type="button" className={site === 'lichess' ? 'on' : ''} onClick={() => setSite('lichess')}>Lichess</button>
+      </div>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your username" aria-label="Your username" autoCapitalize="none" autoCorrect="off" spellCheck={false} data-testid={`find-name${idSuffix}`} />
+      <button type="submit" className="hp-btn" data-testid={`find-go${idSuffix}`}>Find my 3 biggest mistakes</button>
+    </form>
+  );
+}
 
 /**
  * Scroll motion: each [data-sa] element gets --p (0..1), the largest share of it seen in view so far.
@@ -84,11 +108,6 @@ function Board({ pieces, light, dark, className, children }: { pieces: Sq[]; lig
   );
 }
 
-const FRIENDS: { i: string; n: string; a: string; c: string; on: boolean; bob: string }[] = [
-  { i: 'A', n: 'anna', a: 'Solving puzzles', c: '#81b64c', on: true, bob: 'hp-bob' },
-  { i: 'L', n: 'leo', a: 'Analysing a game', c: '#8fb5e8', on: true, bob: 'hp-bob2' },
-  { i: 'M', n: 'maja', a: 'Last seen 2 h ago', c: '#e6b46a', on: false, bob: 'hp-bob' },
-];
 const SAMPLE_MOVES: [string, string, string, string][] = [
   ['1. e4', 'Opening', '#96bc4b', 'Best'],
   ['1… e5', 'Opening', '#96bc4b', 'Best'],
@@ -105,7 +124,6 @@ export function Home() {
   const playPhase = usePlay((p) => p.phase);
   const games = useStrength((s) => s.games);
   const progress = usePuzzle((p) => p.progress);
-  const syncOn = useSync((s) => s.configured);
   const { pieceSet, boardTheme } = useSettings();
   const [light, dark] = BOARD_COLORS[boardTheme];
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
@@ -136,11 +154,12 @@ export function Home() {
       <header className="hp-nav">
         <button className="hp-brand" onClick={jump('hp-top')}><span className="logo" aria-hidden>♞</span>Chess Analysis</button>
         <nav className="hp-links" aria-label="Start page sections">
+          <a href="#hp-report" onClick={jump('hp-report')}>Your report</a>
+          <a href="#hp-plan" onClick={jump('hp-plan')}>Weekly plan</a>
           <a href="#hp-analyse" onClick={jump('hp-analyse')}>Analyse</a>
           <a href="#hp-play" onClick={jump('hp-play')}>Play</a>
           <a href="#hp-puzzles" onClick={jump('hp-puzzles')}>Puzzles</a>
           <a href="#hp-level" onClick={jump('hp-level')}>Your level</a>
-          {syncOn && <a href="#hp-friends" onClick={jump('hp-friends')}>Friends</a>}
         </nav>
         <div className="home-top"><AccountButton variant="top" /></div>
       </header>
@@ -148,13 +167,21 @@ export function Home() {
       {/* HERO */}
       <section className="hp-sec hp-hero" id="hp-top">
         <div className="hp-t">
-          <div className="hp-eyebrow">Free · runs in your browser</div>
-          <h1 className="hp-h1">See every move. Understand every mistake.</h1>
-          <p className="hp-lead">Analyse your games with Stockfish, play at your own level and train on puzzles. Your data stays in your browser.</p>
-          <div className="hp-btns">
-            <button className="home-card hp-btn" onClick={analyse} data-testid="home-analyse"><strong>Analyse a game</strong></button>
-            <button className="home-card hp-btn ghost" onClick={() => go('play')} data-testid="home-play"><strong>Play Stockfish</strong></button>
-            <button className="home-card hp-btn ghost" onClick={() => go('player')} data-testid="home-games"><strong>My games</strong></button>
+          <div className="hp-eyebrow">Free · no sign-up</div>
+          <h1 className="hp-h1">Find out why you are stuck at your rating, then fix it.</h1>
+          <p className="hp-lead">Type your Chess.com or Lichess username. Stockfish finds the mistakes you keep repeating and builds a plan from them.</p>
+          <FindForm />
+          <ul className="hp-trust">
+            <li>Your data stays in your browser</li>
+            <li>Analyses your latest 20 games</li>
+            <li>First result in about a minute</li>
+          </ul>
+          <div className="hp-alt">
+            <button className="hp-link" onClick={analyse} data-testid="home-analyse">Paste a game instead</button>
+            <span aria-hidden> · </span>
+            <button className="hp-link" onClick={() => go('play')} data-testid="home-play">Play Stockfish</button>
+            <span aria-hidden> · </span>
+            <button className="hp-link" onClick={() => go('player')} data-testid="home-games">My games</button>
           </div>
           <button className="hp-scrollhint" onClick={jump('hp-analyse')}><span className="hp-mouse" aria-hidden /> Scroll to see what&apos;s inside</button>
         </div>
@@ -199,10 +226,47 @@ export function Home() {
 
       <div className="hp-banner"><SignInBanner /></div>
 
+      {/* REPORT */}
+      <section className="hp-sec hp-wide-sec" id="hp-report">
+        <div className="hp-wide">
+          <div data-sa className="hp-eyebrow rv-up">01 · Your report</div>
+          <h2 data-sa className="hp-h2 rv-up">Your 3 biggest recurring mistakes, with proof.</h2>
+          <p data-sa className="hp-lead rv-up">Not a list of every error. The three patterns that cost you the most, how often they happen, an example from your own game and one thing to do about each.</p>
+          <div className="hp-cards3">
+            {[['7 of 20', 'Pieces left hanging', 'Moves that left a piece undefended, most often in the middlegame.'], ['5 of 20', 'Missed knight forks', 'A fork was there for you or against you and the move list shows it.'], ['4 of 20', 'Rushed endgames', 'Accuracy drops after move 35 when the clock is low.']].map(([n, t, d]) => (
+              <div key={t} data-sa className="hp-card rv-up">
+                <div className="hp-disp hp-big-n">{n}</div>
+                <strong>{t}</strong>
+                <div className="hp-muted" style={{ marginTop: 6, lineHeight: 1.5 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+          <div data-sa className="hp-muted hp-small rv-up" style={{ marginTop: 14 }}>Example report. Yours is made from your own games.</div>
+        </div>
+      </section>
+
+      {/* WEEKLY PLAN */}
+      <section className="hp-sec hp-wide-sec" id="hp-plan">
+        <div className="hp-wide">
+          <div data-sa className="hp-eyebrow rv-up">02 · Your weekly plan</div>
+          <h2 data-sa className="hp-h2 rv-up">Three tasks, about 20 minutes.</h2>
+          <p data-sa className="hp-lead rv-up">Each task uses puzzles built from your own mistakes. Ten games later we check whether the weaknesses shrank.</p>
+          <div className="hp-cards3">
+            {[['Monday · 8 min', 'Find the free piece', '9 puzzles from your own games'], ['Wednesday · 7 min', 'Lesson: knight forks', '5 exercises, then 3 forks from your games'], ['Friday · 5 min', 'Replay one of your endgames', 'Find the better move yourself']].map(([d, t, sub]) => (
+              <div key={t} data-sa className="hp-card rv-up">
+                <div className="hp-muted hp-small">{d}</div>
+                <strong style={{ display: 'block', marginTop: 4 }}>{t}</strong>
+                <div className="hp-muted" style={{ marginTop: 6 }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ANALYSE */}
       <section className="hp-sec" id="hp-analyse">
         <div className="hp-t">
-          <div data-sa className="hp-eyebrow rv-up">01 · Analyse</div>
+          <div data-sa className="hp-eyebrow rv-up">03 · Analyse</div>
           <h2 data-sa className="hp-h2 rv-up">Every move, graded.</h2>
           <p data-sa className="hp-lead rv-up">Stockfish reviews your game and tells you what was best, what slipped and why, move by move.</p>
           <div data-sa className="hp-muted hp-small rv-up" style={{ marginTop: 22 }}>Example game</div>
@@ -227,7 +291,7 @@ export function Home() {
       {/* PLAY */}
       <section className="hp-sec hp-rev" id="hp-play">
         <div className="hp-t">
-          <div data-sa className="hp-eyebrow rv-up">02 · Play</div>
+          <div data-sa className="hp-eyebrow rv-up">04 · Play</div>
           <h2 data-sa className="hp-h2 rv-up">Play Stockfish at your level.</h2>
           <p data-sa className="hp-lead rv-up">Pick a strength from beginner to maximum, add a clock and ask for a hint when you are stuck. Get feedback after every move, or only at the end.</p>
           <div data-sa className="hp-btns rv-up"><button className="hp-btn" onClick={() => go('play')}>Play a game</button></div>
@@ -249,7 +313,7 @@ export function Home() {
       {/* PUZZLES */}
       <section className="hp-sec" id="hp-puzzles">
         <div className="hp-t">
-          <div data-sa className="hp-eyebrow rv-up">03 · Puzzles</div>
+          <div data-sa className="hp-eyebrow rv-up">05 · Puzzles</div>
           <h2 data-sa className="hp-h2 rv-up">Train. Or make your own.</h2>
           <p data-sa className="hp-lead rv-up">Puzzles by theme, spaced repetition for the ones you miss, and puzzles from your own games. Record a position, let Stockfish check it and share it with a link.</p>
           <div data-sa className="hp-btns rv-up"><button className="hp-btn" onClick={() => go('puzzles')}>Train puzzles</button><button className="hp-btn ghost" onClick={() => go('learn')}>Lessons</button></div>
@@ -269,7 +333,7 @@ export function Home() {
       {/* LEVEL */}
       <section className="hp-sec hp-rev" id="hp-level">
         <div className="hp-t">
-          <div data-sa className="hp-eyebrow rv-up">04 · Your level</div>
+          <div data-sa className="hp-eyebrow rv-up">06 · Your level</div>
           <h2 data-sa className="hp-h2 rv-up">See how you are improving.</h2>
           <p data-sa className="hp-lead rv-up">After {MIN_GAMES_RATING} analysed games you get an honest range, plus your accuracy, your weakest themes and a training plan built from your own mistakes.</p>
           <div data-sa className="hp-btns rv-up"><button className="hp-btn" onClick={() => go('strength')}>See my level</button></div>
@@ -284,7 +348,7 @@ export function Home() {
           </div>
           <div data-sa className="hp-card rv-up hp-levelcard">
             <div className="hp-muted hp-small">Estimated level · example</div>
-            <div className="hp-disp" style={{ fontSize: 38, margin: '4px 0 24px' }}>850–1750</div>
+            <div className="hp-disp" style={{ fontSize: 24, margin: '4px 0 24px' }}>Shown after {MIN_GAMES_RATING} analysed games</div>
             <div className="hp-track"><div className="hp-range" /><div className="hp-centre" /></div>
             <div className="hp-ticks"><span>400</span><span>1200</span><span>2000</span><span>2800</span></div>
             <div className="hp-muted hp-small" style={{ marginTop: 16 }}>A rough guide: about ±450 points. It tends to run high below 1000 and low above 1600.</div>
@@ -292,36 +356,15 @@ export function Home() {
         </div>
       </section>
 
-      {/* FRIENDS (only when accounts are available) */}
-      {syncOn && (
-        <section className="hp-sec" id="hp-friends">
-          <div className="hp-t">
-            <div data-sa className="hp-eyebrow rv-up">05 · Friends</div>
-            <h2 data-sa className="hp-h2 rv-up">Do it together.</h2>
-            <p data-sa className="hp-lead rv-up">Sign in with an e-mail link, add friends by username and see who is online and what they are working on. Your progress follows you between devices.</p>
-            <div data-sa className="hp-btns rv-up"><button className="hp-btn" onClick={() => openDialog('account')}>Account &amp; friends</button></div>
-          </div>
-          <div className="hp-v hp-friends" aria-hidden>
-            {FRIENDS.map((f) => (
-              <div key={f.n} className={f.bob}>
-                <div className="hp-avatar" style={{ background: f.c }}>{f.i}{f.on && <span className="hp-online" />}</div>
-                <div style={{ marginTop: 10, fontWeight: 700 }}>{f.n}</div>
-                <div className="hp-muted hp-small">{f.a}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* CTA */}
       <section className="hp-sec hp-cta">
         <div>
           <h2 data-sa className="hp-h2 rv-up">Ready when you are.</h2>
-          <p data-sa className="hp-lead rv-up">Paste a game, import from Chess.com or Lichess, or just start playing.</p>
-          <div data-sa className="hp-btns rv-pop" style={{ justifyContent: 'center' }}>
-            <button className="hp-btn" onClick={analyse}>Analyse a game</button>
-            <button className="hp-btn ghost" onClick={enterApp} data-testid="home-skip">Go straight to the board</button>
-          </div>
+          <p data-sa className="hp-lead rv-up">Type your username and see your own report in about a minute.</p>
+          <div data-sa className="rv-pop"><FindForm idSuffix="-bottom" /></div>
+          <div data-sa className="hp-alt rv-up"><button className="hp-link" onClick={analyse}>Paste a game instead</button><span aria-hidden> · </span><button className="hp-link" onClick={enterApp} data-testid="home-skip">Go straight to the board</button></div>
         </div>
       </section>
       <p className="home-foot">
