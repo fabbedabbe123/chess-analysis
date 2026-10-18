@@ -23,6 +23,12 @@ async def main():
         await pg.goto(BASE_URL); await pg.evaluate("localStorage.clear(); localStorage.setItem('chess-analysis:settings:v1', JSON.stringify({reviewDepth:8}))"); await pg.reload(); await pg.wait_for_selector('[data-testid=home]')
         check('home has no sign-in box above the headline', await pg.locator('[data-testid=signin-banner]').count()==0 and await pg.locator('.home-top [data-testid=account-open]').count()==0)
         check('no build stamp floating on the page', await pg.locator('.version-badge').count()==0)
+        await pg.reload(); await pg.wait_for_selector('[data-testid=site-footer]')
+        for label,title in [('About','About'),('Privacy','Privacy'),('Credits & licences','Credits and licences')]:
+            await pg.locator('[data-testid=site-footer]').get_by_text(label,exact=True).click()
+            check(f'footer {label} opens its page', await pg.get_by_role('dialog').get_by_text(title).count()>0)
+            await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
+        check('footer shows the copyright and the independence note', 'Not affiliated with Chess.com or Lichess' in await pg.inner_text('[data-testid=site-footer]'))
         await pg.fill('[data-testid=find-name]','tester'); await pg.click('[data-testid=find-go]')
         await pg.wait_for_selector('cg-board',timeout=15000)
         check('submitting opens the Strength tab', await pg.get_by_role('tab',name='Strength',exact=True).get_attribute('aria-selected')=='true')

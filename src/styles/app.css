@@ -1554,3 +1554,12 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 @media (max-width: 520px) { .lp-actions { grid-template-columns: minmax(0, 1fr); } }
 :root[data-theme='light'] .lp-views button { border-color: rgba(0,0,0,.14); color: var(--text); }
 :root[data-theme='light'] .path-node { border-color: rgba(0,0,0,.12); background: rgba(0,0,0,.02); }
+
+/* ---- site footer (start page) ---- */
+.hp-footer { position: relative; z-index: 2; border-top: 1px solid rgba(255,255,255,.08); margin: 0 auto; max-width: 1100px; padding: 28px 16px 56px; text-align: center; color: var(--muted); font-size: 13px; }
+.hp-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin-bottom: 14px; }
+.hp-footer nav a, .hp-footer nav .linklike { color: #b9b4aa; text-decoration: none; background: none; border: 0; padding: 4px 0; font: inherit; cursor: pointer; }
+.hp-footer nav a:hover, .hp-footer nav .linklike:hover { color: #fff; text-decoration: underline; }
+.hp-footer p { margin: 0; font-size: 12px; }
+:root[data-theme='light'] .hp-footer { border-top-color: rgba(0,0,0,.1); }
+:root[data-theme='light'] .hp-footer nav a, :root[data-theme='light'] .hp-footer nav .linklike { color: var(--text); }

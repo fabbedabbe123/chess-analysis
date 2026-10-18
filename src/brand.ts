@@ -1,0 +1,4 @@
+/** The product name and links used in the footer and info pages. Change the name here (and in index.html / package.json). */
+export const APP_NAME = 'Chess Analysis';
+export const REPO_URL = 'https://github.com/fabbedabbe123/chess-analysis';
+export const YEAR = new Date().getFullYear();

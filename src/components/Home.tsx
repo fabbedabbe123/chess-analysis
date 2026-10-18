@@ -1,3 +1,4 @@
+import { APP_NAME, REPO_URL, YEAR } from '@/brand';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { duePuzzles, loadPuzzles, type Puzzle } from '@/puzzles/puzzles';
 import { averageAccuracy, estimateStrength, focusAreas, MIN_GAMES_RATING, ratingEstimate } from '@/strength/strength';
@@ -360,16 +361,22 @@ export function Home() {
       <section className="hp-sec hp-cta">
         <div>
           <h2 data-sa className="hp-h2 rv-up">Ready when you are.</h2>
-          <p data-sa className="hp-lead rv-up">Type your username and see your own report in about a minute.</p>
+          <p data-sa className="hp-lead rv-up">Type your username and see your own report in 1 to 2 minutes.</p>
           <div data-sa className="rv-pop"><FindForm idSuffix="-bottom" /></div>
           <div data-sa className="hp-alt rv-up"><button className="hp-link" onClick={analyse}>Paste a game instead</button><span aria-hidden> · </span><button className="hp-link" onClick={enterApp} data-testid="home-skip">Go straight to the board</button></div>
         </div>
       </section>
-      <p className="home-foot">
-        <button className="linklike" onClick={() => { enterApp(); openDialog('help'); }}>Help &amp; tips</button>
-        <span aria-hidden> · </span>
-        <button className="linklike" onClick={jump('hp-top')}>Back to top</button>
-      </p>
+      <footer className="hp-footer" data-testid="site-footer">
+        <nav aria-label="Footer">
+          <button className="linklike" onClick={() => openDialog('about')}>About</button>
+          <button className="linklike" onClick={() => { enterApp(); openDialog('help'); }}>Help &amp; tips</button>
+          <button className="linklike" onClick={() => openDialog('privacy')}>Privacy</button>
+          <button className="linklike" onClick={() => openDialog('credits')}>Credits &amp; licences</button>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">Source code</a>
+          <button className="linklike" onClick={jump('hp-top')}>Back to top</button>
+        </nav>
+        <p>© {YEAR} {APP_NAME} · Not affiliated with Chess.com or Lichess · Free and open source (GPL-3.0)</p>
+      </footer>
     </main>
   );
 }

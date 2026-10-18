@@ -4,6 +4,7 @@ import { EnginePanel } from '@/components/EnginePanel';
 import { EvalBar } from '@/components/EvalBar';
 import { AccountDialog } from '@/components/AccountSection';
 import { HelpDialog } from '@/components/HelpDialog';
+import { AboutDialog, CreditsDialog, PrivacyDialog } from '@/components/InfoDialogs';
 import { ImportDialog } from '@/components/ImportDialog';
 import { MoveList, MoveTools } from '@/components/MoveList';
 import { Notices } from '@/components/Notices';
@@ -131,7 +132,13 @@ export default function App() {
     return (
       <>
         <Home />
-        {dialog === 'help' && <HelpDialog />}
+        {dialog === 'about' && <AboutDialog />}
+        {dialog === 'privacy' && <PrivacyDialog />}
+        {dialog === 'credits' && <CreditsDialog />}
+        {dialog === 'about' && <AboutDialog />}
+      {dialog === 'privacy' && <PrivacyDialog />}
+      {dialog === 'credits' && <CreditsDialog />}
+      {dialog === 'help' && <HelpDialog />}
         {dialog === 'import' && <ImportDialog />}
         {dialog === 'account' && <AccountDialog />}
         <Notices />
