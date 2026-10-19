@@ -9,7 +9,7 @@ import { splitUci } from '@/analysis/pv';
 import { gameStore, playMove, setShapes, useGame } from '@/stores/gameStore';
 import { engineStore, useEngine } from '@/stores/engineStore';
 import { useSettings } from '@/stores/settingsStore';
-import { useUi } from '@/stores/uiStore';
+import { setBoardSize, useUi } from '@/stores/uiStore';
 import { boardLocked, useOrientation, usePuzzle } from '@/stores/puzzleStore';
 import { playBoardLocked, usePlay } from '@/stores/playStore';
 import type { MoveInput, PromotionPiece, Shape, ShapeColor, Square } from '@/types/game';
@@ -230,6 +230,7 @@ export function ChessBoard() {
   const color = turn === 'white' ? 'w' : 'b';
   return (
     <div className="board-frame">
+      <BoardResizer />
       <div
         className={`board-wrap pieces-${settings.pieceSet} theme-${settings.boardTheme}`}
         role="application"
@@ -272,3 +273,38 @@ export function ChessBoard() {
 
 /** Used by tests/other components that need the live (non-React) engine state. */
 export const peekEngine = () => engineStore.get();
+
+/** Corner handle: drag to resize the board (desktop). Double-click or Home resets; arrow keys nudge. */
+function BoardResizer() {
+  const size = useUi((s) => s.boardSize);
+  const drag = useRef<{ x: number; y: number; start: number } | null>(null);
+  const edge = (el: HTMLElement) => el.parentElement?.getBoundingClientRect().width ?? 480;
+  return (
+    <button
+      type="button"
+      className="board-resize"
+      data-testid="board-resize"
+      aria-label="Resize board. Drag, use arrow keys, or double-click to reset."
+      title="Drag to resize the board (double-click to reset)"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { x: e.clientX, y: e.clientY, start: size ?? edge(e.currentTarget) };
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (d === null) return;
+        setBoardSize(d.start + (e.clientX - d.x) + (e.clientY - d.y));
+      }}
+      onPointerUp={() => { drag.current = null; }}
+      onPointerCancel={() => { drag.current = null; }}
+      onDoubleClick={() => setBoardSize(null)}
+      onKeyDown={(e) => {
+        const cur = size ?? edge(e.currentTarget);
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === '+') { e.preventDefault(); setBoardSize(cur + 24); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === '-') { e.preventDefault(); setBoardSize(cur - 24); }
+        else if (e.key === 'Home') { e.preventDefault(); setBoardSize(null); }
+      }}
+    />
+  );
+}

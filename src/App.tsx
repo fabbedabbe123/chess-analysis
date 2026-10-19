@@ -108,6 +108,7 @@ export default function App() {
   const mobileTab = useUi((s) => s.mobileTab);
   const collapsed = useUi((s) => s.sidebarCollapsed);
   const movesCollapsed = useUi((s) => s.movesCollapsed);
+  const boardSize = useUi((s) => s.boardSize);
   const puzzleActive = usePuzzle((s) => s.phase !== 'off');
   const playActive = usePlay((s) => s.phase !== 'off');
   const view = useView();
@@ -145,7 +146,7 @@ export default function App() {
   }
 
   return (
-    <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''}`}>
+    <div data-section={section?.id ?? ''} data-live={puzzleActive ? 'puzzle' : playActive ? 'play' : ''} className={`app mobile-${mobileTab} ${puzzleActive ? 'has-puzzle' : ''} ${collapsed ? 'side-collapsed' : ''} ${movesCollapsed ? 'moves-collapsed' : ''} ${boardSize !== null ? 'has-board-size' : ''}`} style={boardSize !== null ? ({ '--user-board': `${boardSize}px` } as React.CSSProperties) : undefined}>
       <div className="col-left">
         <div className="side-body"><Sidebar /></div>
       </div>

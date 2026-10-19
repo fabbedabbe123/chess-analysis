@@ -17,6 +17,8 @@ export interface UiState {
   sidebarCollapsed: boolean;
   /** Moves list under the board folded to a thin bar so the board can grow. */
   movesCollapsed: boolean;
+  /** Board edge in px chosen by dragging the corner handle (desktop), or null for the automatic size. */
+  boardSize: number | null;
   /** A lesson (skill id) another panel wants the Learn tab to open; consumed by the Learn tab. */
   learnRequest: string | null;
   confirm: { message: string; confirmLabel: string; onConfirm: () => void } | null;
@@ -58,6 +60,29 @@ export function toggleMoves(): void {
   }
 }
 
+export const BOARD_MIN = 280;
+export const BOARD_MAX = 1400;
+const SIZE_KEY = 'chess-analysis:board-size:v1';
+function readBoardSize(): number | null {
+  try {
+    const n = Number(localStorage.getItem(SIZE_KEY));
+    return Number.isFinite(n) && n >= BOARD_MIN && n <= BOARD_MAX ? Math.round(n) : null;
+  } catch {
+    return null;
+  }
+}
+/** Sets the board size (px); null goes back to the automatic size. The window still limits it (see app.css). */
+export function setBoardSize(px: number | null): void {
+  const next = px === null ? null : Math.round(Math.min(BOARD_MAX, Math.max(BOARD_MIN, px)));
+  uiStore.set({ boardSize: next });
+  try {
+    if (next === null) localStorage.removeItem(SIZE_KEY);
+    else localStorage.setItem(SIZE_KEY, String(next));
+  } catch {
+    /* not remembered */
+  }
+}
+
 export const uiStore = createStore<UiState>({
   rightTab: 'engine',
   mobileTab: 'board',
@@ -66,6 +91,7 @@ export const uiStore = createStore<UiState>({
   reanalyzeNonce: 0,
   sidebarCollapsed: readCollapsed(),
   movesCollapsed: readMovesCollapsed(),
+  boardSize: readBoardSize(),
   learnRequest: null,
   confirm: null,
 });
