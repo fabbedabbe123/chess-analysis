@@ -1567,3 +1567,9 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 
 /* The move-verdict box only exists in Analyse; do not reserve its height for the board elsewhere (Play, Train, My games). */
 .app:not([data-section='analyse']) { --verdict-h: 0px; }
+
+/* During a Play game or a puzzle the annotation tools are not needed: give that height to the board instead. */
+.app:not([data-section='analyse'])[data-live='play'] .moves-panel .move-tools,
+.app:not([data-section='analyse'])[data-live='puzzle'] .moves-panel .move-tools { display: none; }
+.app:not([data-section='analyse'])[data-live='play'], .app:not([data-section='analyse'])[data-live='puzzle'] { --verdict-h: -36px; }
+.app:not([data-section='analyse'])[data-live='play'] .col-center .moves-panel, .app:not([data-section='analyse'])[data-live='puzzle'] .col-center .moves-panel { min-height: 64px; }
