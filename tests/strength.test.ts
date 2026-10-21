@@ -208,11 +208,11 @@ describe('rating range only after enough games', () => {
 });
 
 describe('calibrated mapping', () => {
-  it('uses the anchored calibration (2818*exp(-0.01315*ACPL))', () => {
-    expect(Math.round(ratingFromAcpl(60))).toBe(1280);
-    expect(Math.round(ratingFromAcpl(100))).toBe(757);
-    expect(Math.round(ratingFromAcpl(30)/50)*50).toBe(1900);
-    expect(ratingFromAcpl(0)).toBe(2800);
+  it('uses the anchored calibration (2439*exp(-0.01248*ACPL))', () => {
+    expect(Math.round(ratingFromAcpl(60))).toBe(1153);
+    expect(Math.round(ratingFromAcpl(100))).toBe(700);
+    expect(Math.round(ratingFromAcpl(20)/50)*50).toBe(1900);
+    expect(ratingFromAcpl(0)).toBe(2439);
   });
 });
 

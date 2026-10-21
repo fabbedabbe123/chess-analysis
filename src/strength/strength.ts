@@ -257,12 +257,12 @@ export function progressSeries(all: readonly AnalysedGame[], window = 5): Progre
 
 /**
  * Mapping from average centipawn loss (Stockfish depth 14, first 6 plies skipped, +-1000 cp cap) to a Chess.com-like rating:
- * rating = 2818 * exp(-0.01315 * ACPL). Anchored so that ACPL 30 is about 1900 and ACPL 100 about 750 (the earlier fit,
- * 4533 * exp(-0.0179 * ACPL) on 51 Chess.com players, gave about 2650 for ACPL 30, which felt far too generous). It is only a
+ * rating = 2439 * exp(-0.01248 * ACPL). Anchored so that ACPL 20 is about 1900, ACPL 30 about 1700 and ACPL 100 about 700 (the earlier
+ * fit, 4533 * exp(-0.0179 * ACPL) on 51 Chess.com players, gave about 2650 for ACPL 30, which felt far too generous). It is only a
  * coarse guide. Other depths or time controls shift it, and a low analysis depth makes ACPL (and so the rating) look better.
  */
 export function ratingFromAcpl(acpl: number): number {
-  const raw = 2818 * Math.exp(-0.01315 * Math.max(0, acpl));
+  const raw = 2439 * Math.exp(-0.01248 * Math.max(0, acpl));
   return Math.max(400, Math.min(2800, raw));
 }
 

@@ -80,6 +80,18 @@ function MomentRow({ m, label }: { m: ReviewMove; label?: string }) {
 const GRADE_BADGE: Partial<Record<string, string>> = { brilliant: '!!', great: '!', best: '★', excellent: '✓', good: '✓', book: '📖', inaccuracy: '?!', mistake: '?', miss: '✗', blunder: '??' };
 const COMMON_GRADES: MoveGrade[] = ['best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'blunder'];
 
+/** One grade line with its counts; clicking it lists the moves that got this grade. */
+function GradeRow({ g, summary, active, onPick }: { g: MoveGrade; summary: ReviewResult['summary']; active: boolean; onPick: (g: MoveGrade | null) => void }) {
+  const n = summary.grades.w[g] + summary.grades.b[g];
+  return (
+    <button type="button" className={`rp-grade cls-${g} ${n === 0 ? 'zero' : ''} ${active ? 'on' : ''}`} title={`${GRADE_HELP[g]} Click to list these moves.`} disabled={n === 0} aria-pressed={active} onClick={() => onPick(active ? null : g)} data-testid={`grade-row-${g}`}>
+      <span className={`rv-badge cls-${g}`} aria-hidden>{GRADE_BADGE[g]}</span>
+      <span className="rp-gname">{GRADE_LABEL[g]}</span>
+      <span className="rp-gc"><b data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</b><em>·</em><b data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</b></span>
+    </button>
+  );
+}
+
 const ERR_GRADES = ['blunder', 'miss', 'mistake', 'inaccuracy'] as const;
 const ERR_WORD: Record<(typeof ERR_GRADES)[number], [string, string]> = { blunder: ['blunder', 'blunders'], miss: ['miss', 'misses'], mistake: ['mistake', 'mistakes'], inaccuracy: ['inaccuracy', 'inaccuracies'] };
 
@@ -140,6 +152,8 @@ export function ReviewPanel() {
   const plies = line.length - 1;
   const currentPly = Math.max(0, line.indexOf(currentId));
   const summary = result?.summary;
+  const [gradeFilter, setGradeFilter] = useState<MoveGrade | null>(null);
+  const gradeMoves = useMemo(() => (result !== null && gradeFilter !== null ? result.moves.filter((m) => (m.classification.grade ?? m.classification.moveClass) === gradeFilter) : []), [result, gradeFilter]);
 
   const firstError = summary?.criticalMoments[0] ?? summary?.studyPositions[0] ?? null;
   const rare = GRADE_ORDER.filter((g) => !COMMON_GRADES.includes(g));
@@ -202,22 +216,28 @@ export function ReviewPanel() {
           <div className="rp-sechead"><span className="rp-label">Moves</span><div className="spacer" /><span className="rp-legend">{name('w')} · {name('b')}</span></div>
           <div className="rp-grades counts">
             {COMMON_GRADES.map((g) => (
-              <div key={g} className={`rp-grade cls-${g} ${summary.grades.w[g] + summary.grades.b[g] === 0 ? 'zero' : ''}`} title={GRADE_HELP[g]}>
-                <span className={`rv-badge cls-${g}`} aria-hidden>{GRADE_BADGE[g]}</span>
-                <span className="rp-gname">{GRADE_LABEL[g]}</span>
-                <span className="rp-gc"><b data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</b><em>·</em><b data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</b></span>
-              </div>
+              <GradeRow key={g} g={g} summary={summary} active={gradeFilter === g} onPick={setGradeFilter} />
             ))}
           </div>
+          {gradeFilter !== null && (
+            <div className="rp-card grade-moves" data-testid="grade-moves">
+              <div className="rp-t"><b>{GRADE_LABEL[gradeFilter]} moves</b><button className="linklike" onClick={() => setGradeFilter(null)} data-testid="grade-clear">Close</button></div>
+              {gradeMoves.length === 0 ? <span className="muted small-print">No moves with this grade.</span> : (
+                <div className="gm-list">
+                  {gradeMoves.map((m) => (
+                    <button key={m.nodeId} className={`gm-chip ${m.nodeId === currentId ? 'on' : ''}`} onClick={() => goTo(m.nodeId)} data-testid="grade-move">
+                      <i className={m.color} />{m.moveNumber}{m.color === 'w' ? '.' : '...'} {m.san}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <details className="rp-more">
             <summary>All grades: {rare.map((g) => GRADE_LABEL[g]).join(', ')}, missed mates and wins</summary>
             <div className="rp-grades">
               {rare.map((g) => (
-                <div key={g} className={`rp-grade cls-${g} ${summary.grades.w[g] + summary.grades.b[g] === 0 ? 'zero' : ''}`} title={GRADE_HELP[g]}>
-                  <span className={`rv-badge cls-${g}`} aria-hidden>{GRADE_BADGE[g]}</span>
-                  <span className="rp-gname">{GRADE_LABEL[g]}</span>
-                  <span className="rp-gc"><b data-testid={`grade-w-${g}`}>{summary.grades.w[g]}</b><em>·</em><b data-testid={`grade-b-${g}`}>{summary.grades.b[g]}</b></span>
-                </div>
+                <GradeRow key={g} g={g} summary={summary} active={gradeFilter === g} onPick={setGradeFilter} />
               ))}
               <div className="rp-grade"><span className="rp-gname">Missed mates</span><span className="rp-gc"><b>{summary.missedMates.w}</b><em>·</em><b>{summary.missedMates.b}</b></span></div>
               <div className="rp-grade"><span className="rp-gname">Missed wins</span><span className="rp-gc"><b>{summary.missedWins.w}</b><em>·</em><b>{summary.missedWins.b}</b></span></div>

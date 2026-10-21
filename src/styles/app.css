@@ -1596,3 +1596,24 @@ input.switch:checked::after { transform: translateX(20px); background: #fff; }
 .perf-na { color: var(--muted); font-size: 13px; }
 .perf-note { margin: 10px 0 0; }
 .code-input { font-size: 26px; letter-spacing: .3em; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* clickable grade rows + list of moves with that grade */
+button.rp-grade { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+button.rp-grade:disabled { cursor: default; }
+button.rp-grade:not(:disabled):hover { border-color: var(--accent, #81b64c); }
+button.rp-grade.on { border-color: var(--accent, #81b64c); box-shadow: 0 0 0 1px var(--accent, #81b64c) inset; }
+.grade-moves { margin-top: 8px; }
+.gm-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gm-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: #1f1d1b; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.gm-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid #888; }
+.gm-chip i.w { background: #f2f2f2; } .gm-chip i.b { background: #222; }
+.gm-chip.on, .gm-chip:hover { border-color: var(--accent, #81b64c); }
+:root[data-theme='light'] .gm-chip { background: #fff; }
+/* grade badge on the board square of the move just played */
+.grade-layer { position: absolute; inset: 0; pointer-events: none; z-index: 14; }
+.grade-sq { position: absolute; width: 12.5%; height: 12.5%; }
+.grade-mark { position: absolute; top: -9%; right: -9%; width: 42%; height: 42%; min-width: 16px; min-height: 16px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: clamp(9px, 2.4vw, 16px); line-height: 1; color: #fff; background: #8b8884; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.grade-mark.cls-brilliant { background: #26c2a3; } .grade-mark.cls-great { background: #5c8bb0; } .grade-mark.cls-best { background: #81b64c; }
+.grade-mark.cls-excellent { background: #81b64c; } .grade-mark.cls-good { background: #95b776; } .grade-mark.cls-book { background: #a88865; }
+.grade-mark.cls-inaccuracy { background: #f0c15c; color: #3a2d00; } .grade-mark.cls-mistake { background: #e69f56; }
+.grade-mark.cls-miss { background: #ee6055; } .grade-mark.cls-blunder { background: #ca3431; }

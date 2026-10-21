@@ -17,6 +17,7 @@ import { playSound } from '@/utils/sound';
 import { watchKnightArrows } from '@/utils/knightArrows';
 import { BoardFx } from '@/components/BoardFx';
 import { MateMarkers } from '@/components/MateMarkers';
+import { GradeMark } from '@/components/GradeMark';
 
 const USER_BRUSHES = new Set<string>(['green', 'red', 'blue', 'yellow']);
 
@@ -240,6 +241,7 @@ export function ChessBoard() {
       >
         <div ref={host} className="board-host" data-testid="board" />
         <BoardFx />
+        {!playOpen && <GradeMark orientation={orientation} />}
         <MateMarkers
           fen={fen}
           mated={status.kind === 'checkmate'}
