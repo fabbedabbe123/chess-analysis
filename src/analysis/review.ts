@@ -234,23 +234,40 @@ function materialFor(chess: Chess, color: Color): number {
 }
 
 /**
- * Points of material the mover has given up once the exchanges of the engine's own continuation have settled
- * (looks at up to two further full moves of `pv`, which starts with the opponent's reply). 0 if none or unknown, and 0 if
- * the line is too short to tell whether the material is won back (unless the game ends in it).
+ * Points of material the mover has offered with this move, or 0 if it is not a sacrifice. It is one when the engine's best
+ * reply (`pv[0]`) wins material because of the move (the capture was not possible before it: the moved piece itself can be
+ * taken, or the move uncovers something) and the mover is still behind after the next move of the line (so it is not an
+ * even exchange). A loss that was already on the board before the move (a piece that was hanging anyway) is not a sacrifice.
  */
 export function netSacrifice(fenBefore: string, uci: string, pv: readonly string[], mover: Color): number {
   try {
+    const reply = pv[0];
+    if (reply === undefined) return 0;
+    const play = (chess: Chess, m: string) => chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), ...(m.length === 5 ? { promotion: m.slice(4) } : {}) });
     const chess = new Chess(fenBefore);
     const start = materialFor(chess, mover);
-    chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), ...(uci.length === 5 ? { promotion: uci.slice(4) } : {}) });
-    let settled = materialFor(chess, mover);
-    for (let i = 0; i < 4 && i < pv.length; i += 1) {
-      const m = pv[i] as string;
-      chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), ...(m.length === 5 ? { promotion: m.slice(4) } : {}) });
-      if (i % 2 === 1) settled = materialFor(chess, mover); // a full exchange has been played out
+    play(chess, uci);
+    const captured = play(chess, reply).captured;
+    if (captured === undefined) return 0;
+    const dropped = start - materialFor(chess, mover);
+    // already hanging before the move? Same capture available with the opponent to move in the position before it.
+    try {
+      const parts = fenBefore.split(' ');
+      parts[1] = mover === 'w' ? 'b' : 'w';
+      parts[3] = '-';
+      const before = new Chess(parts.join(' '));
+      if (before.moves({ verbose: true }).some((m) => m.from === reply.slice(0, 2) && m.to === reply.slice(2, 4) && m.captured === captured)) return 0;
+    } catch {
+      // the flipped position is not legal (e.g. a king in check): the capture could not have been played before
     }
-    if (pv.length < 4 && !chess.isGameOver()) return 0;
-    return Math.max(0, start - settled);
+    const next = pv[1];
+    if (next !== undefined) {
+      play(chess, next);
+      if (start - materialFor(chess, mover) < 1) return 0;
+    } else if (!chess.isGameOver()) {
+      return 0;
+    }
+    return Math.max(0, dropped);
   } catch {
     return 0;
   }

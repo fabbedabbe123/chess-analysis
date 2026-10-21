@@ -39,8 +39,9 @@ import { mateWinner, sideWinPercent } from './eval';
  * On top of the six base classes the review assigns one display grade per move. Chess.com's exact rules are
  * proprietary, so these are OUR documented approximations built from the same engine evaluations:
  *   book        the move is a known opening-book move and every earlier move of the game was too
- *   brilliant   a real sacrifice: the engine's best (or within the excellent threshold), but after the exchanges in the
- *               engine's own line the mover is at least GRADE_RULES.brilliantMinSacrifice points of material down,
+ *   brilliant   a real sacrifice: the engine's best (or within the excellent threshold), but the move offers material
+ *               that was not already hanging (see netSacrifice): the engine's best reply wins at least
+ *               GRADE_RULES.brilliantMinSacrifice points because of it and the mover is still behind one move later,
  *               was not already clearly winning (< brilliantMaxWinBefore %) and is not worse afterwards
  *               (>= brilliantMinWinAfter %). Exception: if it is the ONLY way to keep a won position (second-best is
  *               >= greatMinGap points worse), an already-winning position still counts (needs >= brilliantOnlyWayMinWinAfter % after)
@@ -55,8 +56,8 @@ import { mateWinner, sideWinPercent } from './eval';
 export type MoveGrade = MoveClass | 'brilliant' | 'great' | 'book' | 'miss';
 export const GRADE_ORDER: readonly MoveGrade[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'];
 export const GRADE_RULES = {
-  brilliantMinSacrifice: 3,
-  brilliantMaxWinBefore: 80,
+  brilliantMinSacrifice: 2,
+  brilliantMaxWinBefore: 90,
   brilliantMinWinAfter: 45,
   /** Brilliant when it is the only way to keep a won position: the position after the move must still be this good. */
   brilliantOnlyWayMinWinAfter: 90,

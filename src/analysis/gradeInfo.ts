@@ -28,7 +28,7 @@ export const GRADE_SYMBOL: Record<MoveGrade, string> = {
 };
 
 export const GRADE_HELP: Record<MoveGrade, string> = {
-  brilliant: 'A real sacrifice that is still the best (or nearly best) move: you are material down after the exchanges in the engine\'s line, were not already clearly winning, and are not worse afterwards.',
+  brilliant: 'A real sacrifice that is still the best (or nearly best) move: you offer material (the engine\'s best reply wins some because of your move) and are still behind a move later, were not already clearly winning, and are not worse afterwards.',
   great: 'The only good move: Stockfish\'s best move, with the second-best at least 15 winning-chance points worse.',
   best: 'Stockfish\'s first choice.',
   excellent: 'Almost as good as the best move (loses at most 2 winning-chance points).',
