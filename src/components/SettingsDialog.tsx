@@ -238,7 +238,7 @@ export function SettingsDialog() {
         <div className="set-pane" ref={paneRef}>
           {shown('account') && (
             <section data-sec="account" className="set-sec">
-              {head('account', 'Optional. Sign in with an e-mail link to sync games, puzzles and settings between devices.')}
+              {head('account', 'Optional. Sign in with an e-mailed code to sync games, puzzles and settings between devices.')}
               <AccountSettings />
             </section>
           )}

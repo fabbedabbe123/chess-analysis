@@ -85,7 +85,7 @@ async def main():
         await pg0.goto(URL); await pg0.wait_for_selector('cg-board'); await pg0.click('[data-testid=open-settings]'); await pg0.wait_for_selector('[data-testid=account-off]')
         check('build without a Supabase project: Account says sync is off, no supabase request', not [u for u in reqs0 if 'supabase' in u])
         await pg0.context.close()
-        # 1) not signed in: e-mail link flow
+        # 1) not signed in: e-mail code flow
         st={'reqs':[],'rows':[]}
         ctx=await b.new_context(viewport={'width':1440,'height':900}); await mock(ctx,st); pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
