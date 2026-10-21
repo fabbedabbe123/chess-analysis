@@ -55,7 +55,7 @@ import { mateWinner, sideWinPercent } from './eval';
 export type MoveGrade = MoveClass | 'brilliant' | 'great' | 'book' | 'miss';
 export const GRADE_ORDER: readonly MoveGrade[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'];
 export const GRADE_RULES = {
-  brilliantMinSacrifice: 2,
+  brilliantMinSacrifice: 3,
   brilliantMaxWinBefore: 80,
   brilliantMinWinAfter: 45,
   /** Brilliant when it is the only way to keep a won position: the position after the move must still be this good. */
