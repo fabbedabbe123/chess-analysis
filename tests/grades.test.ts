@@ -149,3 +149,12 @@ describe('summary counts grades once per move', () => {
     expect(s.counts.w.best).toBe(3); // base classes are unchanged
   });
 });
+
+describe('netSacrifice on a real game (Play vs Stockfish)', () => {
+  it('25. Ne4 gives up material that is not back within two moves (a sacrifice)', () => {
+    expect(netSacrifice("r3b1k1/1p1r1pp1/p3p2p/2bPB3/P1P2P2/2NB4/5RPP/R5K1 w - - 3 25", 'c3e4', ["c5f2", "g1f2", "e6d5", "e4c5", "d5c4", "c5d7"], 'w')).toBeGreaterThanOrEqual(3);
+  });
+  it('29. Bxf6 only looks like a hanging bishop: the engine line wins material back', () => {
+    expect(netSacrifice("r3b1k1/1p1r2p1/p2Ppp1p/4B3/P1P1NP2/3B4/5KPP/R7 w - - 0 29", 'e5f6', ["g7f6", "e4f6", "g8f7", "f6d7", "e8d7", "a1b1"], 'w')).toBe(0);
+  });
+});

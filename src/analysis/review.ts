@@ -235,7 +235,7 @@ function materialFor(chess: Chess, color: Color): number {
 
 /**
  * Points of material the mover has given up once the exchanges of the engine's own continuation have settled
- * (looks at up to three further full moves of `pv`, which starts with the opponent's reply). 0 if none or unknown, and 0 if
+ * (looks at up to two further full moves of `pv`, which starts with the opponent's reply). 0 if none or unknown, and 0 if
  * the line is too short to tell whether the material is won back (unless the game ends in it).
  */
 export function netSacrifice(fenBefore: string, uci: string, pv: readonly string[], mover: Color): number {
@@ -244,7 +244,7 @@ export function netSacrifice(fenBefore: string, uci: string, pv: readonly string
     const start = materialFor(chess, mover);
     chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), ...(uci.length === 5 ? { promotion: uci.slice(4) } : {}) });
     let settled = materialFor(chess, mover);
-    for (let i = 0; i < 6 && i < pv.length; i += 1) {
+    for (let i = 0; i < 4 && i < pv.length; i += 1) {
       const m = pv[i] as string;
       chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), ...(m.length === 5 ? { promotion: m.slice(4) } : {}) });
       if (i % 2 === 1) settled = materialFor(chess, mover); // a full exchange has been played out
