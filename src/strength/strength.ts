@@ -257,12 +257,12 @@ export function progressSeries(all: readonly AnalysedGame[], window = 5): Progre
 
 /**
  * Mapping from average centipawn loss (Stockfish depth 14, first 6 plies skipped, +-1000 cp cap) to a Chess.com-like rating:
- * rating = 4533 * exp(-0.0179 * ACPL). Fitted on 51 public Chess.com players (562 games, mostly blitz, ratings ~400-3200);
- * leave-one-player-out RMSE about 390 rating points (the old 3100*exp(-0.01*ACPL) rule scored about 430). It is only a coarse
- * guide: best at about 1000-1600, too high below ~1000 and too low above ~1600. Other depths or time controls shift it.
+ * rating = 2818 * exp(-0.01315 * ACPL). Anchored so that ACPL 30 is about 1900 and ACPL 100 about 750 (the earlier fit,
+ * 4533 * exp(-0.0179 * ACPL) on 51 Chess.com players, gave about 2650 for ACPL 30, which felt far too generous). It is only a
+ * coarse guide. Other depths or time controls shift it, and a low analysis depth makes ACPL (and so the rating) look better.
  */
 export function ratingFromAcpl(acpl: number): number {
-  const raw = 4533 * Math.exp(-0.0179 * Math.max(0, acpl));
+  const raw = 2818 * Math.exp(-0.01315 * Math.max(0, acpl));
   return Math.max(400, Math.min(2800, raw));
 }
 

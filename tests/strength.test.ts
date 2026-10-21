@@ -208,9 +208,10 @@ describe('rating range only after enough games', () => {
 });
 
 describe('calibrated mapping', () => {
-  it('uses the Chess.com calibration (4533*exp(-0.0179*ACPL))', () => {
-    expect(Math.round(ratingFromAcpl(60))).toBe(1549);
+  it('uses the anchored calibration (2818*exp(-0.01315*ACPL))', () => {
+    expect(Math.round(ratingFromAcpl(60))).toBe(1280);
     expect(Math.round(ratingFromAcpl(100))).toBe(757);
+    expect(Math.round(ratingFromAcpl(30)/50)*50).toBe(1900);
     expect(ratingFromAcpl(0)).toBe(2800);
   });
 });
