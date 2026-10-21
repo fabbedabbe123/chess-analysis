@@ -25,10 +25,25 @@ interface TokenProps {
   badge: MoveGrade | null;
 }
 
+/** Scrolls only the move list itself so the move is visible. scrollIntoView would also scroll the whole page and push the board's top out of view. */
+function keepInView(el: HTMLElement): void {
+  let box: HTMLElement | null = el.parentElement;
+  while (box !== null) {
+    const oy = getComputedStyle(box).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && box.scrollHeight > box.clientHeight) break;
+    box = box.parentElement;
+  }
+  if (box === null) return;
+  const b = box.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  if (r.top < b.top) box.scrollTop += r.top - b.top;
+  else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom;
+}
+
 const Token = memo(function Token({ node, selected, showNumber, badge }: TokenProps) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (selected) ref.current?.scrollIntoView({ block: 'nearest' });
+    if (selected && ref.current) keepInView(ref.current);
   }, [selected]);
   const nags = node.nags.map(nagToSymbol).filter((s): s is string => s !== null).join('');
   return (
