@@ -3,7 +3,7 @@ import { MASTERY_LABEL } from '@/lessons/lessons';
 import { loadCurriculum, type PathSkill } from '@/lessons/path';
 import { CATEGORY_LABEL } from '@/play/coach';
 import {
-  averageAccuracy, buildPlan, estimateStrength, MIN_GAMES_RATING, ratingEstimate, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
+  averageAccuracy, buildPlan, gamePerformance, estimateStrength, MIN_GAMES_RATING, ratingEstimate, focusAreas, openMistakeCount, progressSeries, trainingPuzzles, MIN_MOVES_ESTIMATE, MIN_GAMES_FOCUS, MIN_GAMES_TREND, recentActualRating, recentGames, RECENT_GAMES,
   type AnalysedGame, type Trend,
 } from '@/strength/strength';
 import { analyseTrackedGames, cancelBatch, clearAnalysedBySource, clearAnalysedGames, removeAnalysedGame, unanalysedTracked, useStrength } from '@/stores/strengthStore';
@@ -254,7 +254,7 @@ function GameList({ games }: { games: AnalysedGame[] }) {
               <span>{g.label || 'Game'}</span>
               <span className="muted small-print">{SOURCE_TEXT[g.source]} · {formatDate(g.endedAt)} · as {g.userColor === 'w' ? 'White' : 'Black'}</span>
             </div>
-            <span className="sg-num" title="Average centipawn loss">{g.acpl.toFixed(0)} cp</span>
+            <span className="sg-num" title={`Average centipawn loss ${g.acpl.toFixed(0)} cp. Level of play in this game only, very rough.`}>{(() => { const p = gamePerformance(g.acpl, g.moves); return p === null ? `${g.acpl.toFixed(0)} cp` : `≈ ${p.rating}`; })()}</span>
             <button className="btn small" onClick={() => removeAnalysedGame(g.id)} aria-label={`Remove ${g.label || 'game'}`}>✕</button>
           </li>
         ))}

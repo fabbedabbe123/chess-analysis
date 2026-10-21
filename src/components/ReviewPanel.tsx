@@ -12,6 +12,8 @@ import { usePuzzle } from '@/stores/puzzleStore';
 import { usePlay } from '@/stores/playStore';
 import { addFromReview, useStrength } from '@/stores/strengthStore';
 import { formatPercent } from '@/utils/format';
+import { MIN_GAMES_RATING, performanceFromReview } from '@/strength/strength';
+import type { Color } from '@/types/game';
 
 
 export function EvalGraph({ values, ids, currentPly }: { values: number[]; ids: string[]; currentPly: number }) {
@@ -190,6 +192,7 @@ export function ReviewPanel() {
               </div>
             ))}
           </div>
+          <PerfBox result={result} entries={[{ color: 'w', label: name('w'), testId: 'perf-w' }, { color: 'b', label: name('b'), testId: 'perf-b' }]} />
           <EvalGraph values={result.whiteWinGraph} ids={line} currentPly={currentPly} />
           <div className="rp-sum">
             <p className="review-headline" data-testid="review-headline">{headline(summary, name('w'), name('b'))}</p>
@@ -273,5 +276,30 @@ export function ReviewPanel() {
         </>
       )}
     </section>
+  );
+}
+
+/** Its own box: the level of play shown in this one game. One game says little, so it is labelled very rough. */
+export function PerfBox({ result, entries }: { result: ReviewResult; entries: { color: Color; label: string; testId: string }[] }) {
+  return (
+    <div className="rp-card perf-box" data-testid="perf-box">
+      <div className="rp-label">Level of play in this game</div>
+      <div className="perf-cols">
+        {entries.map((e) => {
+          const perf = performanceFromReview(result, e.color);
+          return (
+            <div key={e.color} className="perf-col">
+              <span className="rp-who"><i className={e.color} />{e.label}</span>
+              {perf === null ? (
+                <span className="perf-na" data-testid={e.testId}>Too few moves</span>
+              ) : (
+                <strong className="perf-num" data-testid={e.testId} title={`Roughly ${perf.low}–${perf.high}. Average loss ${perf.acpl.toFixed(0)} cp over ${perf.moves} moves.`}>≈ {perf.rating}</strong>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="muted small-print perf-note">This game only, very rough: the same mapping as your overall level, but one game says little. Your overall level appears after {MIN_GAMES_RATING} analysed games.</p>
+    </div>
   );
 }

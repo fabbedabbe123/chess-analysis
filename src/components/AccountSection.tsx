@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { closeDialog, confirmThen, openDialog } from '@/stores/uiStore';
 import { SYNC_LABEL, SYNC_NAMES } from '@/sync/keys';
-import { checkUsername, deleteMyCloudData, resetLinkForm, saveAvatar, saveUsername, sendLink, setSharePresence, setShareStats, signOut, syncNow, useSync, type UsernameCheck } from '@/sync/syncStore';
+import { checkUsername, deleteMyCloudData, resetLinkForm, saveAvatar, saveUsername, sendLink, setSharePresence, setShareStats, signOut, syncNow, useSync, verifyCode, type UsernameCheck } from '@/sync/syncStore';
 import { USERNAME_MAX, USERNAME_MIN, usernameProblem } from '@/sync/profile';
 import { useStrength } from '@/stores/strengthStore';
 import { usePuzzle } from '@/stores/puzzleStore';
@@ -72,7 +72,7 @@ function Benefits() {
   return (
     <ul className="benefits">
       <li><span aria-hidden>⇄</span> Use your games, puzzle progress and settings on any device</li>
-      <li><span aria-hidden>✉</span> No password: you get a one-time link by e-mail</li>
+      <li><span aria-hidden>✉</span> No password: you get a one-time code by e-mail</li>
       <li><span aria-hidden>🔒</span> Only you can read your data, and you can delete it at any time</li>
     </ul>
   );
@@ -81,6 +81,7 @@ function Benefits() {
 function SignInForm() {
   const s = useSync((x) => x);
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [now, setNow] = useState(Date.now());
   const sent = s.linkSentTo !== null;
   useEffect(() => {
@@ -92,16 +93,22 @@ function SignInForm() {
   if (sent && s.linkSentTo !== null) {
     const wait = Math.max(0, RESEND_WAIT_S - Math.floor((now - (s.linkSentAt ?? now)) / 1000));
     return (
-      <div className="signin-sent" role="status" data-testid="account-link-sent">
+      <form className="signin-sent" data-testid="account-link-sent" onSubmit={(e) => { e.preventDefault(); void verifyCode(code); }}>
         <span className="big-icon" aria-hidden>✉</span>
-        <h3>Check your e-mail</h3>
-        <p>We sent a sign-in link to <strong>{s.linkSentTo}</strong>. Open it on this device and you are signed in. It can take a minute.</p>
+        <h3>Enter your code</h3>
+        <p>We sent a code to <strong>{s.linkSentTo}</strong>. Type the digits from the e-mail here. It can take a minute.</p>
+        <label className="field">
+          <span>Code from the e-mail</span>
+          <input className="code-input" value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d\s]/g, ''))} inputMode="numeric" autoComplete="one-time-code" maxLength={12} placeholder="123456" autoFocus data-testid="account-code" />
+        </label>
+        {s.error && <div className="callout error small" role="alert" data-testid="account-code-error">{s.error}</div>}
+        <button className="btn primary big" type="submit" disabled={s.busy !== 'idle' || code.replace(/\s/g, '').length < 4} data-testid="account-verify">{s.busy === 'sending' ? 'Checking…' : 'Sign in'}</button>
         <div className="callout warn small" data-testid="spam-note">⚠ <strong>Check your spam folder.</strong> The e-mail very likely ends up there. It comes from {AUTH_SENDER}. If you find it, mark it as "not spam".</div>
         <div className="row wrap">
-          <button className="btn" disabled={wait > 0 || s.busy !== 'idle'} onClick={() => void sendLink(s.linkSentTo ?? '')} data-testid="account-resend">{wait > 0 ? `Send again in ${wait} s` : s.busy === 'sending' ? 'Sending…' : 'Send again'}</button>
-          <button className="btn" onClick={resetLinkForm} data-testid="account-other-email">Use another e-mail</button>
+          <button type="button" className="btn" disabled={wait > 0 || s.busy !== 'idle'} onClick={() => { setCode(''); void sendLink(s.linkSentTo ?? ''); }} data-testid="account-resend">{wait > 0 ? `Send a new code in ${wait} s` : s.busy === 'sending' ? 'Sending…' : 'Send a new code'}</button>
+          <button type="button" className="btn" onClick={() => { setCode(''); resetLinkForm(); }} data-testid="account-other-email">Use another e-mail</button>
         </div>
-      </div>
+      </form>
     );
   }
   return (
@@ -110,9 +117,9 @@ function SignInForm() {
         <span>E-mail address</span>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus data-testid="account-email" />
       </label>
-      <button className="btn primary big" type="submit" disabled={s.busy !== 'idle' || email.trim() === ''} data-testid="account-send">{s.busy === 'sending' ? 'Sending…' : 'Email me a sign-in link'}</button>
-      <div className="callout warn small" data-testid="spam-hint">⚠ The sign-in e-mail will most likely end up in your <strong>spam folder</strong>. Look there if it does not arrive within a minute.</div>
-      <p className="muted small-print">New here? The same link creates your account. We only use the address to sign you in.</p>
+      <button className="btn primary big" type="submit" disabled={s.busy !== 'idle' || email.trim() === ''} data-testid="account-send">{s.busy === 'sending' ? 'Sending…' : 'Email me a code'}</button>
+      <div className="callout warn small" data-testid="spam-hint">⚠ The e-mail with your code will most likely end up in your <strong>spam folder</strong>. Look there if it does not arrive within a minute.</div>
+      <p className="muted small-print">New here? The same code creates your account. We only use the address to sign you in.</p>
     </form>
   );
 }

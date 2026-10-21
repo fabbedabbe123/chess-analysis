@@ -83,22 +83,27 @@ export function moverCp(score: WhiteScore, mover: Color): number {
   return Math.max(-CP_CLAMP, Math.min(CP_CLAMP, cp));
 }
 
+/** Average centipawn loss and number of counted moves (book moves skipped) of one side in a finished review; null without a counted move. */
+export function colourLoss(result: ReviewResult, color: Color): { acpl: number; moves: number } | null {
+  let total = 0;
+  let moves = 0;
+  for (const m of result.moves) {
+    if (m.color !== color || m.classification.moveClass === null || m.classification.grade === 'book') continue;
+    total += Math.max(0, moverCp(m.before.score, color) - moverCp(m.after.score, color));
+    moves += 1;
+  }
+  return moves === 0 ? null : { acpl: total / moves, moves };
+}
+
 /** Build the record for one analysed game from a finished review; null when the user has no counted move. */
 export function gameFromReview(
   result: ReviewResult,
   userColor: Color,
   meta: { id: string; source: GameSource; endedAt: number; label: string; myRating?: number | null },
 ): AnalysedGame | null {
-  let total = 0;
-  let moves = 0;
-  for (const m of result.moves) {
-    if (m.color !== userColor || m.classification.moveClass === null || m.classification.grade === 'book') continue;
-    const before = moverCp(m.before.score, userColor);
-    const after = moverCp(m.after.score, userColor);
-    total += Math.max(0, before - after);
-    moves += 1;
-  }
-  if (moves === 0) return null;
+  const loss = colourLoss(result, userColor);
+  if (loss === null) return null;
+  const { acpl, moves } = loss;
   const report = buildCoachReport(result, userColor);
   const catCount: AnalysedGame['catCount'] = {};
   const catLoss: AnalysedGame['catLoss'] = {};
@@ -122,7 +127,7 @@ export function gameFromReview(
     userColor,
     label: meta.label,
     moves,
-    acpl: total / moves,
+    acpl,
     accuracy: acc === null || Number.isNaN(acc) ? null : acc,
     counts: { inaccuracy: c.inaccuracy, mistake: c.mistake, blunder: c.blunder },
     catCount,
@@ -259,6 +264,22 @@ export function progressSeries(all: readonly AnalysedGame[], window = 5): Progre
 export function ratingFromAcpl(acpl: number): number {
   const raw = 4533 * Math.exp(-0.0179 * Math.max(0, acpl));
   return Math.max(400, Math.min(2800, raw));
+}
+
+export interface GamePerformance { rating: number; low: number; high: number; moves: number; acpl: number }
+/**
+ * The level of play shown in ONE game (same ACPL mapping as the overall estimate). A single game says little: the band is
+ * the same wide one as for "very rough" and the UI says so. null with fewer than MIN_MOVES_ESTIMATE counted moves.
+ */
+export function gamePerformance(acpl: number, moves: number): GamePerformance | null {
+  if (moves < MIN_MOVES_ESTIMATE) return null;
+  const rating = ratingFromAcpl(acpl);
+  const half = Math.min(550, 400 + 150 / Math.sqrt(Math.max(1, moves / MOVES_PER_GAME)));
+  return { rating: roundTo(rating, 25), low: Math.max(400, roundTo(rating - half, 50)), high: Math.min(2800, roundTo(rating + half, 50)), moves, acpl };
+}
+export function performanceFromReview(result: ReviewResult, color: Color): GamePerformance | null {
+  const l = colourLoss(result, color);
+  return l === null ? null : gamePerformance(l.acpl, l.moves);
 }
 
 export type Confidence = 'very rough' | 'rough' | 'moderate';

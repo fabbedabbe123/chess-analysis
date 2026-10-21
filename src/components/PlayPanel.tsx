@@ -21,6 +21,7 @@ import {
 } from '@/stores/playStore';
 import { startPuzzleSession, usePuzzle } from '@/stores/puzzleStore';
 import { useReview } from '@/stores/reviewStore';
+import { PerfBox } from './ReviewPanel';
 import { confirmThen, openLesson, setMobileTab, setRightTab } from '@/stores/uiStore';
 
 const FEEDBACK_LABEL: Record<FeedbackMode, string> = {
@@ -345,6 +346,7 @@ function Finished() {
       {!showSetup && s.review === 'done' && result && summary && report && (
         <div data-testid="play-report">
           <h3>Performance</h3>
+          <PerfBox result={result} entries={[{ color: me, label: 'You', testId: 'perf-you' }, { color: them, label: 'Stockfish', testId: 'perf-sf' }]} />
           <table className="counts">
             <thead><tr><th></th><th>You</th><th>Stockfish</th></tr></thead>
             <tbody>

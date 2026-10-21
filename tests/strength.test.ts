@@ -214,3 +214,24 @@ describe('calibrated mapping', () => {
     expect(ratingFromAcpl(0)).toBe(2800);
   });
 });
+
+describe('gamePerformance (level of play in one game)', () => {
+  it('maps ACPL like the overall estimate, rounded to 25, with a wide band', async () => {
+    const { gamePerformance, ratingFromAcpl } = await import('@/strength/strength');
+    const p = gamePerformance(40, 40);
+    expect(p).not.toBeNull();
+    expect(p!.rating).toBe(Math.round(ratingFromAcpl(40) / 25) * 25);
+    expect(p!.high - p!.low).toBeGreaterThanOrEqual(800);
+    expect(p!.low).toBeLessThan(p!.rating);
+    expect(p!.high).toBeGreaterThan(p!.rating);
+  });
+  it('shows nothing for a game with too few counted moves', async () => {
+    const { gamePerformance } = await import('@/strength/strength');
+    expect(gamePerformance(30, 19)).toBeNull();
+    expect(gamePerformance(30, 20)).not.toBeNull();
+  });
+  it('lower loss means higher rating', async () => {
+    const { gamePerformance } = await import('@/strength/strength');
+    expect(gamePerformance(20, 40)!.rating).toBeGreaterThan(gamePerformance(80, 40)!.rating);
+  });
+});

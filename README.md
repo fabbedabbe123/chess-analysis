@@ -114,7 +114,7 @@ How it works (`src/sync/`): one row per (user, name) in `public.user_data`, prot
 
 1. Create a free project at supabase.com.
 2. SQL editor: run `supabase/schema.sql`.
-3. Authentication -> Providers: keep **Email** enabled (magic link). Authentication -> URL Configuration: set *Site URL* to `https://<user>.github.io/<repo>/` and add the same address (and `http://localhost:5173/`) to *Redirect URLs*.
+3. Authentication -> Providers: keep **Email** enabled. Sign-in uses a one-time code: under Authentication -> Email Templates open **Magic Link** (and **Confirm signup**, used for first-time sign-ups) and put `{{ .Token }}` in the message, for example `Your sign-in code: {{ .Token }}`. The app asks for that code (`verifyOtp`); a link left in the template still works too. The code length is under Authentication -> Providers -> Email (6 digits by default). Authentication -> URL Configuration: set *Site URL* to `https://<user>.github.io/<repo>/` and add the same address (and `http://localhost:5173/`) to *Redirect URLs*.
 4. Project Settings -> API: copy the **Project URL** and the **anon public** key (both are public by design; the *service_role* key must never be put in the site).
 5. Put the URL and the key in `.github/workflows/pages.yml` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; already done for this site's project). The next push redeploys with sync on. Locally: `.env.local` with the same two names. Plain `vite build` without them leaves sync off.
 
@@ -190,7 +190,9 @@ Friends see whether you are online and what you are doing ("Online - Solving puz
 - **Win / lose effects** on the board: confetti for a win or solved puzzle, a shake and dimming for a loss or wrong puzzle move, a soft tint for a draw. Settings → "Win / lose animations"; disabled automatically with "reduce motion".
 - **Knight arrows** (drawn with right-click, and engine arrows) are bent into an "L" like on Lichess: two squares along the long side, then one across. Chessground only draws straight lines, so its SVG is post-processed (`src/utils/knightArrows.ts`).
 
-## Rating range only after 10 games
+## Level of play per game, overall range only after 10 games
+
+After a single reviewed or played game the app shows "Played at about N, this game only" (Review accuracy cards, the Play report table, and a `≈ N` in the Strength tab's list of analysed games). It uses the same ACPL mapping as the overall estimate and is labelled very rough: one game says little. Fewer than 20 counted moves show no number.
 
 The strength rating range (e.g. 900–1300) is shown only once 10 games are analysed (`MIN_GAMES_RATING`). Before that the Strength tab, the start page and the shared profile stats show accuracy and a progress bar instead, because the estimate from `ACPL` swings a lot between single games. Sound volume is a setting (default 35 %).
 

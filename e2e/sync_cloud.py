@@ -21,6 +21,12 @@ async def mock(ctx, state):
         if req.method=='OPTIONS': return await route.fulfill(status=204, headers=CORS)
         u=req.url; state['reqs'].append((req.method,u,dict(req.headers),req.post_data))
         if '/auth/v1/otp' in u: return await route.fulfill(status=200, headers=CORS, content_type='application/json', body='{}')
+        if '/auth/v1/verify' in u:
+            body=json.loads(req.post_data or '{}'); state['verify']=body
+            if body.get('token')!='123456': return await route.fulfill(status=403, headers=CORS, content_type='application/json', body=json.dumps({'code':403,'error_code':'otp_expired','msg':'Token has expired or is invalid'}))
+            now=int(__import__('time').time())
+            sess={'access_token':'tok','token_type':'bearer','expires_in':3600,'expires_at':now+3600,'refresh_token':'r','user':{'id':'u-1','aud':'authenticated','email':'fabian@example.com','app_metadata':{},'user_metadata':{},'created_at':'2026-01-01T00:00:00Z'}}
+            return await route.fulfill(status=200, headers=CORS, content_type='application/json', body=json.dumps(sess))
         if '/auth/v1/logout' in u: return await route.fulfill(status=204, headers=CORS)
         if '/rest/v1/profiles' in u:
             if 'profiles' not in state: state['profiles']={'username':'fabbed','created_at':'2026-01-01T00:00:00Z','avatar':None}
@@ -91,13 +97,18 @@ async def main():
         await pg.fill('[data-testid=account-email]','fabian@example.com'); await pg.click('[data-testid=account-send]')
         await pg.wait_for_selector('[data-testid=account-link-sent]')
         otp=[r for r in st['reqs'] if '/auth/v1/otp' in r[1]]
-        check('sign-in link request sent once with the address', len(otp)==1 and 'fabian@example.com' in (otp[0][3] or ''))
+        check('sign-in code request sent once with the address', len(otp)==1 and 'fabian@example.com' in (otp[0][3] or ''))
         check('the sign-in form warns that the e-mail probably ends up in spam', 'spam' in (await pg.inner_text('[data-testid=spam-note]')).lower())
         check('after sending: resend is locked for a minute and the address can be changed', await pg.is_disabled('[data-testid=account-resend]') and await pg.is_visible('[data-testid=account-other-email]'))
+        check('after sending, a code field is shown instead of "open the link"', await pg.is_visible('[data-testid=account-code]'))
+        await pg.fill('[data-testid=account-code]','000000'); await pg.click('[data-testid=account-verify]'); await pg.wait_for_selector('[data-testid=account-code-error]')
+        check('a wrong code shows a clear error and keeps the code form', 'wrong or has expired' in await pg.inner_text('[data-testid=account-code-error]') and await pg.is_visible('[data-testid=account-code]'))
+        v=st.get('verify') or {}
+        check('the code is sent with the address as an e-mail OTP', v.get('email')=='fabian@example.com' and v.get('type')=='email' and v.get('token')=='000000')
         await pg.click('[data-testid=account-other-email]'); await pg.wait_for_selector('[data-testid=account-email]')
         check('"use another e-mail" brings the form back', await pg.is_visible('[data-testid=account-send]'))
         await pg.screenshot(path='/tmp/claude-0/signin_dialog.png')
-        check('sign-in link asks for no password and sends the public key only', 'password' not in (otp[0][3] or '') and otp[0][2].get('apikey')=='a'*40)
+        check('sign-in code asks for no password and sends the public key only', 'password' not in (otp[0][3] or '') and otp[0][2].get('apikey')=='a'*40)
         await ctx.close()
         # 2) signed in on a new device: cloud data is downloaded and applied
         st={'reqs':[],'rows':[{'name':'library','value':json.dumps([{'id':'g1','title':'From the cloud','pgn':'1. e4 e5 *','savedAt':5}]),'updated_at':'2026-10-01T10:00:00Z'},
@@ -254,6 +265,15 @@ async def main():
         check('no page errors in friends / picture flow', not errs3)
         if errs3: print(errs3[:3])
         await ctx3.close()
+        # signing in with the right code
+        st2={'reqs':[],'rows':[]}; ctx2=await b.new_context(viewport={'width':1440,'height':900}); await mock(ctx2,st2); pg2=await ctx2.new_page(); errs2=[]
+        pg2.on('pageerror',lambda e: errs2.append(str(e)))
+        await pg2.goto(SURL); await pg2.evaluate("localStorage.clear()"); await pg2.reload(); await pg2.wait_for_selector('cg-board')
+        await pg2.click('[data-testid=account-open]'); await pg2.fill('[data-testid=account-email]','fabian@example.com'); await pg2.click('[data-testid=account-send]')
+        await pg2.wait_for_selector('[data-testid=account-code]'); await pg2.fill('[data-testid=account-code]','123 456'); await pg2.click('[data-testid=account-verify]')
+        await pg2.wait_for_selector('[data-testid=account-status]', timeout=15000)
+        check('the right code (spaces ignored) signs the user in', (st2.get('verify') or {}).get('token')=='123456' and await pg2.is_visible('[data-testid=account-status]'))
+        check('no page errors after code sign-in', not errs2)
         await b.close()
     raise SystemExit(0 if ok else 1)
 asyncio.run(main())

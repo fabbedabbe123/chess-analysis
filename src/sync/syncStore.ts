@@ -188,7 +188,7 @@ export async function initSync(): Promise<void> {
   }
 }
 
-/** Sends a sign-in link by e-mail (no password). The address is only used by the sign-in service. */
+/** Sends a one-time sign-in code by e-mail (no password; the message may also hold a link). The address is only used by the sign-in service. */
 export async function sendLink(email: string): Promise<void> {
   const address = email.trim();
   if (client === null) return;
@@ -198,6 +198,25 @@ export async function sendLink(email: string): Promise<void> {
   syncStore.set(error ? { busy: 'idle', error: friendlySendError(error.message) } : { busy: 'idle', linkSentTo: address, linkSentAt: Date.now() });
 }
 
+/** Signs in with the one-time code from the e-mail (the same message can also carry a link). */
+export async function verifyCode(code: string): Promise<void> {
+  const { linkSentTo } = syncStore.get();
+  const token = code.replace(/\s+/g, '');
+  if (client === null || linkSentTo === null) return;
+  if (!/^\d{4,10}$/.test(token)) { syncStore.set({ error: 'Enter the digits from the e-mail.' }); return; }
+  syncStore.set({ busy: 'sending', error: null });
+  arrivedByLink = true; // shows the "Signed in" notice once the session arrives
+  const { error } = await client.auth.verifyOtp({ email: linkSentTo, token, type: 'email' });
+  if (error) { arrivedByLink = false; syncStore.set({ busy: 'idle', error: friendlyCodeError(error.message) }); return; }
+  syncStore.set({ busy: 'idle' });
+}
+
+function friendlyCodeError(message: string): string {
+  if (/expired|invalid/i.test(message)) return 'That code is wrong or has expired. Check the digits, or send a new code.';
+  if (/rate limit|too many|seconds/i.test(message)) return 'Too many attempts. Wait a few minutes and try again.';
+  return `Could not sign in: ${message}`;
+}
+
 /** Back to the e-mail form (wrong address, or the link never arrived). */
 export function resetLinkForm(): void {
   syncStore.set({ linkSentTo: null, linkSentAt: null, error: null });
@@ -205,7 +224,7 @@ export function resetLinkForm(): void {
 
 function friendlySendError(message: string): string {
   if (/rate limit|too many|seconds/i.test(message)) return 'Too many sign-in e-mails were requested. Wait a few minutes and try again.';
-  return `Could not send the link: ${message}`;
+  return `Could not send the code: ${message}`;
 }
 
 /** Reads the signed-in user's profile row (if they have chosen a username yet). */
