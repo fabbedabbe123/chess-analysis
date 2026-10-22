@@ -30,7 +30,7 @@ npm run preview      # serve dist/ at http://localhost:4173
 ## Conventions
 
 - Engines report scores from the side to move; the app converts once (`toWhiteScore`) and shows **White's point of view** everywhere. The eval bar's white part is White's winning-chance share (flips with the board).
-- Move classes use the loss of the mover's winning chances (thresholds configurable). Accuracy is an **estimate** adapted from Lichess's published formula, not Chess.com's or Lichess's number.
+- Move classes use the loss of the mover's winning chances (thresholds configurable). Game accuracy is an **estimate** built the way Lichess publishes it (the average of the harmonic mean of the per-move accuracies and a mean weighted by how volatile the position was), which gives lower numbers than a plain average; it is not Chess.com's or Lichess's displayed number.
 
 ## Network use
 

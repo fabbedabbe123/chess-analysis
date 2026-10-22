@@ -385,6 +385,21 @@ describe('summarizeReview (pure aggregation)', () => {
     expect(s.biggestSwings[0]?.ply).toBe(5);
   });
 
+  it('game accuracy punishes one big error harder than a plain average, and a clean game stays near 100', () => {
+    const clean: ReviewMove[] = [];
+    for (let i = 1; i <= 20; i += 1) clean.push(move(i, i % 2 === 1 ? 'w' : 'b', cp(20), cp(20), true));
+    expect(summarizeReview(clean).accuracy.w as number).toBeGreaterThan(99);
+    const flawed: ReviewMove[] = [];
+    for (let i = 1; i <= 20; i += 1) {
+      if (i === 11) flawed.push(move(i, 'w', cp(20), cp(-500)));
+      else flawed.push(move(i, i % 2 === 1 ? 'w' : 'b', i === 12 ? cp(-500) : cp(20), i === 12 ? cp(-500) : cp(20), true));
+    }
+    const s = summarizeReview(flawed);
+    const plain = flawed.filter((m) => m.color === 'w').reduce((a, m) => a + m.classification.accuracy, 0) / 10;
+    expect(s.accuracy.w as number).toBeLessThan(plain - 3);
+    expect(s.accuracy.b as number).toBeGreaterThan(s.accuracy.w as number);
+  });
+
   it('returns null accuracy for a side without classified moves and handles an empty game', () => {
     const only = summarizeReview([move(1, 'w', cp(0), cp(0), true)]);
     expect(only.accuracy.b).toBeNull();

@@ -247,7 +247,7 @@ export function ReviewPanel() {
           <details className="grade-legend rp-more">
             <summary>How accuracy and the grades are decided</summary>
             <p className="muted small-print">
-              Accuracy is an estimate: the mean per-move score from the loss of winning chances (model adapted from Lichess's published formula). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
+              Accuracy is an estimate: per-move scores from the loss of winning chances, combined the way Lichess publishes it (the average of a harmonic mean, which punishes big errors, and a mean that weights the critical moments more). It is not Chess.com's or Lichess's number. Depth {result.depth}; moves classified from winning-chance loss, thresholds in settings.
             </p>
             <p className="muted small-print">These labels follow the familiar Chess.com scheme, but the rules are our own approximation: Chess.com's exact algorithm is not public. Everything comes from Stockfish's evaluations at the review depth.</p>
             <ul className="learn-ideas">

@@ -67,7 +67,7 @@ export interface ReviewSummary {
   totalMoves: number;
   movesAnalyzed: number;
   unclassified: number;
-  /** Mean of per-move accuracies (see classify.ts); null if a side has no classified move. */
+  /** Game accuracy (see gameAccuracy: harmonic + volatility-weighted mean of per-move accuracies); null if a side has no classified move. */
   accuracy: Record<Color, number | null>;
   counts: Record<Color, Record<MoveClass, number>>;
   /** Display grades (Chess.com-style): every classified move is counted once. */
@@ -273,6 +273,54 @@ export function netSacrifice(fenBefore: string, uci: string, pv: readonly string
   }
 }
 
+/**
+ * Game accuracy per side, the way Lichess publishes it: the average of (a) the harmonic mean of the per-move accuracies,
+ * which punishes single big errors hard, and (b) a mean in which each move is weighted by how volatile the position was
+ * around it (a sliding window of the White win% series), so decisive moments count more than quiet ones. It is lower than a
+ * plain average, usually by 5-15 points. Still an estimate: it does not reproduce Lichess's or Chess.com's displayed numbers.
+ */
+export function gameAccuracy(moves: readonly ReviewMove[]): Record<Color, number | null> {
+  const out: Record<Color, number | null> = { w: null, b: null };
+  const wins: number[] = [];
+  const first = moves[0];
+  if (first === undefined) return out;
+  const pct = (m: ReviewMove, which: 'before' | 'after'): number => {
+    const v = whiteWinPercent(m[which].score);
+    return Number.isFinite(v) ? v : Number.NaN;
+  };
+  wins.push(pct(first, 'before'));
+  for (const m of moves) wins.push(pct(m, 'after'));
+  for (let i = 0; i < wins.length; i += 1) if (Number.isNaN(wins[i] as number)) wins[i] = i > 0 ? (wins[i - 1] as number) : 50;
+  const size = Math.max(2, Math.min(8, Math.floor(wins.length / 10)));
+  const windows: number[][] = [];
+  for (let i = 0; i < size - 2; i += 1) windows.push(wins.slice(0, size));
+  for (let i = 0; i + size <= wins.length; i += 1) windows.push(wins.slice(i, i + size));
+  const weight = (i: number): number => {
+    const w = windows[i] ?? windows[windows.length - 1] ?? [50];
+    const mean = w.reduce((a, b) => a + b, 0) / w.length;
+    const sd = Math.sqrt(w.reduce((a, b) => a + (b - mean) ** 2, 0) / w.length);
+    return Math.max(0.5, Math.min(12, sd));
+  };
+  for (const color of ['w', 'b'] as const) {
+    let sumW = 0;
+    let sumAW = 0;
+    let sumInv = 0;
+    let n = 0;
+    moves.forEach((m, i) => {
+      if (m.color !== color || m.classification.moveClass === null) return;
+      const a = m.classification.accuracy;
+      if (!Number.isFinite(a)) return;
+      const w = weight(i);
+      sumW += w;
+      sumAW += a * w;
+      sumInv += 1 / Math.max(a, 0.01);
+      n += 1;
+    });
+    if (n > 0) out[color] = (sumAW / sumW + n / sumInv) / 2;
+  }
+  return out;
+}
+
 /** Pure aggregation of classified moves (unit-tested without an engine). */
 export function summarizeReview(moves: readonly ReviewMove[]): ReviewSummary {
   const counts = perColor(emptyCounts);
@@ -301,9 +349,10 @@ export function summarizeReview(moves: readonly ReviewMove[]): ReviewSummary {
     if (c.tags.includes('tactical')) tacticalErrors[m.color] += 1;
   }
 
+  const game = gameAccuracy(moves);
   const accuracy: Record<Color, number | null> = {
-    w: accuracyN.w > 0 ? accuracySum.w / accuracyN.w : null,
-    b: accuracyN.b > 0 ? accuracySum.b / accuracyN.b : null,
+    w: accuracyN.w > 0 ? game.w ?? accuracySum.w / accuracyN.w : null,
+    b: accuracyN.b > 0 ? game.b ?? accuracySum.b / accuracyN.b : null,
   };
 
   const classified = moves.filter((m) => m.classification.moveClass !== null);
